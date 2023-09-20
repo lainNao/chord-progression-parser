@@ -1,0 +1,4 @@
+[package]
+name = "chord-progression-ast-parser"
+version = "0.1.0"
+authors = ["lainNao"]
