@@ -2,6 +2,8 @@ mod errors;
 mod lexer;
 mod parser;
 
+use parser::parser::parse;
+
 fn main() {
     let input = "
     @section=A
@@ -29,7 +31,7 @@ fn main() {
     }
 
     println!("Starting parsing");
-    match parser::parser(&tokens) {
+    match parse(&tokens) {
         Ok(ast) => println!("{:?}", ast),
         Err(e) => println!("Error: {}", e),
     }

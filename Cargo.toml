@@ -5,3 +5,4 @@ authors = ["lainNao"]
 edition = "2021"
 
 [dependencies]
+regex = "1.9.5"
