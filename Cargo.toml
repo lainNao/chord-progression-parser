@@ -3,6 +3,11 @@ name = "chord-progression-ast-parser"
 version = "0.1.0"
 authors = ["lainNao"]
 edition = "2021"
+license = "MIT"
+description = "A parser for chord progression ASTs"
+repository = "https://github.com/lainNao/chord-progression-ast-parser"
+readme = "README.md"
+keywords = ["music", "chord", "progression", "parser", "ast"]
 
 [dependencies]
 regex = "1.9.5"

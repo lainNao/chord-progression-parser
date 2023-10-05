@@ -1,48 +1,12 @@
 use crate::errors;
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum Token {
-    // Common
-    Equal,
-    Comma,
-    LineBreak,
-    Slash,
+mod types;
+mod util;
 
-    // SectionMetaInfoElement
-    SectionMetaInfoStart, // @
-    SectionMetaInfoKey(String),
-    SectionMetaInfoValue(String),
+pub use types::{Token, ValueToken};
+use util::is_token_char;
 
-    // ChordBlockElement
-    ChordBlockSeparator, // |
-    Chord(String),       // 分子
-    Denominator(String), // 分母
-
-    // MetaInfoElement
-    MetaInfoStart, //(
-    MetaInfoKey(String),
-    MetaInfoValue(String),
-    MetaInfoEnd, //)
-}
-
-#[derive(Debug, PartialEq, Clone)]
-enum ValueToken {
-    SectionMetaInfoKey,
-    SectionMetaInfoValue,
-    MetaInfoKey,
-    MetaInfoValue,
-    Chord,
-    Denominator,
-}
-
-fn is_token_char(ch: char) -> bool {
-    matches!(
-        ch,
-        '\n' | '\r' | '@' | '(' | ')' | '|' | '=' | '/' | ',' | '\t'
-    )
-}
-
-pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
+pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
 
@@ -163,7 +127,7 @@ mod tests {
                 Token::SectionMetaInfoValue("A".to_string()),
             ];
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             println!("111 {:?}", lex_result);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
@@ -190,7 +154,7 @@ mod tests {
                 Token::LineBreak,
             ];
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
             assert_eq!(tokens, expected);
@@ -216,7 +180,7 @@ mod tests {
                 Token::LineBreak,
             ];
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
             assert_eq!(tokens, expected);
@@ -257,7 +221,7 @@ mod tests {
                 Token::LineBreak,
             ];
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
             assert_eq!(tokens, expected);
@@ -305,7 +269,7 @@ mod tests {
                 Token::LineBreak,
             ];
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             println!("222 {:?}", lex_result);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
@@ -397,7 +361,7 @@ mod tests {
                 Token::LineBreak,
             ];
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
 
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
@@ -416,7 +380,7 @@ mod tests {
             ion=A
             ";
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             assert!(lex_result.is_err());
             assert_eq!(
                 lex_result.unwrap_err(),
@@ -432,7 +396,7 @@ mod tests {
                 )C|
                 ";
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             assert!(lex_result.is_err());
             assert_eq!(
                 lex_result.unwrap_err(),
@@ -447,7 +411,7 @@ mod tests {
                     bbbb)C|
                 ";
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             assert!(lex_result.is_err());
             assert_eq!(
                 lex_result.unwrap_err(),
@@ -462,7 +426,7 @@ mod tests {
                 C7|F|Fm7|
                 ";
 
-            let lex_result = lexer(input);
+            let lex_result = tokenize(input);
             println!("222 {:?}", lex_result);
             assert!(lex_result.is_err());
             assert_eq!(
