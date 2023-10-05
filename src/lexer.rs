@@ -3,7 +3,8 @@ use crate::errors;
 mod types;
 mod util;
 
-pub use types::{Token, ValueToken};
+pub use types::token::Token;
+pub use types::value_token::ValueToken;
 use util::is_token_char;
 
 pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
