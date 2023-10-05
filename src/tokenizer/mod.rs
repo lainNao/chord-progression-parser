@@ -1,5 +1,11 @@
 use crate::errors;
 
+pub mod types;
+pub mod util;
+
+use types::{Token, ValueToken};
+use util::is_token_char;
+
 pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
@@ -50,10 +56,11 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                         }
                         Some(Token::MetaInfoKey(_)) => Ok(Some(ValueToken::MetaInfoValue)),
                         _ => {
-                            return Err(format!(
-                                "Error: Invalid token type: {:?}",
-                                second_token_from_last.unwrap()
-                            ))
+                            return Err([
+                                errors::INVALID_TOKEN_TYPE.to_string(),
+                                second_token_from_last.unwrap().to_string(),
+                            ]
+                            .join(": "));
                         }
                     },
                     Some(Token::Slash) => Ok(Some(ValueToken::Denominator)),
@@ -90,10 +97,11 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                     Some(ValueToken::Chord) => tokens.push(Token::Chord(token)),
                     Some(ValueToken::Denominator) => tokens.push(Token::Denominator(token)),
                     None => {
-                        return Err(format!(
-                            "Error: Invalid token type: {:?}",
-                            token_type.unwrap()
-                        ))
+                        return Err([
+                            errors::INVALID_TOKEN_TYPE.to_string(),
+                            token_type.unwrap().to_string(),
+                        ]
+                        .join(": "));
                     }
                 }
             }

@@ -2,7 +2,7 @@ mod types;
 mod util;
 
 use crate::errors;
-use crate::lexer::Token;
+use crate::tokenizer::types::Token;
 
 use types::{Ast, Chord, ChordInfo, ChordInfoMeta, Key, Section, SectionMeta};
 

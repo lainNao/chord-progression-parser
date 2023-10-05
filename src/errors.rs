@@ -1,3 +1,5 @@
+// TODO: 「the xx is not yy」のような動的なエラーメッセージに対応できないっぽいので修正する必要がありそう。ただしエラーIDも持ちたい。idと、stringを返す関数で作るしかない？
+
 // should not contains xxx
 pub const SECTION_META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK: &str =
     "Error: SectionMetaInfoKey should not contains line break";
@@ -26,6 +28,7 @@ pub const SECTION_META_INFO_VALUE_NEEDS_LINE_BREAK_AFTER: &str =
     "Error: SectionMetaInfoValue needs line break after";
 
 // invalid
+pub const INVALID_TOKEN_TYPE: &str = "Error: Invalid token type"; // TODO: test
 pub const SECTION_META_INFO_KEY_IS_INVALID: &str = "Error: SectionMetaInfoKey is invalid";
 pub const SECTION_META_INFO_VALUE_OF_REPEAT_NEEDS_TO_BE_NUMBER: &str =
     "Error: SectionMetaInfoValue of repeat needs to be number";
