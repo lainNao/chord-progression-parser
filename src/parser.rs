@@ -1,7 +1,10 @@
+mod types;
+mod util;
+
 use crate::errors;
 use crate::lexer::Token;
 
-use super::types::{Ast, Chord, ChordInfo, ChordInfoMeta, Key, Section, SectionMeta};
+use types::{Ast, Chord, ChordInfo, ChordInfoMeta, Key, Section, SectionMeta};
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
     let mut sections: Vec<Section> = Vec::new();

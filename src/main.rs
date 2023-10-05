@@ -2,7 +2,8 @@ mod errors;
 mod lexer;
 mod parser;
 
-use parser::parser::parse;
+use lexer::tokenize;
+use parser::parse;
 
 fn main() {
     let input = "
@@ -18,7 +19,7 @@ fn main() {
 
     println!("Input: {}", input);
 
-    let lex_result = lexer::lexer(input);
+    let lex_result = tokenize(input);
     if let Err(e) = lex_result {
         println!("Error: {}", e);
         return;
