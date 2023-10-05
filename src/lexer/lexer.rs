@@ -1,11 +1,5 @@
 use crate::errors;
 
-mod types;
-mod util;
-
-pub use types::{Token, ValueToken};
-use util::is_token_char;
-
 pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
