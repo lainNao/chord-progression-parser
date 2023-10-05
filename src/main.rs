@@ -1,9 +1,9 @@
 mod errors;
-mod lexer;
 mod parser;
+mod tokenizer;
 
-use lexer::tokenize;
 use parser::parse;
+use tokenizer::tokenize;
 
 fn main() {
     let input = "

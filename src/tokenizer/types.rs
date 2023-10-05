@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, strum_macros::Display)]
 pub enum Token {
     // Common
     Equal,
@@ -23,7 +23,7 @@ pub enum Token {
     MetaInfoEnd, //)
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, strum_macros::Display)]
 pub enum ValueToken {
     SectionMetaInfoKey,
     SectionMetaInfoValue,

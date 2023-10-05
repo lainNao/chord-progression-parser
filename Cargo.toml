@@ -11,3 +11,5 @@ keywords = ["music", "chord", "progression", "parser", "ast"]
 
 [dependencies]
 regex = "1.9.5"
+strum = "0.25.0"
+strum_macros = "0.25.2"
