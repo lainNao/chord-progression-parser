@@ -97,33 +97,27 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 // add meta info to last chord block
                 match meta_info_key.as_str() {
                     "key" => {
-                        // if section_meta_info_value cannot parse as u32, return error
-                        if meta_info_value.parse::<u32>().is_err() {
-                            return Err(errors::SECTION_META_INFO_VALUE_OF_REPEAT_NEEDS_TO_BE_NUMBER.to_string());
-                        }
+                        let key_name = match meta_info_value.parse() {
+                            Ok(key) => key,
+                            Err(_) => return Err(errors::META_INFO_VALUE_IS_INVALID.to_string()),
+                        };
 
                         // add ChordInfoMeta to last ChordInfo
-                        let last_chord_block = sections.last_mut().unwrap().chord_blocks.last_mut().unwrap();
-
-                        last_chord_block.last_mut().unwrap().meta_infos.push(ChordInfoMeta::Key {
-                            value: Key::C_M, //TODO コードはmatchなどで判定する
+                        sections.last_mut().unwrap().chord_blocks.last_mut().unwrap().last_mut().unwrap().meta_infos.push(ChordInfoMeta::Key {
+                            value: key_name, 
                         });
                     }
                     _ => {
                         return Err(errors::META_INFO_KEY_IS_INVALID.to_string());
                     }
                 }
-            
-                // match tokens.next() {
-                //     Some(Token::LineBreak) => {}
-                //     _ => {
-                //         return Err(errors::SECTION_META_INFO_VALUE_NEEDS_LINE_BREAK_AFTER.to_string());
-                //     }
-                // }    
+
+                // if next token is not Token::MetaInfoEnd, return error
+                match tokens.next() {
+                    Some(Token::MetaInfoEnd) => {}
+                    _ => return Err(errors::META_INFO_VALUE_NEEDS_CLOSE_PARENTHESIS_AFTER.to_string())
+                }
             }       
-            // Token::MetaInfoKey(String) => {}
-            // Token::MetaInfoValue(String) => {}
-            // Token::MetaInfoEnd => {} //)
             Token::ChordBlockSeparator => {} // |
             Token::Chord(String) => {}
             Token::Equal => {}
