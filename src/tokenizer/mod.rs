@@ -131,7 +131,6 @@ mod tests {
             ];
 
             let lex_result = tokenize(input);
-            println!("111 {:?}", lex_result);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
             assert_eq!(tokens, expected);
