@@ -2,7 +2,7 @@ mod types;
 mod util;
 
 use crate::errors;
-use crate::tokenizer::types::Token;
+use crate::tokenizer::types::token::Token;
 
 use types::ast::Ast;
 use types::chord_info_meta::ChordInfoMeta;

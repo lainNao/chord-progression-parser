@@ -22,13 +22,3 @@ pub enum Token {
     MetaInfoValue(String),
     MetaInfoEnd, //)
 }
-
-#[derive(Debug, PartialEq, Clone, strum_macros::Display)]
-pub enum ValueToken {
-    SectionMetaInfoKey,
-    SectionMetaInfoValue,
-    MetaInfoKey,
-    MetaInfoValue,
-    Chord,
-    Denominator,
-}
