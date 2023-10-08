@@ -12,7 +12,12 @@ use types::chord_detailed::ChordDetailed;
 use types::chord_info::ChordInfo;
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
-    let mut sections: Vec<Section> = Vec::new();
+    let mut sections: Vec<Section> = vec![
+        Section {
+            meta_infos: Vec::new(),
+            chord_blocks: Vec::new(),
+        }
+    ];
     let mut tokens = tokens.iter().peekable();
     let mut tmp_chord_info_meta_infos: Vec<ChordInfoMeta> = Vec::new();
 
@@ -20,9 +25,12 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
         match token {
             // section meta info
             Token::SectionMetaInfoStart => {
+                // TODO セクションメタインフォが無くても初期化されうるよ。どこで初期化必要か考えてね
+                //      ・そもそもセクションが空配列な時
+                //      ・改行が2つ以上重なる時（空行ができる時）
+                //      ・以下の時
+
                 let is_new_section = 
-                    // no section
-                    sections.is_empty() ||
                     // last section's chord_blocks is not empty
                     !sections.last().unwrap().chord_blocks.is_empty();
                 
@@ -33,7 +41,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         chord_blocks: Vec::new(),
                     });
                 }
-
+    
                 // if next token is not Token::SectionMetaInfoKey, return error
                 let section_meta_info_key = match tokens.next() {
                     Some(Token::SectionMetaInfoKey(value)) => value,
@@ -74,7 +82,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     }
                 }
             
-                match tokens.next() {
+                match tokens.peek() {
                     Some(Token::LineBreak) => {}
                     _ => {
                         return Err(errors::SECTION_META_INFO_VALUE_NEEDS_LINE_BREAK_AFTER.to_string());
@@ -130,9 +138,13 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
             Token::Chord(chord_string) => {
                 // if next token is denominator, read denominator
                 let denominator: Option<String> = match tokens.peek() {
-                    Some(Token::Denominator(denominator)) => {
+                    Some(Token::Slash) => {
                         tokens.next();
-                        Some(denominator.clone())
+                        match tokens.next() {
+                            Some(Token::Denominator(denominator)) => Some(denominator.clone()),
+                            Some(Token::Slash) => return Err(errors::CHORD_SHOULD_NOT_CONTAINS_MULTIPLE_SLASHES.to_string()),
+                            _ => return Err("slashの後にdenominatorがないよ！".to_string()),
+                        }
                     }
                     _ => None,
                 };
@@ -168,11 +180,30 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     ].join(": "));
                 }
             }
-            Token::LineBreak => {}
+            Token::LineBreak => {
+                // if Token::LineBreak appears two or more times in a row, create new section
+                match tokens.peek() {
+                    Some(Token::LineBreak) => {
+
+                        // if last section is empty, remove it
+                        if sections.last().unwrap().chord_blocks.is_empty() {
+                            sections.pop();
+                        }
+
+                        // create new section
+                        sections.push(Section {
+                            meta_infos: Vec::new(),
+                            chord_blocks: Vec::new(),
+                        });
+                    }
+                    _ => { /* Nothing */ }
+                }
+            }
             Token::Denominator(_) => { /* Nothing */ }
             Token::Comma => { /* Nothing */ }
-            Token::ChordBlockSeparator => { /* Nothing */ } // |
+            Token::ChordBlockSeparator => { /* Nothing */ } //
             Token::Equal => { /* Nothing */ }
+            Token::Slash => { /* Nothing */ }
             _ => {
                 // invalid token
                 return Err(errors::INVALID_TOKEN_TYPE.to_string())
@@ -189,36 +220,100 @@ mod tests {
     use types::chord_info::ChordInfo;
     use types::base::Base;
     use types::chord_type::ChordType;
+    use types::accidental::Accidental;
+    use types::extension::Extension;
 
     #[cfg(test)]
     mod success {
         use super::*;
 
         #[test]
-        fn sample() {
+        fn section_meta_info() {
             let input = [
                 Token::SectionMetaInfoStart,
                 Token::SectionMetaInfoKey("section".to_string()),
                 Token::Equal,
                 Token::SectionMetaInfoValue("A".to_string()),
                 Token::LineBreak,
+            ];
+            
+            assert_eq!(parse(&input),
+                Ok([
+                    Section {
+                        meta_infos: vec![
+                            SectionMeta::Section {
+                                value: "A".to_string(),
+                            }
+                        ],
+                        chord_blocks: Vec::new(),
+                    }
+                ].to_vec()));
+        }
+
+        #[test]
+        fn multiple_section_meta_info() {
+            let input = [
+                Token::LineBreak,
+                Token::SectionMetaInfoStart,
+                Token::SectionMetaInfoKey("section".to_string()),
+                Token::Equal,
+                Token::SectionMetaInfoValue("A".to_string()),
+                Token::LineBreak,
+                Token::SectionMetaInfoStart,
+                Token::SectionMetaInfoKey("section".to_string()),
+                Token::Equal,
+                Token::SectionMetaInfoValue("AA".to_string()),
+                Token::LineBreak,
+            ];
+
+            assert_eq!(parse(&input),
+                Ok([
+                    Section {
+                        meta_infos: vec![
+                            SectionMeta::Section {
+                                value: "A".to_string(),
+                            },
+                            SectionMeta::Section {
+                                value: "AA".to_string(),
+                            }
+                        ],
+                        chord_blocks: Vec::new(),
+                    }
+                ].to_vec()));
+        }
+
+        #[test]
+        fn chord_blocks_with_fraction_chord() {
+            let input = [
+                Token::LineBreak,
                 Token::ChordBlockSeparator,
                 Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
                 Token::ChordBlockSeparator,
                 Token::Chord("G".to_string()),
+                Token::Slash,
+                Token::Denominator("Bb".to_string()),
                 Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
+                Token::Chord("Am".to_string()),
                 Token::ChordBlockSeparator,
+                Token::Chord("Em".to_string()),
+                Token::Slash,
+                Token::Denominator("G".to_string()),
+                Token::ChordBlockSeparator,
+                Token::LineBreak,
+                Token::ChordBlockSeparator,
+                Token::Chord("F#m7-5".to_string()),
+                Token::Slash,
+                Token::Denominator("F#m7-5".to_string()),
+                Token::ChordBlockSeparator,
+                Token::Chord("Fbm13".to_string()),
+                Token::Slash,
+                Token::Denominator("G7".to_string()),
+                Token::ChordBlockSeparator,
+                Token::LineBreak,
             ];
             let expected = [
                 Section {
-                    meta_infos: vec![
-                        SectionMeta::Section {
-                            value: "A".to_string(),
-                        }
-                    ],
+                    meta_infos: Vec::new(),
                     chord_blocks: vec![
                         vec![
                             ChordInfo {
@@ -226,19 +321,6 @@ mod tests {
                                     plain: "C".to_string(),
                                     detailed: ChordDetailed {
                                         base: Base::C,
-                                        accidental: None,
-                                        chord_type: ChordType::Major,
-                                        extension: None,
-                                    },
-                                },
-                                denominator: None,
-                                meta_infos: Vec::new(),
-                            },
-                            ChordInfo {
-                                chord: Chord {
-                                    plain: "F".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::F,
                                         accidental: None,
                                         chord_type: ChordType::Major,
                                         extension: None,
@@ -257,9 +339,87 @@ mod tests {
                                         extension: None,
                                     },
                                 },
+                                denominator: Some("Bb".to_string()),
+                                meta_infos: Vec::new(),
+                            },
+                            ChordInfo {
+                                chord: Chord {
+                                    plain: "Am".to_string(),
+                                    detailed: ChordDetailed {
+                                        base: Base::A,
+                                        accidental: None,
+                                        chord_type: ChordType::Minor,
+                                        extension: None,
+                                    },
+                                },
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
+                            ChordInfo {
+                                chord: Chord {
+                                    plain: "Em".to_string(),
+                                    detailed: ChordDetailed {
+                                        base: Base::E,
+                                        accidental: None,
+                                        chord_type: ChordType::Minor,
+                                        extension: None,
+                                    },
+                                },
+                                denominator: Some("G".to_string()),
+                                meta_infos: Vec::new(),
+                            },
+                            ChordInfo {
+                                chord: Chord {
+                                    plain: "F#m7-5".to_string(),
+                                    detailed: ChordDetailed {
+                                        base: Base::F,
+                                        accidental: Some(Accidental::Sharp),
+                                        chord_type: ChordType::Minor,
+                                        extension: Some(Extension::SevenFlatFive),
+                                    },
+                                },
+                                denominator: Some("F#m7-5".to_string()),
+                                meta_infos: Vec::new(),
+                            },
+                            ChordInfo {
+                                chord: Chord {
+                                    plain: "Fbm13".to_string(),
+                                    detailed: ChordDetailed {
+                                        base: Base::F,
+                                        accidental: Some(Accidental::Flat),
+                                        chord_type: ChordType::Minor,
+                                        extension: Some(Extension::Thirteen),
+                                    },
+                                },
+                                denominator: Some("G7".to_string()),
+                                meta_infos: Vec::new(),
+                            },
+                        ],
+                    ],
+                }
+            ];
+            let parsed_result = parse(&input);
+            assert_eq!(parsed_result, Ok(expected.to_vec()));
+        }
+
+        #[test]
+        fn multiple_section_without_section_meta() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ChordBlockSeparator,
+                Token::LineBreak,
+                Token::LineBreak,
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+            assert_eq!(parse(&input),
+            Ok([
+                Section {
+                    meta_infos: Vec::new(),
+                    chord_blocks: vec![
+                        vec![
                             ChordInfo {
                                 chord: Chord {
                                     plain: "C".to_string(),
@@ -273,12 +433,31 @@ mod tests {
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
-                        ]
+                        ],
+                    ],
+                },
+                Section {
+                    meta_infos: Vec::new(),
+                    chord_blocks: vec![
+                        vec![
+                            ChordInfo {
+                                chord: Chord {
+                                    plain: "C".to_string(),
+                                    detailed: ChordDetailed {
+                                        base: Base::C,
+                                        accidental: None,
+                                        chord_type: ChordType::Major,
+                                        extension: None,
+                                    },
+                                },
+                                denominator: None,
+                                meta_infos: Vec::new(),
+                            },
+                        ],
                     ],
                 }
-            ];
-            let parsed_result = parse(&input);
-            assert_eq!(parsed_result, Ok(expected.to_vec()));
+            ].to_vec()));
         }
+
     }
 }
