@@ -5,5 +5,5 @@ use super::chord_info_meta::ChordInfoMeta;
 pub struct ChordInfo {
     pub meta_infos: Vec<ChordInfoMeta>,
     pub chord: Chord,
-    pub denominator: String, // 曖昧で扱いようが無いのでstring
+    pub denominator: Option<String>, // 曖昧で扱いようが無いのでstring
 }
