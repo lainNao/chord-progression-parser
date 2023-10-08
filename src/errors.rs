@@ -34,6 +34,7 @@ pub const SECTION_META_INFO_VALUE_OF_REPEAT_NEEDS_TO_BE_NUMBER: &str =
     "Error: SectionMetaInfoValue of repeat needs to be number";
 pub const META_INFO_KEY_IS_INVALID: &str = "Error: MetaInfoKey is invalid";
 pub const META_INFO_VALUE_IS_INVALID: &str = "Error: MetaInfoValue is invalid";
+pub const CHORD_IS_INVALID: &str = "Error: Chord is invalid";
 
 // should not be isolated
 // NOTE: test it on parser

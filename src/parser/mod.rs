@@ -1,5 +1,4 @@
 mod types;
-mod util;
 
 use crate::errors;
 use crate::tokenizer::types::token::Token;
@@ -8,6 +7,8 @@ use types::ast::Ast;
 use types::chord_info_meta::ChordInfoMeta;
 use types::section::Section;
 use types::section_meta::SectionMeta;
+use types::chord::Chord;
+use types::chord_detailed::ChordDetailed;
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
     let mut sections: Vec<Section> = Vec::new();
@@ -124,14 +125,41 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 }
             }
             // chord
-            Token::Chord(chord) => {
+            Token::Chord(chord_string) => {
+                // if next token is denominator, read denominator
+                let denominator: Option<String> = match tokens.peek() {
+                    Some(Token::Denominator(denominator)) => {
+                        tokens.next();
+                        Some(denominator.clone())
+                    }
+                    _ => None,
+                };
 
-            }
-            // denominator
-            Token::Denominator(denominator) => {
+                let chord_detailed  = ChordDetailed::from_str(chord_string);
+                if let Ok(detailed) = chord_detailed {
+                    let chord = Chord {
+                        plain: chord_string.clone(),
+                        detailed,
+                    };
+    
+                    sections.last_mut().unwrap()
+                        .chord_blocks.last_mut().unwrap().last_mut().unwrap()
+                        .chord = chord;
+                    
+                    sections.last_mut().unwrap()
+                        .chord_blocks.last_mut().unwrap().last_mut().unwrap()
+                        .denominator = denominator;
 
+                } else {
+                    return Err(
+                        [errors::CHORD_IS_INVALID.to_string(),
+                        chord_string.to_string()
+                        ].join(": ")
+                    );
+                }
             }
             Token::LineBreak => {}
+            Token::Denominator(_) => { /* Nothing */ }
             Token::Comma => { /* Nothing */ }
             Token::ChordBlockSeparator => { /* Nothing */ } // |
             Token::Equal => { /* Nothing */ }
