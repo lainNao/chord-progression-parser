@@ -4,7 +4,10 @@ mod util;
 use crate::errors;
 use crate::tokenizer::types::Token;
 
-use types::{Ast, Chord, ChordInfo, ChordInfoMeta, Key, Section, SectionMeta};
+use types::ast::Ast;
+use types::chord_info_meta::ChordInfoMeta;
+use types::section::Section;
+use types::section_meta::SectionMeta;
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
     let mut sections: Vec<Section> = Vec::new();
@@ -12,6 +15,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
 
     while let Some(token) = tokens.next() {
         match token {
+            // section meta info
             Token::SectionMetaInfoStart => {
                 let is_new_section = 
                     // no section
@@ -74,6 +78,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     }
                 }
             },
+            // meta info
             Token::MetaInfoStart => {//(
                 
                 // if next token is not Token::MetaInfoKey, return error
@@ -117,13 +122,23 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     Some(Token::MetaInfoEnd) => {}
                     _ => return Err(errors::META_INFO_VALUE_NEEDS_CLOSE_PARENTHESIS_AFTER.to_string())
                 }
-            }       
-            Token::ChordBlockSeparator => {} // |
-            Token::Chord(String) => {}
-            Token::Equal => {}
-            Token::Comma => {}
+            }
+            // chord
+            Token::Chord(chord) => {
+
+            }
+            // denominator
+            Token::Denominator(denominator) => {
+
+            }
             Token::LineBreak => {}
-            _ => {}
+            Token::Comma => { /* Nothing */ }
+            Token::ChordBlockSeparator => { /* Nothing */ } // |
+            Token::Equal => { /* Nothing */ }
+            _ => {
+                // invalid token
+                return Err(errors::INVALID_TOKEN_TYPE.to_string())
+            }
         }
     }
 
