@@ -9,10 +9,12 @@ use types::section::Section;
 use types::section_meta::SectionMeta;
 use types::chord::Chord;
 use types::chord_detailed::ChordDetailed;
+use types::chord_info::ChordInfo;
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
     let mut sections: Vec<Section> = Vec::new();
     let mut tokens = tokens.iter().peekable();
+    let mut tmp_chord_info_meta_infos: Vec<ChordInfoMeta> = Vec::new();
 
     while let Some(token) = tokens.next() {
         match token {
@@ -108,8 +110,8 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                             Err(_) => return Err(errors::META_INFO_VALUE_IS_INVALID.to_string()),
                         };
 
-                        // add ChordInfoMeta to last ChordInfo
-                        sections.last_mut().unwrap().chord_blocks.last_mut().unwrap().last_mut().unwrap().meta_infos.push(ChordInfoMeta::Key {
+                        // add ChordInfoMeta to temporary variable
+                        tmp_chord_info_meta_infos.push(ChordInfoMeta::Key {
                             value: key_name, 
                         });
                     }
@@ -135,27 +137,35 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     _ => None,
                 };
 
-                let chord_detailed  = ChordDetailed::from_str(chord_string);
-                if let Ok(detailed) = chord_detailed {
+                let result  = ChordDetailed::from_str(chord_string);
+                if let Ok(detailed) = result {
                     let chord = Chord {
                         plain: chord_string.clone(),
                         detailed,
                     };
     
+                    // if chord_blocks is empty, make new chord_block
+                    if sections.last_mut().unwrap().chord_blocks.is_empty() {
+                        sections.last_mut().unwrap().chord_blocks.push(Vec::new());
+                    }
+
+                    // make chord info and add to last chord block
                     sections.last_mut().unwrap()
-                        .chord_blocks.last_mut().unwrap().last_mut().unwrap()
-                        .chord = chord;
+                        .chord_blocks.last_mut().unwrap().push(ChordInfo {
+                            chord,
+                            denominator,
+                            meta_infos: tmp_chord_info_meta_infos.clone(),
+                        });
                     
-                    sections.last_mut().unwrap()
-                        .chord_blocks.last_mut().unwrap().last_mut().unwrap()
-                        .denominator = denominator;
+                    // reset tmp_chord_info_meta_infos
+                    tmp_chord_info_meta_infos = Vec::new();
 
                 } else {
                     return Err([
                         errors::CHORD_IS_INVALID.to_string(),
+                        result.err().unwrap(),
                         chord_string.to_string()
-                    ].join(": ")
-                    );
+                    ].join(": "));
                 }
             }
             Token::LineBreak => {}

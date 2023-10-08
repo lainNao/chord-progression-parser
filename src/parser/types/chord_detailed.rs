@@ -31,14 +31,15 @@ impl ChordDetailed {
                 idx += 1;
                 Some(Accidental::Flat)
             }
-            _ => return Err("Invalid accidental.".to_string()),
+            // No accidental
+            _ => None,
         };
 
         let chord_str = &s[idx..];
 
         let chord_type = if chord_str.starts_with("m") {
             ChordType::Minor
-        } else if chord_str.starts_with("M") {
+        } else if chord_str.starts_with('M') {
             ChordType::Major
         } else if chord_str.starts_with("aug") {
             ChordType::Augmented
@@ -51,7 +52,7 @@ impl ChordDetailed {
         } else if chord_str.starts_with("sus4") {
             ChordType::Sus4
         } else {
-            return Err("Invalid chord type.".to_string());
+            ChordType::Major
         };
 
         let extension_str = chord_str.strip_prefix(match &chord_type {
@@ -85,7 +86,7 @@ impl ChordDetailed {
             Some("b13") => Some(Extension::FlatThirteen),
             Some("13") => Some(Extension::Thirteen),
             Some("#13") => Some(Extension::SharpThirteen),
-            _ => return Err("Invalid extension.".to_string()),
+            _ => None,
         };
 
         Ok(ChordDetailed {
