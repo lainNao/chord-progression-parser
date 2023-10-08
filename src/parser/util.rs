@@ -1,6 +1,11 @@
 use regex::Regex;
 
-use super::types::{Accidental, Base, Chord, ChordDetailed};
+use super::types::chord::Chord;
+
+use super::types::accidental::Accidental;
+use super::types::base::Base;
+
+// TODO コードを詳細までパースするやつ
 
 // pub fn parse_chord(input: &str) -> Result<Chord, &'static str> {
 // let chord_regexp = format!(
