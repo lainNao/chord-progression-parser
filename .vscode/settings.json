@@ -5,6 +5,7 @@
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
   "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.showUnlinkedFieNotification": false,
 
   "[JSON]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -13,6 +14,5 @@
 
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "rust-analyzer.linkedProjects": ["./Cargo.toml"]
+  }
 }
