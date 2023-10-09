@@ -15,24 +15,23 @@ fn main() {
     |(key=F)Gm|Gm|F|F|
     |Gm|Gm|F|F|
     ";
-
     println!("Input: {}", input);
 
-    let lex_result = tokenize(input);
-    if let Err(e) = lex_result {
-        println!("Error: {}", e);
-        return;
-    }
-    let tokens = lex_result.unwrap();
+    let tokens = match tokenize(input) {
+        Ok(t) => t,
+        Err(e) => {
+            println!("Tokenization Error: {}", e);
+            return;
+        }
+    };
+    println!("Tokens: {:?}\n", tokens);
 
-    println!("Tokens:");
-    for token in &tokens {
-        println!("{:?}", token);
-    }
-
-    println!("Starting parsing");
-    match parse(&tokens) {
-        Ok(ast) => println!("{:?}", ast),
-        Err(e) => println!("Error: {}", e),
-    }
+    let ast = match parse(&tokens) {
+        Ok(ast) => ast,
+        Err(e) => {
+            println!("Parse Error: {}", e);
+            return;
+        }
+    };
+    println!("AST: {:?}\n", ast);
 }
