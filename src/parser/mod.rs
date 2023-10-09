@@ -90,7 +90,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                             });
                     }
                     _ => {
-                        return Err(errors::SECTION_META_INFO_KEY_IS_INVALID.to_string());
+                        return Err([
+                            errors::SECTION_META_INFO_KEY_IS_INVALID.to_string(),
+                            section_meta_info_key.to_string(),
+                        ].join(": "));
                     }
                 }
 

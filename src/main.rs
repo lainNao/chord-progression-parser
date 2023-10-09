@@ -8,7 +8,6 @@ use tokenizer::tokenize;
 fn main() {
     let input = "
     @section=A
-    @sample=aaa
     |C|F|G|C|
     |C|F|G|A|
     
