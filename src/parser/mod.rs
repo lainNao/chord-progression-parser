@@ -9,7 +9,7 @@ use types::section::Section;
 use types::section_meta::SectionMeta;
 use types::chord::Chord;
 use types::chord_detailed::ChordDetailed;
-use types::chord_info::ChordInfo;
+use types::chord_info::{ChordInfo, ChordOrUnidentified};
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
     let mut sections: Vec<Section> = vec![
@@ -149,6 +149,26 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     _ => None,
                 };
 
+                if chord_string == "?" {
+                    // if chord_blocks is empty, make new chord_block
+                    if sections.last_mut().unwrap().chord_blocks.is_empty() {
+                        sections.last_mut().unwrap().chord_blocks.push(Vec::new());
+                    }
+                    
+                    // add unidentified chord to last chord block
+                    sections.last_mut().unwrap()
+                        .chord_blocks.last_mut().unwrap().push(ChordInfo {
+                            chord: ChordOrUnidentified::Unidentified,
+                            denominator,
+                            meta_infos: tmp_chord_info_meta_infos.clone(),
+                        });
+                    
+                    // reset tmp_chord_info_meta_infos
+                    tmp_chord_info_meta_infos = Vec::new();
+
+                    continue;
+                }
+
                 let result  = ChordDetailed::from_str(chord_string);
                 if let Ok(detailed) = result {
                     let chord = Chord {
@@ -164,7 +184,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     // make chord info and add to last chord block
                     sections.last_mut().unwrap()
                         .chord_blocks.last_mut().unwrap().push(ChordInfo {
-                            chord,
+                            chord: ChordOrUnidentified::Chord(chord),
                             denominator,
                             meta_infos: tmp_chord_info_meta_infos.clone(),
                         });
@@ -317,80 +337,92 @@ mod tests {
                     chord_blocks: vec![
                         vec![
                             ChordInfo {
-                                chord: Chord {
-                                    plain: "C".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::C,
-                                        accidental: None,
-                                        chord_type: ChordType::Major,
-                                        extension: None,
-                                    },
-                                },
-                                denominator: None,
                                 meta_infos: Vec::new(),
+                                denominator: None,
+                                chord: ChordOrUnidentified::Chord (
+                                    Chord {
+                                        plain: "C".to_string(),
+                                        detailed: ChordDetailed {
+                                            base: Base::C,
+                                            accidental: None,
+                                            chord_type: ChordType::Major,
+                                            extension: None,
+                                        },
+                                    },
+                                )
                             },
                             ChordInfo {
-                                chord: Chord {
-                                    plain: "G".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::G,
-                                        accidental: None,
-                                        chord_type: ChordType::Major,
-                                        extension: None,
+                                chord: ChordOrUnidentified::Chord ( 
+                                    Chord {
+                                        plain: "G".to_string(),
+                                        detailed: ChordDetailed {
+                                            base: Base::G,
+                                            accidental: None,
+                                            chord_type: ChordType::Major,
+                                            extension: None,
+                                        },
                                     },
-                                },
+                                ),
                                 denominator: Some("Bb".to_string()),
                                 meta_infos: Vec::new(),
                             },
                             ChordInfo {
-                                chord: Chord {
-                                    plain: "Am".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::A,
-                                        accidental: None,
-                                        chord_type: ChordType::Minor,
-                                        extension: None,
+                                chord: ChordOrUnidentified::Chord ( 
+                                    Chord {
+                                        plain: "Am".to_string(),
+                                        detailed: ChordDetailed {
+                                            base: Base::A,
+                                            accidental: None,
+                                            chord_type: ChordType::Minor,
+                                            extension: None,
+                                        },
                                     },
-                                },
+                                ),
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
                             ChordInfo {
-                                chord: Chord {
-                                    plain: "Em".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::E,
-                                        accidental: None,
-                                        chord_type: ChordType::Minor,
-                                        extension: None,
+                                chord: ChordOrUnidentified::Chord ( 
+                                    Chord {
+                                        plain: "Em".to_string(),
+                                        detailed: ChordDetailed {
+                                            base: Base::E,
+                                            accidental: None,
+                                            chord_type: ChordType::Minor,
+                                            extension: None,
+                                        },
                                     },
-                                },
+                                ),
                                 denominator: Some("G".to_string()),
                                 meta_infos: Vec::new(),
                             },
                             ChordInfo {
-                                chord: Chord {
-                                    plain: "F#m7-5".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::F,
-                                        accidental: Some(Accidental::Sharp),
-                                        chord_type: ChordType::Minor,
-                                        extension: Some(Extension::SevenFlatFive),
+                                chord: ChordOrUnidentified::Chord ( 
+                                    Chord {
+                                        plain: "F#m7-5".to_string(),
+                                        detailed: ChordDetailed {
+                                            base: Base::F,
+                                            accidental: Some(Accidental::Sharp),
+                                            chord_type: ChordType::Minor,
+                                            extension: Some(Extension::SevenFlatFive),
+                                        },
                                     },
-                                },
+                                ),
                                 denominator: Some("F#m7-5".to_string()),
                                 meta_infos: Vec::new(),
                             },
                             ChordInfo {
-                                chord: Chord {
-                                    plain: "Fbm13".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::F,
-                                        accidental: Some(Accidental::Flat),
-                                        chord_type: ChordType::Minor,
-                                        extension: Some(Extension::Thirteen),
+                                chord: ChordOrUnidentified::Chord ( 
+                                    Chord {
+                                        plain: "Fbm13".to_string(),
+                                        detailed: ChordDetailed {
+                                            base: Base::F,
+                                            accidental: Some(Accidental::Flat),
+                                            chord_type: ChordType::Minor,
+                                            extension: Some(Extension::Thirteen),
+                                        },
                                     },
-                                },
+                                ),
                                 denominator: Some("G7".to_string()),
                                 meta_infos: Vec::new(),
                             },
@@ -402,6 +434,31 @@ mod tests {
             assert_eq!(parsed_result, Ok(expected.to_vec()));
         }
 
+        #[test]
+        fn chord_blocks_with_unidentified() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("?".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+
+            assert_eq!(parse(&input),
+                Ok([
+                    Section {
+                        meta_infos: Vec::new(),
+                        chord_blocks: vec![
+                            vec![
+                                ChordInfo {
+                                    chord: ChordOrUnidentified::Unidentified,
+                                    denominator: None,
+                                    meta_infos: Vec::new(),
+                                },
+                            ],
+                        ],
+                    }
+                ].to_vec()));
+        }
+        
         #[test]
         fn multiple_section_without_section_meta() {
             let input = [
@@ -421,15 +478,16 @@ mod tests {
                     chord_blocks: vec![
                         vec![
                             ChordInfo {
-                                chord: Chord {
-                                    plain: "C".to_string(),
-                                    detailed: ChordDetailed {
-                                        base: Base::C,
-                                        accidental: None,
-                                        chord_type: ChordType::Major,
-                                        extension: None,
+                                chord: ChordOrUnidentified::Chord ( Chord {
+                                        plain: "C".to_string(),
+                                        detailed: ChordDetailed {
+                                            base: Base::C,
+                                            accidental: None,
+                                            chord_type: ChordType::Major,
+                                            extension: None,
+                                        },
                                     },
-                                },
+                                ),
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
@@ -441,7 +499,7 @@ mod tests {
                     chord_blocks: vec![
                         vec![
                             ChordInfo {
-                                chord: Chord {
+                                chord: ChordOrUnidentified::Chord ( Chord {
                                     plain: "C".to_string(),
                                     detailed: ChordDetailed {
                                         base: Base::C,
@@ -450,6 +508,7 @@ mod tests {
                                         extension: None,
                                     },
                                 },
+                            ),
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
