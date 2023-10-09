@@ -7,13 +7,21 @@ use tokenizer::tokenize;
 
 fn main() {
     let input = "
-    @section=A
-    |C|F|G|C|
-    |C|F|G|A|
+    @section=Intro
+    |(key=E)E|C#m7|Bm7|C#7|
+    |F#m7|Am7|F#7|B|
     
-    @section=B
-    |(key=F)Gm|Gm|F|F|
-    |Gm|Gm|F|F|
+    @section=Verse
+    |E|C#m7|Bm7|C#7|
+    |F#m7|Am7|F#7|B|
+    
+    @section=Chorus
+    |(key=C)C|C7|FM7|Fm7|
+    |C|C7|FM7|Dm7|
+    |Em7|E7|
+
+    @section=Interlude
+    |C|A,B|
     ";
     println!("Input: {}", input);
 
