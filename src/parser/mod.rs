@@ -23,11 +23,6 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
         match token {
             // section meta info
             Token::SectionMetaInfoStart => {
-                // TODO セクションメタインフォが無くても初期化されうるよ。どこで初期化必要か考えてね
-                //      ・そもそもセクションが空配列な時
-                //      ・改行が2つ以上重なる時（空行ができる時）
-                //      ・以下の時
-
                 let is_new_section = 
                     // last section's chord_blocks is not empty
                     !sections.last().unwrap().chord_blocks.is_empty();
