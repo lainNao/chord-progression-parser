@@ -37,7 +37,7 @@ impl ChordDetailed {
 
         let chord_str = &s[idx..];
 
-        let chord_type = if chord_str.starts_with("m") {
+        let chord_type = if chord_str.starts_with('m') {
             ChordType::Minor
         } else if chord_str.starts_with('M') {
             ChordType::Major
