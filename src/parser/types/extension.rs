@@ -1,24 +1,55 @@
-#[derive(Debug, PartialEq, Clone)]
+use strum_macros::{Display, EnumString, EnumVariantNames};
+
+#[derive(Debug, PartialEq, Clone, Display, EnumString, EnumVariantNames)]
 pub enum Extension {
-    //TODO: なんかおかしいな
-    Two,           // 2
-    Three,         // 3
-    FlatThree,     // b3
-    Four,          // 4
-    FlatFive,      // b5, -5
-    Five,          // 5
-    SharpFive,     // #5
-    FlatSix,       // b6
-    Six,           // 6
-    Seven,         // 7
-    SevenFlatFive, // 7b5, 7-5
-    FlatNine,      // b9
-    Nine,          // 9
-    SharpNine,     // #9
-    FlatEleven,    // b11
-    Eleven,        // 11
-    SharpEleven,   // #11
-    FlatThirteen,  // b13
-    Thirteen,      // 13
-    SharpThirteen, // #13
+    #[strum(serialize = "2")]
+    Two,
+    #[strum(serialize = "3")]
+    Three,
+    #[strum(serialize = "b3")]
+    FlatThree,
+    #[strum(serialize = "4")]
+    Four,
+    #[strum(serialize = "b5", serialize = "-5")]
+    FlatFive,
+    #[strum(serialize = "5")]
+    Five,
+    #[strum(serialize = "#5")]
+    SharpFive,
+    #[strum(serialize = "b6")]
+    FlatSix,
+    #[strum(serialize = "6")]
+    Six,
+    #[strum(serialize = "7")]
+    Seven,
+    #[strum(serialize = "b9")]
+    FlatNine,
+    #[strum(serialize = "9")]
+    Nine,
+    #[strum(serialize = "#9")]
+    SharpNine,
+    #[strum(serialize = "b11")]
+    FlatEleven,
+    #[strum(serialize = "11")]
+    Eleven,
+    #[strum(serialize = "#11")]
+    SharpEleven,
+    #[strum(serialize = "b13")]
+    FlatThirteen,
+    #[strum(serialize = "13")]
+    Thirteen,
+    #[strum(serialize = "#13")]
+    SharpThirteen,
+    #[strum(serialize = "add9")]
+    Add9,
+    #[strum(serialize = "add11")]
+    Add11,
+    #[strum(serialize = "add13")]
+    Add13,
+    #[strum(serialize = "sus2")]
+    Sus2,
+    #[strum(serialize = "sus4")]
+    Sus4,
+    #[strum(serialize = "o")]
+    HalfDiminish,
 }
