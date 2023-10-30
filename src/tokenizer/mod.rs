@@ -272,7 +272,6 @@ mod tests {
             ];
 
             let lex_result = tokenize(input);
-            println!("222 {:?}", lex_result);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
             assert_eq!(tokens, expected);
@@ -429,7 +428,6 @@ mod tests {
                 ";
 
             let lex_result = tokenize(input);
-            println!("222 {:?}", lex_result);
             assert!(lex_result.is_err());
             assert_eq!(
                 lex_result.unwrap_err(),
