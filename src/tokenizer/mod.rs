@@ -14,8 +14,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
     while let Some(ch) = chars.next() {
         match ch {
             '@' => tokens.push(Token::SectionMetaInfoStart),
-            '(' => tokens.push(Token::MetaInfoStart),
-            ')' => tokens.push(Token::MetaInfoEnd),
+            '[' => tokens.push(Token::MetaInfoStart),
+            ']' => tokens.push(Token::MetaInfoEnd),
             '|' => tokens.push(Token::ChordBlockSeparator),
             '=' => tokens.push(Token::Equal),
             ',' => tokens.push(Token::Comma),
@@ -230,9 +230,33 @@ mod tests {
         }
 
         #[test]
+        fn aaaaa() {
+            let input = "
+            |[key=C]D|
+            ";
+            let expected = vec![
+                Token::LineBreak,
+                Token::ChordBlockSeparator,
+                Token::MetaInfoStart,
+                Token::MetaInfoKey("key".to_string()),
+                Token::Equal,
+                Token::MetaInfoValue("C".to_string()),
+                Token::MetaInfoEnd,
+                Token::Chord("D".to_string()),
+                Token::ChordBlockSeparator,
+                Token::LineBreak,
+            ];
+
+            let lex_result = tokenize(input);
+            assert!(lex_result.is_ok());
+            let tokens = lex_result.unwrap();
+            assert_eq!(tokens, expected);
+        }
+
+        #[test]
         fn chord_block_with_multiple_meta_info() {
             let input = "
-                |(key=C)(sample=aaa)C|F|(key=Eb)Fm,(sample=bbb)Bb|C|
+                |[key=C][sample=aaa]C|F|[key=Eb]Fm,[sample=bbb]Bb|C|
                 ";
 
             let expected = vec![
@@ -286,7 +310,7 @@ mod tests {
                 |C|C7|F|Fm7|
 
                 @section=B
-                |(key=F)Gm|Gm|F|F|
+                |[key=F]Gm|Gm|F|F|
                 |Gm|Gm|F|F|
                 ";
 
@@ -333,7 +357,7 @@ mod tests {
                 Token::Equal,
                 Token::SectionMetaInfoValue("B".to_string()),
                 Token::LineBreak,
-                // |(key=F)Gm|Gm|F|F|
+                // |[key=F]Gm|Gm|F|F|
                 Token::ChordBlockSeparator,
                 Token::MetaInfoStart,
                 Token::MetaInfoKey("key".to_string()),
@@ -392,9 +416,9 @@ mod tests {
         #[test]
         fn meta_info_key_should_not_contains_line_break() {
             let input = "
-                |(aaaa
+                |[aaaa
                     aaaa=bbbb
-                )C|
+                ]C|
                 ";
 
             let lex_result = tokenize(input);
@@ -408,8 +432,8 @@ mod tests {
         #[test]
         fn meta_info_value_should_not_contains_line_break() {
             let input = "
-                |(aaaa=bbbb
-                    bbbb)C|
+                |[aaaa=bbbb
+                    bbbb]C|
                 ";
 
             let lex_result = tokenize(input);
