@@ -96,7 +96,6 @@ impl ChordDetailed {
             });
         }
 
-        // TODO 繰り返してる＆重複定義になってるのでリファクタ
         let first_extension_str = first_extension_str_result.unwrap();
         let first_extension: Option<Extension> = match *first_extension_str {
             "2" => Some(Extension::Two),
@@ -191,20 +190,6 @@ mod tests {
                     let mut chord_str = String::from("C");
                     chord_str.push_str(extension_str);
                     let extension = Extension::from_str(*extension_str);
-
-                    // FIXME: 「Cb9」が「Cbの9」なのか「Cのb9」なのか分からず、強制的に前者扱いになってしまい、failしてしまう…どうしようかな。
-                    // これって世のコード表記自体の脆弱性なのでは？かっこをつけてるのかそういうのは…
-                    // 対策案としてはテンション部分は全部かっこで囲うルールにするとか…うーんでもそしたら「C(7)」とかになっちゃうけども…いいかな？うーん。C(5)
-                    //   もしそうするなら、コードメタ情報は()で囲うのでなく[]で囲うように修正したほうがいいな。というかそれはもうやっちゃってもいいはず。紛らわしいので
-
-                    // TODO: ExtensionにM7、M9、M11、M13を忘れてたわ。追加
-                    // これも「CM9」だと「CMの9th」なのか「CのM9」なのか区別つかなくなる問題あるな。
-                    //   やっぱり前者を「CM(9)」、後者を「C（M9)」のようにかき分けるのが正義か…？なんかそう思えてきた
-                    //   というかそういう仕様で提案したら？その方がExtensionをいくらでもつけれるよね？（C(-5,9,13)とか）
-                    //   あと知恵袋に「CM9」の問題を聞いてみてもサンプリングにいいかもね
-
-                    println!("chord_str: {}", chord_str);
-                    println!("extension: {:?}", extension);
 
                     assert_eq!(
                         ChordDetailed::from_str(&chord_str).unwrap(),

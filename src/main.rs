@@ -8,7 +8,7 @@ use tokenizer::tokenize;
 fn main() {
     let input = "
     @section=Intro
-    |(key=E)E|C#m7|Bm7|C#7|
+    |[key=E]E|C#m7|Bm7|C#7|
     |F#m7|Am7|F#7|B|
     
     @section=Verse
@@ -16,7 +16,7 @@ fn main() {
     |F#m7|Am7|F#7|B|
     
     @section=Chorus
-    |(key=C)C|C7|FM7|Fm7|
+    |[key=C]C|C7|FM7|Fm7|
     |C|C7|FM7|Dm7|
     |Em7|E7|
 

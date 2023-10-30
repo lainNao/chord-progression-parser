@@ -1,24 +1,40 @@
-#[derive(Debug, PartialEq, Clone, strum_macros::Display)]
+use strum_macros::{Display, EnumString, EnumVariantNames};
+
+#[derive(Debug, PartialEq, Clone, Display, EnumString, EnumVariantNames)]
 pub enum Token {
     // Common
+    #[strum(serialize = "=")]
     Equal,
+    #[strum(serialize = ",")]
     Comma,
+    #[strum(serialize = "\r\n", serialize = "\n")]
     LineBreak,
+    #[strum(serialize = "/")]
     Slash,
 
     // SectionMetaInfoElement
-    SectionMetaInfoStart, // @
+    #[strum(serialize = "@")]
+    SectionMetaInfoStart,
     SectionMetaInfoKey(String),
     SectionMetaInfoValue(String),
 
     // ChordBlockElement
-    ChordBlockSeparator, // |
+    #[strum(serialize = "|")]
+    ChordBlockSeparator,
     Chord(String),       // 分子
     Denominator(String), // 分母
 
     // MetaInfoElement
-    MetaInfoStart, //(
+    #[strum(serialize = "[")]
+    MetaInfoStart,
+    #[strum(serialize = "]")]
+    MetaInfoEnd,
     MetaInfoKey(String),
     MetaInfoValue(String),
-    MetaInfoEnd, //)
+
+    //TODO (と)の分の追加
+    #[strum(serialize = "(")]
+    ExtensionStart,
+    #[strum(serialize = ")")]
+    ExtensionEnd,
 }
