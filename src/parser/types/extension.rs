@@ -1,6 +1,9 @@
+use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString, EnumVariantNames};
 
-#[derive(Debug, PartialEq, Clone, Display, EnumString, EnumVariantNames)]
+#[derive(
+    Debug, PartialEq, Clone, Display, EnumString, EnumVariantNames, Serialize, Deserialize,
+)]
 pub enum Extension {
     #[strum(serialize = "2")]
     Two,
