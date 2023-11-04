@@ -3,9 +3,10 @@ use std::str::FromStr;
 use crate::errors;
 
 use super::{accidental::Accidental, base::Base, chord_type::ChordType, extension::Extension};
+use serde::{Deserialize, Serialize};
 use strum::VariantNames;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChordDetailed {
     pub base: Base,
     pub accidental: Option<Accidental>,
