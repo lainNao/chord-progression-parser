@@ -8,6 +8,10 @@
 - lib.rsにまとめる
 - WebAssemblyにする最小のサンプルをGPTに聞いたりしてできるようにする
   - `wasm-bindgen`を使うとd.tsも出力してくれるっぽいけど古い？
+  - TSの型も自動生成したい
+    - sectionが`Array<Array>`のようになっていた。どうしよう。rs_tsに合わせて構造変えるのもな…rustのtypeをtsのtypeにしてくれないしうーん。色々試したけどきついっぽかった。
+    - `ts-bindgen`使っちゃったほうがいいのかも
+    - 最悪自分でツール作る。
 
 ## 仕様面
 
@@ -30,6 +34,7 @@
     - unwrap()の代わりにif let で書き換える
   - PartialEqとかDebugとかのderiveの値は何なのか
 - `他`
+  - まだstrum使ってない箇所あるので使う（Accidentalとか）
   - differ_M9_vs_9ofMな問題に名前をつける。テスト名はその名前にする
   - コメント追加
   - 関数に切り出し
