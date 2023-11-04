@@ -10,7 +10,7 @@ pub enum Extension {
     FlatThree,
     #[strum(serialize = "4")]
     Four,
-    #[strum(serialize = "b5", serialize = "-5")]
+    #[strum(serialize = "b5")]
     FlatFive,
     #[strum(serialize = "5")]
     Five,
@@ -40,6 +40,14 @@ pub enum Extension {
     Thirteen,
     #[strum(serialize = "#13")]
     SharpThirteen,
+    #[strum(serialize = "M7")]
+    MajorSeven,
+    #[strum(serialize = "M9")]
+    MajorNine,
+    #[strum(serialize = "M11")]
+    MajorEleven,
+    #[strum(serialize = "M13")]
+    MajorThirteen,
     #[strum(serialize = "add9")]
     Add9,
     #[strum(serialize = "add11")]

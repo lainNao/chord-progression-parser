@@ -5,5 +5,6 @@ pub enum ValueToken {
     MetaInfoKey,
     MetaInfoValue,
     Chord,
+    Extension,
     Denominator,
 }
