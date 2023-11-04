@@ -32,9 +32,10 @@ pub enum Token {
     MetaInfoKey(String),
     MetaInfoValue(String),
 
-    //TODO (と)の分の追加
+    // Extension
     #[strum(serialize = "(")]
     ExtensionStart,
     #[strum(serialize = ")")]
     ExtensionEnd,
+    Extension(String),
 }

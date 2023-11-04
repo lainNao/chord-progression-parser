@@ -1,4 +1,6 @@
-use std::string;
+use std::str::FromStr;
+
+use crate::errors;
 
 use super::{accidental::Accidental, base::Base, chord_type::ChordType, extension::Extension};
 use strum::VariantNames;
@@ -8,8 +10,7 @@ pub struct ChordDetailed {
     pub base: Base,
     pub accidental: Option<Accidental>,
     pub chord_type: ChordType,
-    pub extension: Option<Extension>,
-    pub additional_extension: Option<Extension>,
+    pub extensions: Vec<Extension>,
 }
 
 fn try_remove_prefix(input: &str, prefix: &str) -> String {
@@ -61,7 +62,7 @@ impl ChordDetailed {
             ChordType::Major
         };
 
-        let extensions_str = try_remove_prefix(
+        let extensions_str_with_parenthesis = try_remove_prefix(
             chord_str_without_base,
             match chord_type {
                 ChordType::Minor => "m",
@@ -71,99 +72,74 @@ impl ChordDetailed {
             },
         );
 
-        if extensions_str.as_str().eq("") {
+        if extensions_str_with_parenthesis.eq("") {
             return Ok(ChordDetailed {
                 base,
                 accidental,
                 chord_type,
-                extension: None,
-                additional_extension: None,
+                extensions: vec![],
+            });
+        }
+
+        if !extensions_str_with_parenthesis.starts_with('(')
+            || !extensions_str_with_parenthesis.ends_with(')')
+        {
+            return Err([
+                errors::EXTENSION_STRING_MUST_BE_SURROUNDED_BY_PARENTHESIS,
+                &extensions_str_with_parenthesis.to_string(),
+            ]
+            .join(": "));
+        }
+
+        // strip surrounded parenthesis
+        let extensions_str =
+            &extensions_str_with_parenthesis[1..extensions_str_with_parenthesis.len() - 1];
+
+        if extensions_str.eq("") {
+            return Ok(ChordDetailed {
+                base,
+                accidental,
+                chord_type,
+                extensions: vec![],
             });
         }
 
         let mut sorted_extensions = (*Extension::VARIANTS.clone()).to_vec();
         sorted_extensions.sort_by_key(|b| std::cmp::Reverse(b.len()));
-        let first_extension_str_result = sorted_extensions
-            .iter()
-            .find(|e| extensions_str.starts_with(*e));
-        if first_extension_str_result.is_none() {
-            return Ok(ChordDetailed {
-                base,
-                accidental,
-                chord_type,
-                extension: None,
-                additional_extension: None,
-            });
+
+        let extensions_str_vec: Vec<&str> = extensions_str.split(',').collect();
+
+        // get first element if exists, or return None
+        let first_extension_str_before_validation = match extensions_str_vec.first() {
+            Some(s) => s,
+            None => {
+                return Ok(ChordDetailed {
+                    base,
+                    accidental,
+                    chord_type,
+                    extensions: vec![],
+                })
+            }
+        };
+
+        let mut parsed_extensions: Vec<Extension> = vec![];
+        // loop extensions_str_vec
+        for extension_str in extensions_str_vec.iter() {
+            let extension_str_result = sorted_extensions
+                .iter()
+                .find(|e| extension_str.starts_with(**e));
+            if extension_str_result.is_none() {
+                return Err([errors::INVALID_EXTENSION, extension_str].join(": "));
+            } else {
+                parsed_extensions.push(Extension::from_str(extension_str_result.unwrap()).unwrap());
+            }
         }
-
-        let first_extension_str = first_extension_str_result.unwrap();
-        let first_extension: Option<Extension> = match *first_extension_str {
-            "2" => Some(Extension::Two),
-            "3" => Some(Extension::Three),
-            "b3" => Some(Extension::FlatThree),
-            "4" => Some(Extension::Four),
-            "b5" => Some(Extension::FlatFive),
-            "-5" => Some(Extension::FlatFive),
-            "5" => Some(Extension::Five),
-            "#5" => Some(Extension::SharpFive),
-            "b6" => Some(Extension::FlatSix),
-            "6" => Some(Extension::Six),
-            "7" => Some(Extension::Seven),
-            "b9" => Some(Extension::FlatNine),
-            "9" => Some(Extension::Nine),
-            "#9" => Some(Extension::SharpNine),
-            "b11" => Some(Extension::FlatEleven),
-            "11" => Some(Extension::Eleven),
-            "#11" => Some(Extension::SharpEleven),
-            "b13" => Some(Extension::FlatThirteen),
-            "13" => Some(Extension::Thirteen),
-            "#13" => Some(Extension::SharpThirteen),
-            "add9" => Some(Extension::Add9),
-            "add11" => Some(Extension::Add11),
-            "add13" => Some(Extension::Add13),
-            "sus2" => Some(Extension::Sus2),
-            "sus4" => Some(Extension::Sus4),
-            "o" => Some(Extension::HalfDiminish),
-            _ => None,
-        };
-
-        let additional_extension_str = extensions_str.strip_prefix(first_extension_str);
-        let additional_extension: Option<Extension> = match additional_extension_str {
-            Some("2") => Some(Extension::Two),
-            Some("3") => Some(Extension::Three),
-            Some("b3") => Some(Extension::FlatThree),
-            Some("4") => Some(Extension::Four),
-            Some("b5") => Some(Extension::FlatFive),
-            Some("-5") => Some(Extension::FlatFive),
-            Some("5") => Some(Extension::Five),
-            Some("#5") => Some(Extension::SharpFive),
-            Some("b6") => Some(Extension::FlatSix),
-            Some("6") => Some(Extension::Six),
-            Some("7") => Some(Extension::Seven),
-            Some("b9") => Some(Extension::FlatNine),
-            Some("9") => Some(Extension::Nine),
-            Some("#9") => Some(Extension::SharpNine),
-            Some("b11") => Some(Extension::FlatEleven),
-            Some("11") => Some(Extension::Eleven),
-            Some("#11") => Some(Extension::SharpEleven),
-            Some("b13") => Some(Extension::FlatThirteen),
-            Some("13") => Some(Extension::Thirteen),
-            Some("#13") => Some(Extension::SharpThirteen),
-            Some("add9") => Some(Extension::Add9),
-            Some("add11") => Some(Extension::Add11),
-            Some("add13") => Some(Extension::Add13),
-            Some("sus2") => Some(Extension::Sus2),
-            Some("sus4") => Some(Extension::Sus4),
-            Some("o") => Some(Extension::HalfDiminish),
-            _ => None,
-        };
 
         Ok(ChordDetailed {
             base,
             accidental,
             chord_type,
-            extension: first_extension,
-            additional_extension,
+            extensions: parsed_extensions,
         })
     }
 }
@@ -180,84 +156,46 @@ mod tests {
             use strum::VariantNames;
 
             use crate::parser::types::{
-                accidental::Accidental, base::Base, chord_detailed::ChordDetailed,
-                chord_type::ChordType, extension::Extension,
+                base::Base, chord_detailed::ChordDetailed, chord_type::ChordType,
+                extension::Extension,
             };
 
             #[test]
             fn all_extension() {
                 Extension::VARIANTS.iter().for_each(|extension_str| {
-                    let mut chord_str = String::from("C");
-                    chord_str.push_str(extension_str);
-                    let extension = Extension::from_str(*extension_str);
-
+                    let chord_and_extension_str = format!("C({})", extension_str);
                     assert_eq!(
-                        ChordDetailed::from_str(&chord_str).unwrap(),
+                        ChordDetailed::from_str(&chord_and_extension_str).unwrap(),
                         ChordDetailed {
                             base: Base::C,
                             accidental: None,
                             chord_type: ChordType::Major,
-                            extension: Some(extension.unwrap()),
-                            additional_extension: None,
+                            extensions: vec![Extension::from_str(extension_str).unwrap()],
                         }
                     );
                 });
             }
 
             #[test]
-            fn half_diminish_raw() {
-                assert_eq!(
-                    ChordDetailed::from_str("C#m7-5").unwrap(),
-                    ChordDetailed {
-                        base: Base::C,
-                        accidental: Some(Accidental::Sharp),
-                        chord_type: ChordType::Minor,
-                        extension: Some(Extension::Seven),
-                        additional_extension: Some(Extension::FlatFive),
-                    }
-                );
-            }
-
-            #[test]
-            fn half_diminish_symbol() {
-                assert_eq!(
-                    ChordDetailed::from_str("Co11").unwrap(),
-                    ChordDetailed {
-                        base: Base::C,
-                        accidental: None,
-                        chord_type: ChordType::Major,
-                        extension: Some(Extension::HalfDiminish),
-                        additional_extension: Some(Extension::Eleven),
-                    }
-                );
-            }
-
-            #[test]
-            fn nine_add13() {
-                assert_eq!(
-                    ChordDetailed::from_str("C#m9add13").unwrap(),
-                    ChordDetailed {
-                        base: Base::C,
-                        accidental: Some(Accidental::Sharp),
-                        chord_type: ChordType::Minor,
-                        extension: Some(Extension::Nine),
-                        additional_extension: Some(Extension::Add13),
-                    }
-                );
-            }
-
-            #[test]
-            fn nine_flat13() {
-                assert_eq!(
-                    ChordDetailed::from_str("C#m9b13").unwrap(),
-                    ChordDetailed {
-                        base: Base::C,
-                        accidental: Some(Accidental::Sharp),
-                        chord_type: ChordType::Minor,
-                        extension: Some(Extension::Nine),
-                        additional_extension: Some(Extension::FlatThirteen),
-                    }
-                );
+            fn all_extension_pairs() {
+                Extension::VARIANTS.iter().for_each(|extension_str1| {
+                    Extension::VARIANTS.iter().for_each(|extension_str2| {
+                        let chord_and_extension_str =
+                            format!("C({},{})", extension_str1, extension_str2);
+                        assert_eq!(
+                            ChordDetailed::from_str(&chord_and_extension_str).unwrap(),
+                            ChordDetailed {
+                                base: Base::C,
+                                accidental: None,
+                                chord_type: ChordType::Major,
+                                extensions: vec![
+                                    Extension::from_str(extension_str1).unwrap(),
+                                    Extension::from_str(extension_str2).unwrap()
+                                ],
+                            }
+                        );
+                    });
+                });
             }
         }
     }

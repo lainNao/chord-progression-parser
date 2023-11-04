@@ -16,6 +16,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
             '@' => tokens.push(Token::SectionMetaInfoStart),
             '[' => tokens.push(Token::MetaInfoStart),
             ']' => tokens.push(Token::MetaInfoEnd),
+            '(' => tokens.push(Token::ExtensionStart),
+            ')' => tokens.push(Token::ExtensionEnd),
             '|' => tokens.push(Token::ChordBlockSeparator),
             '=' => tokens.push(Token::Equal),
             ',' => tokens.push(Token::Comma),
@@ -41,33 +43,69 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
             non_functional_char => {
                 let mut token = String::new();
                 token.push(non_functional_char);
-                let second_token_from_last = if tokens.len() >= 2 {
-                    tokens.get(tokens.len() - 2)
-                } else {
-                    None
-                };
 
-                // get token type
+                // get token type by using previous token
                 let get_token_type_result = match tokens.last() {
                     Some(Token::SectionMetaInfoStart) => Ok(Some(ValueToken::SectionMetaInfoKey)),
+                    Some(Token::ExtensionStart) => Ok(Some(ValueToken::Extension)),
                     Some(Token::MetaInfoStart) => Ok(Some(ValueToken::MetaInfoKey)),
-                    Some(Token::Equal) => match second_token_from_last {
-                        Some(Token::SectionMetaInfoKey(_)) => {
-                            Ok(Some(ValueToken::SectionMetaInfoValue))
-                        }
-                        Some(Token::MetaInfoKey(_)) => Ok(Some(ValueToken::MetaInfoValue)),
-                        _ => {
-                            return Err([
-                                errors::INVALID_TOKEN_TYPE.to_string(),
-                                second_token_from_last.unwrap().to_string(),
-                            ]
-                            .join(": "));
-                        }
-                    },
-                    Some(Token::Slash) => Ok(Some(ValueToken::Denominator)),
-                    _ => Ok(Some(ValueToken::Chord)),
-                };
+                    Some(Token::Equal) => {
+                        // NOTE: イコールの場合、イコールの前の文字によってはセクションメタなのかコードメタなのかが変わるので、取得しておく
+                        let token_before_equal: Option<&Token> = if tokens.len() >= 2 {
+                            tokens.get(tokens.len() - 2)
+                        } else {
+                            None
+                        };
 
+                        match token_before_equal {
+                            Some(Token::SectionMetaInfoKey(_)) => {
+                                Ok(Some(ValueToken::SectionMetaInfoValue))
+                            }
+                            Some(Token::MetaInfoKey(_)) => Ok(Some(ValueToken::MetaInfoValue)),
+                            _ => {
+                                return Err([
+                                    errors::INVALID_TOKEN_TYPE.to_string(),
+                                    token_before_equal.unwrap().to_string(),
+                                ]
+                                .join(": "));
+                            }
+                        }
+                    }
+                    Some(Token::Slash) => Ok(Some(ValueToken::Denominator)),
+                    _ => {
+                        // 前を辿った結果"]"か"|"があればコード、"("があればExtension
+                        let mut is_code = false;
+                        let mut is_extension = false;
+                        let mut prev_token_index = tokens.len() - 1;
+                        while prev_token_index > 0 {
+                            let prev_token = tokens.get(prev_token_index).unwrap();
+                            match prev_token {
+                                Token::MetaInfoEnd => {
+                                    is_code = true;
+                                    break;
+                                }
+                                Token::ChordBlockSeparator => {
+                                    is_code = true;
+                                    break;
+                                }
+                                Token::ExtensionStart => {
+                                    is_extension = true;
+                                    break;
+                                }
+                                _ => {}
+                            };
+                            prev_token_index -= 1;
+                        }
+
+                        if is_code {
+                            Ok(Some(ValueToken::Chord))
+                        } else if is_extension {
+                            Ok(Some(ValueToken::Extension))
+                        } else {
+                            Err(errors::INVALID_TOKEN_TYPE.to_string())
+                        }
+                    }
+                };
                 // if error, return
                 let token_type = if let Ok(token_type) = get_token_type_result {
                     token_type
@@ -77,6 +115,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
 
                 // get token
                 while let Some(&next_ch) = chars.peek() {
+                    // loop while next char is token char
                     if is_token_char(next_ch) {
                         break;
                     }
@@ -93,9 +132,16 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                     Some(ValueToken::SectionMetaInfoValue) => {
                         tokens.push(Token::SectionMetaInfoValue(token))
                     }
+                    Some(ValueToken::Extension) => tokens.push(Token::Extension(token)),
                     Some(ValueToken::MetaInfoKey) => tokens.push(Token::MetaInfoKey(token)),
                     Some(ValueToken::MetaInfoValue) => tokens.push(Token::MetaInfoValue(token)),
-                    Some(ValueToken::Chord) => tokens.push(Token::Chord(token)),
+                    Some(ValueToken::Chord) => {
+                        // 不正なコード（何らかの数字またはoが入っている）な場合エラー
+                        if token.chars().any(|c| c.is_numeric() || c == 'o') {
+                            return Err([errors::INVALID_CHORD.to_string(), token].join(": "));
+                        }
+                        tokens.push(Token::Chord(token))
+                    }
                     Some(ValueToken::Denominator) => tokens.push(Token::Denominator(token)),
                     None => {
                         return Err([
@@ -192,7 +238,7 @@ mod tests {
         fn chord_block_with_fraction_chord() {
             let input = "
                 |C|G/Bb|Am|Em/G|
-                |F#m7-5/F#m7-5|Fbm13/G7|
+                |F#m(7,b5)/F#m(7,b5)|Fbm(13)/G(7)|
                 ";
 
             let expected = vec![
@@ -212,37 +258,29 @@ mod tests {
                 Token::ChordBlockSeparator,
                 Token::LineBreak,
                 Token::ChordBlockSeparator,
-                Token::Chord("F#m7-5".to_string()),
+                Token::Chord("F#m".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::Comma,
+                Token::Extension("b5".to_string()),
+                Token::ExtensionEnd,
                 Token::Slash,
-                Token::Denominator("F#m7-5".to_string()),
+                Token::Denominator("F#m".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::Comma,
+                Token::Extension("b5".to_string()),
+                Token::ExtensionEnd,
                 Token::ChordBlockSeparator,
-                Token::Chord("Fbm13".to_string()),
+                Token::Chord("Fbm".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("13".to_string()),
+                Token::ExtensionEnd,
                 Token::Slash,
-                Token::Denominator("G7".to_string()),
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
-            ];
-
-            let lex_result = tokenize(input);
-            assert!(lex_result.is_ok());
-            let tokens = lex_result.unwrap();
-            assert_eq!(tokens, expected);
-        }
-
-        #[test]
-        fn aaaaa() {
-            let input = "
-            |[key=C]D|
-            ";
-            let expected = vec![
-                Token::LineBreak,
-                Token::ChordBlockSeparator,
-                Token::MetaInfoStart,
-                Token::MetaInfoKey("key".to_string()),
-                Token::Equal,
-                Token::MetaInfoValue("C".to_string()),
-                Token::MetaInfoEnd,
-                Token::Chord("D".to_string()),
+                Token::Denominator("G".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::ExtensionEnd,
                 Token::ChordBlockSeparator,
                 Token::LineBreak,
             ];
@@ -306,8 +344,8 @@ mod tests {
             let input = "
                 @section=A
                 @sample=aaa
-                |C|C7|F|Fm7|
-                |C|C7|F|Fm7|
+                |C|C(7)|F|Fm(7)|
+                |C|C(7)|F|Fm(7)|
 
                 @section=B
                 |[key=F]Gm|Gm|F|F|
@@ -332,22 +370,34 @@ mod tests {
                 Token::ChordBlockSeparator,
                 Token::Chord("C".to_string()),
                 Token::ChordBlockSeparator,
-                Token::Chord("C7".to_string()),
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::ExtensionEnd,
                 Token::ChordBlockSeparator,
                 Token::Chord("F".to_string()),
                 Token::ChordBlockSeparator,
-                Token::Chord("Fm7".to_string()),
+                Token::Chord("Fm".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::ExtensionEnd,
                 Token::ChordBlockSeparator,
                 Token::LineBreak,
                 // |C|C7|F|Fm7|
                 Token::ChordBlockSeparator,
                 Token::Chord("C".to_string()),
                 Token::ChordBlockSeparator,
-                Token::Chord("C7".to_string()),
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::ExtensionEnd,
                 Token::ChordBlockSeparator,
                 Token::Chord("F".to_string()),
                 Token::ChordBlockSeparator,
-                Token::Chord("Fm7".to_string()),
+                Token::Chord("Fm".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::ExtensionEnd,
                 Token::ChordBlockSeparator,
                 Token::LineBreak,
                 Token::LineBreak,
@@ -387,7 +437,6 @@ mod tests {
             ];
 
             let lex_result = tokenize(input);
-
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
             assert_eq!(tokens, expected);
@@ -448,7 +497,7 @@ mod tests {
         fn chord_block_should_not_contains_line_break() {
             let input = "
                 |C,
-                C7|F|Fm7|
+                C7|F|Fm(7)|
                 ";
 
             let lex_result = tokenize(input);

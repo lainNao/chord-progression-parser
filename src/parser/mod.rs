@@ -1,5 +1,7 @@
 mod types;
 
+use std::str::FromStr;
+
 use crate::errors;
 use crate::tokenizer::types::token::Token;
 
@@ -10,6 +12,8 @@ use types::chord_info::{ChordInfo, ChordOrUnidentified};
 use types::chord_info_meta::ChordInfoMeta;
 use types::section::Section;
 use types::section_meta::SectionMeta;
+
+use self::types::extension::Extension;
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
     let mut sections: Vec<Section> = vec![Section {
@@ -158,22 +162,6 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
             }
             // chord
             Token::Chord(chord_string) => {
-                // if next token is denominator, read denominator
-                let denominator: Option<String> = match tokens.peek() {
-                    Some(Token::Slash) => {
-                        tokens.next();
-                        match tokens.next() {
-                            Some(Token::Denominator(denominator)) => Some(denominator.clone()),
-                            Some(Token::Slash) => {
-                                return Err(
-                                    errors::CHORD_SHOULD_NOT_CONTAINS_MULTIPLE_SLASHES.to_string()
-                                )
-                            }
-                            _ => return Err("slashの後にdenominatorがないよ！".to_string()),
-                        }
-                    }
-                    _ => None,
-                };
 
                 if chord_string == "?" {
                     // if chord_blocks is empty, make new chord_block
@@ -190,7 +178,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         .unwrap()
                         .push(ChordInfo {
                             chord: ChordOrUnidentified::Unidentified,
-                            denominator,
+                            denominator: None,
                             meta_infos: tmp_chord_info_meta_infos.clone(),
                         });
 
@@ -200,8 +188,8 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     continue;
                 }
 
-                let result = ChordDetailed::from_str(chord_string);
-                if let Ok(detailed) = result {
+                let chord_detailed_result = ChordDetailed::from_str(chord_string);
+                if let Ok(detailed) = chord_detailed_result {
                     let chord = Chord {
                         plain: chord_string.clone(),
                         detailed,
@@ -221,7 +209,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         .unwrap()
                         .push(ChordInfo {
                             chord: ChordOrUnidentified::Chord(chord),
-                            denominator,
+                            denominator: None,
                             meta_infos: tmp_chord_info_meta_infos.clone(),
                         });
 
@@ -230,7 +218,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 } else {
                     return Err([
                         errors::CHORD_IS_INVALID.to_string(),
-                        result.err().unwrap(),
+                        chord_detailed_result.err().unwrap(),
                         chord_string.to_string(),
                     ]
                     .join(": "));
@@ -254,14 +242,87 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     _ => { /* Nothing */ }
                 }
             }
-            Token::Denominator(_) => { /* Nothing */ }
+            Token::Extension(ext_str) => { 
+                match &sections
+                .last_mut()
+                .unwrap()
+                .chord_blocks
+                .last_mut()
+                .unwrap()
+                .last_mut()
+                .unwrap()
+                .chord {
+                    ChordOrUnidentified::Unidentified => {
+
+                    },
+                    ChordOrUnidentified::Chord(c) => {
+
+                        let mut parsed_extensions = vec![
+                            Extension::from_str(ext_str).unwrap()
+                        ];
+                        for t in tokens.by_ref() {
+                            match t {
+                                Token::ExtensionEnd => {
+                                    break;
+                                }
+                                Token::Comma => {
+                                    continue;
+                                }
+                                Token::Extension(ext_str) => {
+                                    parsed_extensions.push(Extension::from_str(ext_str).unwrap());
+                                }
+                                _ => {
+                                    return Err(errors::INVALID_EXTENSION.to_string());
+                                }
+                            }
+                        }
+                        let extension_str_with_parenthesis = format!("({})", 
+                            parsed_extensions.iter().map(|e| e.to_string()).collect::<Vec<String>>().join(",")
+                        );
+                        
+                        sections
+                            .last_mut()
+                            .unwrap()
+                            .chord_blocks
+                            .last_mut()
+                            .unwrap()
+                            .last_mut()
+                            .unwrap()
+                            .chord = ChordOrUnidentified::Chord(Chord {
+                                    plain: [c.plain.clone(), extension_str_with_parenthesis.to_string()].concat(),
+                                    detailed: ChordDetailed { 
+                                        base: c.detailed.base.clone(),
+                                        accidental: c.detailed.accidental.clone(),
+                                        chord_type: c.detailed.chord_type.clone(),
+                                        extensions: parsed_extensions, 
+                                    },
+                                });
+                    }
+                }
+            }
+            Token::Denominator(denominator) => { 
+                sections
+                    .last_mut()
+                    .unwrap()
+                    .chord_blocks
+                    .last_mut()
+                    .unwrap()
+                    .last_mut()
+                    .unwrap()
+                    .denominator = Some(denominator.clone());
+            },
             Token::Comma => { /* Nothing */ }
             Token::ChordBlockSeparator => { /* Nothing */ } //
             Token::Equal => { /* Nothing */ }
             Token::Slash => { /* Nothing */ }
+            Token::ExtensionStart => { /* Nothing */ }
+            Token::ExtensionEnd => { /* Nothing */ }
             _ => {
                 // invalid token
-                return Err(errors::INVALID_TOKEN_TYPE.to_string());
+                return Err([
+                    errors::INVALID_TOKEN_TYPE.to_string(),
+                    token.to_string(),
+                ].join(": "));
             }
         }
     }
@@ -356,16 +417,25 @@ mod tests {
                 Token::ChordBlockSeparator,
                 Token::LineBreak,
                 Token::ChordBlockSeparator,
-                Token::Chord("F#m7-5".to_string()),
+                Token::Chord("F#m".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("7".to_string()),
+                Token::Comma,
+                Token::Extension("b5".to_string()),
+                Token::ExtensionEnd,
                 Token::Slash,
-                Token::Denominator("F#m7-5".to_string()),
+                Token::Denominator("F#m(7,b5)".to_string()),
                 Token::ChordBlockSeparator,
-                Token::Chord("Fbm13".to_string()),
+                Token::Chord("Fbm".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("13".to_string()),
+                Token::ExtensionEnd,
                 Token::Slash,
                 Token::Denominator("G7".to_string()),
                 Token::ChordBlockSeparator,
                 Token::LineBreak,
             ];
+
             let expected = [Section {
                 meta_infos: Vec::new(),
                 chord_blocks: vec![vec![
@@ -378,8 +448,7 @@ mod tests {
                                 base: Base::C,
                                 accidental: None,
                                 chord_type: ChordType::Major,
-                                extension: None,
-                                additional_extension: None,
+                                extensions: Vec::new(),
                             },
                         }),
                     },
@@ -390,8 +459,7 @@ mod tests {
                                 base: Base::G,
                                 accidental: None,
                                 chord_type: ChordType::Major,
-                                extension: None,
-                                additional_extension: None,
+                                extensions: Vec::new(),
                             },
                         }),
                         denominator: Some("Bb".to_string()),
@@ -404,8 +472,7 @@ mod tests {
                                 base: Base::A,
                                 accidental: None,
                                 chord_type: ChordType::Minor,
-                                extension: None,
-                                additional_extension: None,
+                                extensions: Vec::new(),
                             },
                         }),
                         denominator: None,
@@ -418,8 +485,7 @@ mod tests {
                                 base: Base::E,
                                 accidental: None,
                                 chord_type: ChordType::Minor,
-                                extension: None,
-                                additional_extension: None,
+                                extensions: Vec::new(),
                             },
                         }),
                         denominator: Some("G".to_string()),
@@ -427,27 +493,28 @@ mod tests {
                     },
                     ChordInfo {
                         chord: ChordOrUnidentified::Chord(Chord {
-                            plain: "F#m7-5".to_string(),
+                            plain: "F#m(7,b5)".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::F,
                                 accidental: Some(Accidental::Sharp),
                                 chord_type: ChordType::Minor,
-                                extension: Some(Extension::Seven),
-                                additional_extension: Some(Extension::FlatFive),
+                                extensions: vec![
+                                    Extension::Seven,
+                                    Extension::FlatFive,
+                                ],
                             },
                         }),
-                        denominator: Some("F#m7-5".to_string()),
+                        denominator: Some("F#m(7,b5)".to_string()),
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
                         chord: ChordOrUnidentified::Chord(Chord {
-                            plain: "Fbm13".to_string(),
+                            plain: "Fbm(13)".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::F,
                                 accidental: Some(Accidental::Flat),
                                 chord_type: ChordType::Minor,
-                                extension: Some(Extension::Thirteen),
-                                additional_extension: None,
+                                extensions: vec![Extension::Thirteen],
                             },
                         }),
                         denominator: Some("G7".to_string()),
@@ -505,8 +572,7 @@ mod tests {
                                     base: Base::C,
                                     accidental: None,
                                     chord_type: ChordType::Major,
-                                    extension: None,
-                                    additional_extension: None,
+                                    extensions: Vec::new(),
                                 },
                             },),
                             denominator: None,
@@ -522,8 +588,7 @@ mod tests {
                                     base: Base::C,
                                     accidental: None,
                                     chord_type: ChordType::Major,
-                                    extension: None,
-                                    additional_extension: None,
+                                    extensions: Vec::new(),
                                 },
                             },),
                             denominator: None,
