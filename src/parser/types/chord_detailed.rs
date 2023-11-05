@@ -110,19 +110,6 @@ impl ChordDetailed {
 
         let extensions_str_vec: Vec<&str> = extensions_str.split(',').collect();
 
-        // get first element if exists, or return None
-        let first_extension_str_before_validation = match extensions_str_vec.first() {
-            Some(s) => s,
-            None => {
-                return Ok(ChordDetailed {
-                    base,
-                    accidental,
-                    chord_type,
-                    extensions: vec![],
-                })
-            }
-        };
-
         let mut parsed_extensions: Vec<Extension> = vec![];
         // loop extensions_str_vec
         for extension_str in extensions_str_vec.iter() {
