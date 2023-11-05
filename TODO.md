@@ -12,6 +12,7 @@
     - sectionが`Array<Array>`のようになっていた。どうしよう。rs_tsに合わせて構造変えるのもな…rustのtypeをtsのtypeにしてくれないしうーん。色々試したけどきついっぽかった。
     - `ts-bindgen`使っちゃったほうがいいのかも
     - 最悪自分でツール作る。
+- main.rsかlib.rsのtestかぶってるので、どっちかだけにする。Makefileも合わせて調整
 
 ## 仕様面
 
