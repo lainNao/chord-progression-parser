@@ -300,7 +300,29 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     }
                 }
             }
-            Token::Denominator(denominator) => { 
+            Token::Denominator(denominator) => {
+
+                if sections
+                    .last_mut()
+                    .unwrap()
+                    .chord_blocks
+                    .last().is_none() {
+                        return Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string());
+                    }
+
+                // if denominator is already set, DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD
+                if sections
+                    .last_mut()
+                    .unwrap()
+                    .chord_blocks
+                    .last_mut()
+                    .unwrap()
+                    .last_mut()
+                    .unwrap()
+                    .denominator.is_some() {
+                        return Err(errors::DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD.to_string());
+                    }
+
                 sections
                     .last_mut()
                     .unwrap()
@@ -312,7 +334,15 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     .denominator = Some(denominator.clone());
             },
             Token::Comma => { /* Nothing */ }
-            Token::ChordBlockSeparator => { /* Nothing */ } //
+            Token::ChordBlockSeparator => { 
+                // if next token is same, CHORD_BLOCK_SHOULD_NOT_BE_EMPTY
+                match tokens.peek() {
+                    Some(Token::ChordBlockSeparator) => {
+                        return Err(errors::CHORD_BLOCK_SHOULD_NOT_BE_EMPTY.to_string());
+                    }
+                    _ => { /* Nothing */ }
+                }
+            }
             Token::Equal => { /* Nothing */ }
             Token::Slash => { /* Nothing */ }
             Token::ExtensionStart => { /* Nothing */ }
@@ -598,6 +628,52 @@ mod tests {
                 ]
                 .to_vec())
             );
+        }
+    }
+
+    #[cfg(test)]
+    mod failure {
+        use crate::{tokenizer::types::token::Token, errors, parser::parse};
+
+        #[test]
+        fn chord_block_should_not_be_empty() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::ChordBlockSeparator,
+            ];
+
+            assert_eq!(parse(&input), Err(errors::CHORD_BLOCK_SHOULD_NOT_BE_EMPTY.to_string()));
+        }
+
+        #[test]
+        fn chord_should_not_be_empty() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Slash,
+                Token::Denominator("D".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+
+            assert_eq!(parse(&input), Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string()));
+        }
+
+        #[test]
+        fn denominator_is_limited_to_one_per_chord() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::Slash,
+                Token::Denominator("D".to_string()),
+                Token::Slash,
+                Token::Denominator("E".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Err(errors::DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD.to_string())
+            );
+
         }
     }
 }

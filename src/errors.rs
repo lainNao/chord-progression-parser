@@ -8,12 +8,7 @@ pub const META_INFO_VALUE_SHOULD_NOT_CONTAINS_LINE_BREAK: &str =
 pub const CHORD_BLOCK_SHOULD_NOT_CONTAINS_LINE_BREAK: &str =
     "Error: Chord should not contains line break";
 
-pub const CHORD_SHOULD_NOT_CONTAINS_MULTIPLE_SLASHES: &str =
-    "Error: Chord should not contains multiple slashes";
-
 // should not be empty
-pub const SECTION_META_INFO_KEY_SHOULD_NOT_BE_EMPTY: &str =
-    "Error: SectionMetaInfoKey should not be empty";
 pub const SECTION_META_INFO_VALUE_SHOULD_NOT_BE_EMPTY: &str =
     "Error: SectionMetaInfoValue should not be empty";
 pub const META_INFO_KEY_SHOULD_NOT_BE_EMPTY: &str = "Error: MetaInfoKey should not be empty";
@@ -40,8 +35,6 @@ pub const META_INFO_KEY_IS_INVALID: &str = "Error: MetaInfoKey is invalid";
 pub const META_INFO_VALUE_IS_INVALID: &str = "Error: MetaInfoValue is invalid";
 pub const CHORD_IS_INVALID: &str = "Error: Chord is invalid";
 
-// should not be isolated
-// NOTE: test it on parser
-// pub const CHORD_BLOCK_SEPARATOR_SHOULD_NOT_BE_ISOLATED: &str =
-//     "Error: ChordBlockSeparator should not be isolated";
-// pub const LINE_TOP_CHAR_IS_INVALID: &str = "Error: Line top char is invalid";
+// other
+pub const DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD: &str =
+    "Error: Denominator is limited to one per chord";
