@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
+use typeshare::typeshare;
 
+#[typeshare]
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Clone, EnumString, Serialize, Deserialize)]
 pub enum Key {

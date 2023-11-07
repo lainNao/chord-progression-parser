@@ -1,12 +1,15 @@
 use std::str::FromStr;
 
 use crate::errors;
+use typeshare::typeshare;
 
 use super::{accidental::Accidental, base::Base, chord_type::ChordType, extension::Extension};
 use serde::{Deserialize, Serialize};
 use strum::VariantNames;
 
+#[typeshare]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ChordDetailed {
     pub base: Base,
     pub accidental: Option<Accidental>,

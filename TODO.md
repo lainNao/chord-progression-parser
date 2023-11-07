@@ -2,16 +2,11 @@
 
 ## 必須
 
-- meta_info、`"section": {value: "..."}` のような構造になってるけど`{type:"...", value:"..."}`のほうがよいと思うので検討
 - エラーを全部網羅して実装してテストに組み込む
   - メタ情報が重複した時のエラーが不足しているので追加
-- WebAssemblyにする最小のサンプルをGPTに聞いたりしてできるようにする
-  - `wasm-bindgen`を使うとd.tsも出力してくれるっぽいけど古い？
-  - TSの型も自動生成したい
-    - sectionが`Array<Array>`のようになっていた。どうしよう。rs_tsに合わせて構造変えるのもな…rustのtypeをtsのtypeにしてくれないしうーん。色々試したけどきついっぽかった。
-    - `https://github.com/oscartbeaumont/specta`使っちゃったほうがいいのかも
-    - 最悪自分でツール作る。
-    - 無理なら`types.d.ts`を手書きするしかない。一応型の自動テストもできるはず
+- chord or unidentified、json化した時に変なので identified chord or unidentifiedに変更
+- CI
+  - commit hookでtestとかbuildとかlintとかgenerateとか
 
 ## 仕様面
 
@@ -34,6 +29,7 @@
   - PartialEqとかDebugとかのderiveの値は何なのか
 - `他`
   - まだstrum使ってない箇所あるので使う（Accidentalとか）
+    - 逆にserdeを使えばstrum使わなくてもいい可能性感じるので見てみる
   - コメント追加
   - 関数に切り出し
   - prettifyされない。動かなくなってるかも

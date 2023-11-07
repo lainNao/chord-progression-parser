@@ -75,3 +75,8 @@ doc:
 # see doc
 see-doc:
 	rustup doc
+
+generate-ts-types:
+	typeshare ./src \
+		--lang=typescript \
+		--output-file=generated.types.d.ts

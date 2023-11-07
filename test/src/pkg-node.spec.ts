@@ -22,7 +22,7 @@ describe("success", () => {
         @section=Interlude
         |C|A,B|
       `);
-      // console.log(JSON.stringify(JSON.parse(successResult), null, 2));
+      console.log(JSON.stringify(JSON.parse(successResult), null, 2));
     } catch (e: unknown) {
       console.log(e);
     }
