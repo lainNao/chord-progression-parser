@@ -4,10 +4,10 @@
 
 - エラーを全部網羅して実装してテストに組み込む
   - メタ情報が重複した時のエラーが不足しているので追加
-- chord or unidentified、json化した時に変なので identified chord or unidentifiedに変更
 - CI
   - commit hookでtestとかbuildとかlintとかgenerateとか
 - 生成したtsの型ファイル、importして使えるようにしたい。
+  - そもそも生成したwasmも同じくなのでそこを対応する
 
 ## 仕様面
 
