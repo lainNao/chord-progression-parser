@@ -8,7 +8,8 @@ use crate::tokenizer::types::token::Token;
 use types::ast::Ast;
 use types::chord::Chord;
 use types::chord_detailed::ChordDetailed;
-use types::chord_info::{ChordInfo, ChordOrUnidentified};
+use types::chord_info::ChordInfo;
+use types::chord_expression::ChordExpression;
 use types::chord_info_meta::ChordInfoMeta;
 use types::section::Section;
 use types::section_meta::SectionMeta;
@@ -163,13 +164,18 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
             // chord
             Token::Chord(chord_string) => {
 
-                if chord_string == "?" {
+                if chord_string.eq("-") || chord_string.eq("?") || chord_string.eq("%") {
                     // if chord_blocks is empty, make new chord_block
                     if sections.last_mut().unwrap().chord_blocks.is_empty() {
+                        if chord_string == "%" {
+                            return Err(
+                                errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK.to_string()
+                            );
+                        }
                         sections.last_mut().unwrap().chord_blocks.push(Vec::new());
                     }
 
-                    // add unidentified chord to last chord block
+                    // add ChordInfo to last chord block
                     sections
                         .last_mut()
                         .unwrap()
@@ -177,7 +183,14 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         .last_mut()
                         .unwrap()
                         .push(ChordInfo {
-                            chord: ChordOrUnidentified::Unidentified,
+                            chord: match chord_string.as_str() {
+                                "-" => ChordExpression::NoChord,
+                                "?" => ChordExpression::Unidentified,
+                                "%" => ChordExpression::Same,
+                                _ => {
+                                    return Err(errors::CHORD_IS_INVALID.to_string());
+                                }
+                            },
                             denominator: None,
                             meta_infos: tmp_chord_info_meta_infos.clone(),
                         });
@@ -208,7 +221,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         .last_mut()
                         .unwrap()
                         .push(ChordInfo {
-                            chord: ChordOrUnidentified::Chord(chord),
+                            chord: ChordExpression::Chord(chord),
                             denominator: None,
                             meta_infos: tmp_chord_info_meta_infos.clone(),
                         });
@@ -252,10 +265,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 .last_mut()
                 .unwrap()
                 .chord {
-                    ChordOrUnidentified::Unidentified => {
-
-                    },
-                    ChordOrUnidentified::Chord(c) => {
+                    ChordExpression::Unidentified => {},
+                    ChordExpression::Same => {},
+                    ChordExpression::NoChord => {},
+                    ChordExpression::Chord(c) => {
 
                         let mut parsed_extensions = vec![
                             Extension::from_str(ext_str).unwrap()
@@ -288,7 +301,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                             .unwrap()
                             .last_mut()
                             .unwrap()
-                            .chord = ChordOrUnidentified::Chord(Chord {
+                            .chord = ChordExpression::Chord(Chord {
                                     plain: [c.plain.clone(), extension_str_with_parenthesis.to_string()].concat(),
                                     detailed: ChordDetailed { 
                                         base: c.detailed.base.clone(),
@@ -472,7 +485,7 @@ mod tests {
                     ChordInfo {
                         meta_infos: Vec::new(),
                         denominator: None,
-                        chord: ChordOrUnidentified::Chord(Chord {
+                        chord: ChordExpression::Chord(Chord {
                             plain: "C".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::C,
@@ -483,7 +496,7 @@ mod tests {
                         }),
                     },
                     ChordInfo {
-                        chord: ChordOrUnidentified::Chord(Chord {
+                        chord: ChordExpression::Chord(Chord {
                             plain: "G".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::G,
@@ -496,7 +509,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordOrUnidentified::Chord(Chord {
+                        chord: ChordExpression::Chord(Chord {
                             plain: "Am".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::A,
@@ -509,7 +522,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordOrUnidentified::Chord(Chord {
+                        chord: ChordExpression::Chord(Chord {
                             plain: "Em".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::E,
@@ -522,7 +535,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordOrUnidentified::Chord(Chord {
+                        chord: ChordExpression::Chord(Chord {
                             plain: "F#m(7,b5)".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::F,
@@ -538,7 +551,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordOrUnidentified::Chord(Chord {
+                        chord: ChordExpression::Chord(Chord {
                             plain: "Fbm(13)".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::F,
@@ -557,23 +570,56 @@ mod tests {
         }
 
         #[test]
-        fn chord_blocks_with_unidentified() {
+        // SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK
+        fn same_chord_symbol_should_not_be_placed_first_of_chord_block() {
             let input = [
                 Token::ChordBlockSeparator,
-                Token::Chord("?".to_string()),
+                Token::Chord("%".to_string()),
                 Token::ChordBlockSeparator,
             ];
 
             assert_eq!(
                 parse(&input),
-                Ok([Section {
-                    meta_infos: Vec::new(),
-                    chord_blocks: vec![vec![ChordInfo {
-                        chord: ChordOrUnidentified::Unidentified,
-                        denominator: None,
+                Err(errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK.to_string())
+            );
+        }
+
+        #[test]
+        fn chord_blocks_with_expressions() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("?".to_string()),
+                Token::ChordBlockSeparator,
+                Token::Chord("-".to_string()),
+                Token::ChordBlockSeparator,
+                Token::Chord("%".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Ok([
+                    Section {
                         meta_infos: Vec::new(),
-                    },],],
-                }]
+                        chord_blocks: vec![vec![
+                            ChordInfo {
+                                chord: ChordExpression::Unidentified,
+                                denominator: None,
+                                meta_infos: Vec::new(),
+                            },
+                            ChordInfo {
+                                chord: ChordExpression::NoChord,
+                                denominator: None,
+                                meta_infos: Vec::new(),
+                            },
+                            ChordInfo {
+                                chord: ChordExpression::Same,
+                                denominator: None,
+                                meta_infos: Vec::new(),
+                            },
+                        ],],
+                    },
+                ]
                 .to_vec())
             );
         }
@@ -596,7 +642,7 @@ mod tests {
                     Section {
                         meta_infos: Vec::new(),
                         chord_blocks: vec![vec![ChordInfo {
-                            chord: ChordOrUnidentified::Chord(Chord {
+                            chord: ChordExpression::Chord(Chord {
                                 plain: "C".to_string(),
                                 detailed: ChordDetailed {
                                     base: Base::C,
@@ -612,7 +658,7 @@ mod tests {
                     Section {
                         meta_infos: Vec::new(),
                         chord_blocks: vec![vec![ChordInfo {
-                            chord: ChordOrUnidentified::Chord(Chord {
+                            chord: ChordExpression::Chord(Chord {
                                 plain: "C".to_string(),
                                 detailed: ChordDetailed {
                                     base: Base::C,

@@ -69,26 +69,28 @@ mod tests {
             let result_json = json!(parse(&tokenize(input).unwrap()).unwrap());
             let expected = json!([
                 {
-                    "chord_blocks": [
+                    "chordBlocks": [
                         [
                             {
                                 "chord": {
-                                    "Chord":{
+                                    "type": "chord",
+                                    "value": {
                                         "detailed": {
-                                            "accidental":null,
+                                            "accidental": null,
                                             "base":"C",
-                                            "chord_type":"Major",
+                                            "chordType":"M",
                                             "extensions": [
-                                                "MajorNine"
+                                                "M9"
                                             ]
                                         },
                                         "plain":"C(M9)"
                                     }
                                 },
                                 "denominator":null,
-                                "meta_infos": [
+                                "metaInfos": [
                                     {
-                                        "Key":{
+                                        "type": "key",
+                                        "value": {
                                             "value":"C_M"
                                         }
                                     }
@@ -96,26 +98,28 @@ mod tests {
                             },
                             {
                                 "chord": {
-                                    "Chord":{
+                                    "type": "chord",
+                                    "value": {
                                         "detailed": {
-                                            "accidental":null,
+                                            "accidental": null,
                                             "base":"C",
-                                            "chord_type":"Major",
+                                            "chordType":"M",
                                             "extensions": [
-                                                "Nine"
+                                                "9"
                                             ]
                                         },
                                         "plain":"CM(9)"
                                     }
                                 },
                                 "denominator":null,
-                                "meta_infos": []
+                                "metaInfos": []
                             }
                         ]
                     ],
-                    "meta_infos": [
+                    "metaInfos": [
                         {
-                            "Section": {
+                            "type": "section",
+                            "value": {
                                 "value":"Intro"
                             }
                         }

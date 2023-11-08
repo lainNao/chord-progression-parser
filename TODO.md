@@ -7,6 +7,9 @@
 - chord or unidentified、json化した時に変なので identified chord or unidentifiedに変更
 - CI
   - commit hookでtestとかbuildとかlintとかgenerateとか
+- 生成したtsの型ファイル、importして使えるようにしたい。
+- コード無しのパターン、「-」にしているが、「」とか「 」とかにしたいな。
+  - 懸念としては現状それはエラーになるようになってるからどうしようかなという
 
 ## 仕様面
 

@@ -79,4 +79,4 @@ see-doc:
 generate-ts-types:
 	typeshare ./src \
 		--lang=typescript \
-		--output-file=generated.types.d.ts
+		--output-file=generatedTypes.ts

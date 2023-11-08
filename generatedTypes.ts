@@ -15,13 +15,15 @@ export type ChordInfoMeta =
 	value: Key;
 }};
 
-export type ChordOrUnidentified = 
+export type ChordExpression = 
 	| { type: "chord", value: Chord }
-	| { type: "unidentified", value?: undefined };
+	| { type: "unidentified", value?: undefined }
+	| { type: "noChord", value?: undefined }
+	| { type: "same", value?: undefined };
 
 export interface ChordInfo {
 	metaInfos: ChordInfoMeta[];
-	chord: ChordOrUnidentified;
+	chord: ChordExpression;
 	denominator?: string;
 }
 
