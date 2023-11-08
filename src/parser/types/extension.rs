@@ -2,8 +2,6 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString, EnumVariantNames};
 use typeshare::typeshare;
 
-// q: how to write #[serde(...)] option to export "export enum Extension { Two = 2, ...}" ?
-
 #[typeshare]
 #[derive(
     Debug, PartialEq, Clone, Display, EnumString, EnumVariantNames, Serialize, Deserialize,

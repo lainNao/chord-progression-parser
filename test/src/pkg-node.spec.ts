@@ -20,7 +20,7 @@ describe("success", () => {
         |Em(7)|E(7)|
     
         @section=Interlude
-        |C|A,B|
+        |C|A,B|?|C|-|%|
       `);
       console.log(JSON.stringify(JSON.parse(successResult), null, 2));
     } catch (e: unknown) {
