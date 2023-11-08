@@ -1,3 +1,10 @@
+check-not-broken:
+	make lint-check
+	make check
+	make test-rust
+	make test-e2e
+	make release
+
 ############### common
 
 # run
@@ -55,8 +62,8 @@ lint-check:
 check:
 	cargo check
 
-# integration test
-test-integration:
+# unit & integration test
+test-rust:
 	cargo test --lib
 
 # e2e test

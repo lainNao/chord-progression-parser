@@ -184,7 +184,6 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         .unwrap()
                         .push(ChordInfo {
                             chord: match chord_string.as_str() {
-                                "-" => ChordExpression::NoChord,
                                 "?" => ChordExpression::Unidentified,
                                 "%" => ChordExpression::Same,
                                 _ => {
@@ -348,11 +347,27 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
             },
             Token::Comma => { /* Nothing */ }
             Token::ChordBlockSeparator => { 
-                // if next token is same, CHORD_BLOCK_SHOULD_NOT_BE_EMPTY
-                match tokens.peek() {
+                match tokens.peek() {                
                     Some(Token::ChordBlockSeparator) => {
-                        return Err(errors::CHORD_BLOCK_SHOULD_NOT_BE_EMPTY.to_string());
-                    }
+
+                        // if chord_blocks is empty, make new chord_block
+                        if sections.last_mut().unwrap().chord_blocks.is_empty() {
+                            sections.last_mut().unwrap().chord_blocks.push(Vec::new());
+                        }
+
+                        // add ChordInfo to last chord block
+                        sections
+                            .last_mut()
+                            .unwrap()
+                            .chord_blocks
+                            .last_mut()
+                            .unwrap()
+                            .push(ChordInfo {
+                                chord: ChordExpression::NoChord,
+                                denominator: None,
+                                meta_infos: tmp_chord_info_meta_infos.clone(),
+                            });                        
+                    },
                     _ => { /* Nothing */ }
                 }
             }
@@ -386,6 +401,27 @@ mod tests {
     mod success {
         use super::*;
 
+
+        #[test]
+        fn no_chord() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::ChordBlockSeparator,
+            ];
+            let result = parse(&input);
+
+            println!("1111 {:?}", result);
+            assert_eq!(result.unwrap(), [
+                Section {
+                    meta_infos: Vec::new(),
+                    chord_blocks: vec![vec![ChordInfo {
+                        chord: ChordExpression::NoChord,
+                        denominator: None,
+                        meta_infos: Vec::new(),
+                    },],],
+                }
+            ]);
+        }
         #[test]
         fn section_meta_info() {
             let input = [
@@ -590,8 +626,6 @@ mod tests {
                 Token::ChordBlockSeparator,
                 Token::Chord("?".to_string()),
                 Token::ChordBlockSeparator,
-                Token::Chord("-".to_string()),
-                Token::ChordBlockSeparator,
                 Token::Chord("%".to_string()),
                 Token::ChordBlockSeparator,
             ];
@@ -604,11 +638,6 @@ mod tests {
                         chord_blocks: vec![vec![
                             ChordInfo {
                                 chord: ChordExpression::Unidentified,
-                                denominator: None,
-                                meta_infos: Vec::new(),
-                            },
-                            ChordInfo {
-                                chord: ChordExpression::NoChord,
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
@@ -680,16 +709,6 @@ mod tests {
     #[cfg(test)]
     mod failure {
         use crate::{tokenizer::types::token::Token, errors, parser::parse};
-
-        #[test]
-        fn chord_block_should_not_be_empty() {
-            let input = [
-                Token::ChordBlockSeparator,
-                Token::ChordBlockSeparator,
-            ];
-
-            assert_eq!(parse(&input), Err(errors::CHORD_BLOCK_SHOULD_NOT_BE_EMPTY.to_string()));
-        }
 
         #[test]
         fn chord_should_not_be_empty() {
