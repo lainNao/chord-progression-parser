@@ -83,6 +83,10 @@ doc:
 see-doc:
 	rustup doc
 
+# see coverage
+see-coverage:
+	cargo llvm-cov --show-missing-lines --open
+
 generate-ts-types:
 	typeshare ./src \
 		--lang=typescript \
