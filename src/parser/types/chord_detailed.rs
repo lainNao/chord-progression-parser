@@ -119,10 +119,13 @@ impl ChordDetailed {
             let extension_str_result = sorted_extensions
                 .iter()
                 .find(|e| extension_str.starts_with(**e));
-            if extension_str_result.is_none() {
-                return Err([errors::INVALID_EXTENSION, extension_str].join(": "));
-            } else {
-                parsed_extensions.push(Extension::from_str(extension_str_result.unwrap()).unwrap());
+            match extension_str_result {
+                Some(extension_str_result) => {
+                    parsed_extensions.push(Extension::from_str(extension_str_result).unwrap());
+                }
+                None => {
+                    return Err([errors::INVALID_EXTENSION, extension_str].join(": "));
+                }
             }
         }
 
