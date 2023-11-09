@@ -21,8 +21,8 @@ pub enum Token {
     // ChordBlockElement
     #[strum(serialize = "|")]
     ChordBlockSeparator,
-    Chord(String),       // 分子
-    Denominator(String), // 分母
+    Chord(String), // numerator
+    Denominator(String),
 
     // MetaInfoElement
     #[strum(serialize = "[")]
