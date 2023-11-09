@@ -14,6 +14,7 @@ pub const SECTION_META_INFO_VALUE_SHOULD_NOT_BE_EMPTY: &str =
 pub const META_INFO_KEY_SHOULD_NOT_BE_EMPTY: &str = "Error: MetaInfoKey should not be empty";
 pub const META_INFO_VALUE_SHOULD_NOT_BE_EMPTY: &str = "Error: MetaInfoValue should not be empty";
 pub const CHORD_SHOULD_NOT_BE_EMPTY: &str = "Error: Chord should not be empty";
+pub const EXTENSION_MUST_NOT_BE_EMPTY: &str = "Error: Extension must not be empty";
 
 // should have after
 pub const SECTION_META_INFO_VALUE_NEEDS_LINE_BREAK_AFTER: &str =
