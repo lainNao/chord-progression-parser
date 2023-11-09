@@ -373,8 +373,17 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
             }
             Token::Equal => { /* Nothing */ }
             Token::Slash => { /* Nothing */ }
-            Token::ExtensionStart => { /* Nothing */ }
-            Token::ExtensionEnd => { /* Nothing */ }
+            Token::ExtensionStart => { 
+
+                // if next token is not Extension, error
+                match tokens.peek() {
+                    Some(Token::Extension(_)) => { /* Nothing */ }
+                    _ => {
+                        return Err(errors::EXTENSION_MUST_NOT_BE_EMPTY.to_string());
+                    }
+                }
+            }
+            Token::ExtensionEnd => { /* Nothing */}
             _ => {
                 // invalid token
                 return Err([
@@ -422,6 +431,7 @@ mod tests {
                 }
             ]);
         }
+
         #[test]
         fn section_meta_info() {
             let input = [
@@ -430,14 +440,24 @@ mod tests {
                 Token::Equal,
                 Token::SectionMetaInfoValue("A".to_string()),
                 Token::LineBreak,
+                Token::SectionMetaInfoStart,
+                Token::SectionMetaInfoKey("repeat".to_string()),
+                Token::Equal,
+                Token::SectionMetaInfoValue("3".to_string()),
+                Token::LineBreak,
             ];
 
             assert_eq!(
                 parse(&input),
                 Ok([Section {
-                    meta_infos: vec![SectionMeta::Section {
-                        value: "A".to_string(),
-                    }],
+                    meta_infos: vec![
+                        SectionMeta::Section {
+                            value: "A".to_string(),
+                        },
+                        SectionMeta::Repeat {
+                            value: 3,
+                        },
+                    ],
                     chord_blocks: Vec::new(),
                 }]
                 .to_vec())
@@ -708,7 +728,56 @@ mod tests {
 
     #[cfg(test)]
     mod failure {
-        use crate::{tokenizer::types::token::Token, errors, parser::parse};
+        use crate::{tokenizer::types::token::Token, errors, parser::{parse, types::{chord_info::ChordInfo, chord_expression::ChordExpression, chord::Chord, base::Base, extension::Extension, chord_type::ChordType, chord_detailed::ChordDetailed, section::Section}}};
+
+        #[test]
+        fn section_meta_info_value_of_repeat_needs_to_be_number() {
+            let input = [
+                Token::SectionMetaInfoStart,
+                Token::SectionMetaInfoKey("repeat".to_string()),
+                Token::Equal,
+                Token::SectionMetaInfoValue("A".to_string()),
+                Token::LineBreak,
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Err(errors::SECTION_META_INFO_VALUE_OF_REPEAT_NEEDS_TO_BE_NUMBER.to_string())
+            );
+        }
+
+        #[test]
+        fn section_meta_info_key_is_invalid() {
+            let input = [
+                Token::SectionMetaInfoStart,
+                Token::SectionMetaInfoKey("asdf".to_string()),
+                Token::Equal,
+                Token::SectionMetaInfoValue("A".to_string()),
+                Token::LineBreak,
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Err([errors::SECTION_META_INFO_KEY_IS_INVALID.to_string(), ": asdf".to_string()].concat())
+            );
+        }
+
+        #[test]
+        fn section_meta_info_value_needs_line_break_after() {
+            let input = [
+                Token::SectionMetaInfoStart,
+                Token::SectionMetaInfoKey("section".to_string()),
+                Token::Equal,
+                Token::SectionMetaInfoValue("A".to_string()),
+                Token::ChordBlockSeparator,
+                Token::LineBreak,
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Err(errors::SECTION_META_INFO_VALUE_NEEDS_LINE_BREAK_AFTER.to_string())
+            );
+        }
 
         #[test]
         fn chord_should_not_be_empty() {
@@ -738,7 +807,24 @@ mod tests {
                 parse(&input),
                 Err(errors::DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD.to_string())
             );
-
         }
+
+        #[test]
+        fn extension_must_not_be_empty() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::ExtensionEnd,
+                Token::ChordBlockSeparator,
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Err(errors::EXTENSION_MUST_NOT_BE_EMPTY.to_string())
+            );
+        }
+
+        
     }
 }
