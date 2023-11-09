@@ -91,3 +91,7 @@ generate-ts-types:
 	typeshare ./src \
 		--lang=typescript \
 		--output-file=generatedTypes.ts
+
+# needs: "chmod +x _tools/find_files_include_multibyte_characters.sh"
+find-multibyte:
+	./_tools/find_files_include_multibyte_characters.sh
