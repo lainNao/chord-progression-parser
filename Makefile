@@ -20,11 +20,12 @@ run-pkg-node:
 build:
 	cargo build
 
-# build wasm for browser
-build-wasm-browser:
+# build wasm for web
+build-wasm-web:
 	wasm-pack build \
 		--release \
-		--out-dir ./pkg-browser
+		--out-dir ./pkg-web \
+		--target web
 
 # build wasm for node
 build-wasm-node:
@@ -32,6 +33,13 @@ build-wasm-node:
 		--release \
 		--out-dir ./pkg-node \
 		--target nodejs
+
+# build wasm for bundler
+build-wasm-bundler:
+	wasm-pack build \
+		--release \
+		--out-dir ./pkg-bundler \
+		--target bundler
 
 # release
 release:

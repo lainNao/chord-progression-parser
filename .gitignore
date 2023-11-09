@@ -1,4 +1,7 @@
 /Cargo.lock
 /target
+
+# build artifacts
 /pkg-node
-/pkg-browser
+/pkg-web
+/pkg-bundler
