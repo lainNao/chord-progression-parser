@@ -9,5 +9,5 @@ use typeshare::typeshare;
 pub struct ChordInfo {
     pub meta_infos: Vec<ChordInfoMeta>,
     pub chord: ChordExpression,
-    pub denominator: Option<String>, // 曖昧で扱いようが無いのでstring
+    pub denominator: Option<String>, // ambiguous so string
 }

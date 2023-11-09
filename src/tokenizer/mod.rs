@@ -50,7 +50,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                     Some(Token::ExtensionStart) => Ok(Some(ValueToken::Extension)),
                     Some(Token::MetaInfoStart) => Ok(Some(ValueToken::MetaInfoKey)),
                     Some(Token::Equal) => {
-                        // NOTE: イコールの場合、イコールの前の文字によってはセクションメタなのかコードメタなのかが変わるので、取得しておく
+                        // NOTE: In the case of equal, depending on the character before equal,
+                        //       it may be a section meta or a code meta, so get it in advance.
                         let token_before_equal: Option<&Token> = if tokens.len() >= 2 {
                             tokens.get(tokens.len() - 2)
                         } else {
@@ -73,7 +74,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                     }
                     Some(Token::Slash) => Ok(Some(ValueToken::Denominator)),
                     _ => {
-                        // 前を辿った結果"]"か"|"があればコード、"("があればExtension
+                        // If the result of tracing back is "]" or "|", it is a code, and if it is "(", it is an Extension.
                         let mut is_code = false;
                         let mut is_extension = false;
                         let mut prev_token_index = tokens.len() - 1;
@@ -136,7 +137,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                     Some(ValueToken::MetaInfoKey) => tokens.push(Token::MetaInfoKey(token)),
                     Some(ValueToken::MetaInfoValue) => tokens.push(Token::MetaInfoValue(token)),
                     Some(ValueToken::Chord) => {
-                        // 不正なコード（何らかの数字またはoが入っている）な場合エラー
+                        // If the chord is invalid (contains some number or o), an error occurs.
                         if token.chars().any(|c| c.is_numeric() || c == 'o') {
                             return Err([errors::INVALID_CHORD.to_string(), token].join(": "));
                         }
