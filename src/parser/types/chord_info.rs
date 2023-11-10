@@ -8,6 +8,6 @@ use typeshare::typeshare;
 #[serde(rename_all = "camelCase")]
 pub struct ChordInfo {
     pub meta_infos: Vec<ChordInfoMeta>,
-    pub chord: ChordExpression,
+    pub chord_expression: ChordExpression,
     pub denominator: Option<String>, // ambiguous so string
 }

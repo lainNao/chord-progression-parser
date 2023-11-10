@@ -72,7 +72,7 @@ mod tests {
                     "chordBlocks": [
                         [
                             {
-                                "chord": {
+                                "chordExpression": {
                                     "type": "chord",
                                     "value": {
                                         "detailed": {
@@ -97,7 +97,7 @@ mod tests {
                                 ]
                             },
                             {
-                                "chord": {
+                                "chordExpression": {
                                     "type": "chord",
                                     "value": {
                                         "detailed": {

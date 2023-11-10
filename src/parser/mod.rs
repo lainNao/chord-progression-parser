@@ -183,7 +183,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         .last_mut()
                         .unwrap()
                         .push(ChordInfo {
-                            chord: match chord_string.as_str() {
+                            chord_expression: match chord_string.as_str() {
                                 "?" => ChordExpression::Unidentified,
                                 "%" => ChordExpression::Same,
                                 _ => {
@@ -220,7 +220,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         .last_mut()
                         .unwrap()
                         .push(ChordInfo {
-                            chord: ChordExpression::Chord(chord),
+                            chord_expression: ChordExpression::Chord(chord),
                             denominator: None,
                             meta_infos: tmp_chord_info_meta_infos.clone(),
                         });
@@ -263,7 +263,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 .unwrap()
                 .last_mut()
                 .unwrap()
-                .chord {
+                .chord_expression {
                     ChordExpression::Unidentified => {},
                     ChordExpression::Same => {},
                     ChordExpression::NoChord => {},
@@ -300,7 +300,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                             .unwrap()
                             .last_mut()
                             .unwrap()
-                            .chord = ChordExpression::Chord(Chord {
+                            .chord_expression = ChordExpression::Chord(Chord {
                                     plain: [c.plain.clone(), extension_str_with_parenthesis.to_string()].concat(),
                                     detailed: ChordDetailed { 
                                         base: c.detailed.base.clone(),
@@ -363,7 +363,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                             .last_mut()
                             .unwrap()
                             .push(ChordInfo {
-                                chord: ChordExpression::NoChord,
+                                chord_expression: ChordExpression::NoChord,
                                 denominator: None,
                                 meta_infos: tmp_chord_info_meta_infos.clone(),
                             });                        
@@ -424,7 +424,7 @@ mod tests {
                 Section {
                     meta_infos: Vec::new(),
                     chord_blocks: vec![vec![ChordInfo {
-                        chord: ChordExpression::NoChord,
+                        chord_expression: ChordExpression::NoChord,
                         denominator: None,
                         meta_infos: Vec::new(),
                     },],],
@@ -541,7 +541,7 @@ mod tests {
                     ChordInfo {
                         meta_infos: Vec::new(),
                         denominator: None,
-                        chord: ChordExpression::Chord(Chord {
+                        chord_expression: ChordExpression::Chord(Chord {
                             plain: "C".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::C,
@@ -552,7 +552,7 @@ mod tests {
                         }),
                     },
                     ChordInfo {
-                        chord: ChordExpression::Chord(Chord {
+                        chord_expression: ChordExpression::Chord(Chord {
                             plain: "G".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::G,
@@ -565,7 +565,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordExpression::Chord(Chord {
+                        chord_expression: ChordExpression::Chord(Chord {
                             plain: "Am".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::A,
@@ -578,7 +578,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordExpression::Chord(Chord {
+                        chord_expression: ChordExpression::Chord(Chord {
                             plain: "Em".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::E,
@@ -591,7 +591,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordExpression::Chord(Chord {
+                        chord_expression: ChordExpression::Chord(Chord {
                             plain: "F#m(7,b5)".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::F,
@@ -607,7 +607,7 @@ mod tests {
                         meta_infos: Vec::new(),
                     },
                     ChordInfo {
-                        chord: ChordExpression::Chord(Chord {
+                        chord_expression: ChordExpression::Chord(Chord {
                             plain: "Fbm(13)".to_string(),
                             detailed: ChordDetailed {
                                 base: Base::F,
@@ -657,12 +657,12 @@ mod tests {
                         meta_infos: Vec::new(),
                         chord_blocks: vec![vec![
                             ChordInfo {
-                                chord: ChordExpression::Unidentified,
+                                chord_expression: ChordExpression::Unidentified,
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
                             ChordInfo {
-                                chord: ChordExpression::Same,
+                                chord_expression: ChordExpression::Same,
                                 denominator: None,
                                 meta_infos: Vec::new(),
                             },
@@ -691,7 +691,7 @@ mod tests {
                     Section {
                         meta_infos: Vec::new(),
                         chord_blocks: vec![vec![ChordInfo {
-                            chord: ChordExpression::Chord(Chord {
+                            chord_expression: ChordExpression::Chord(Chord {
                                 plain: "C".to_string(),
                                 detailed: ChordDetailed {
                                     base: Base::C,
@@ -707,7 +707,7 @@ mod tests {
                     Section {
                         meta_infos: Vec::new(),
                         chord_blocks: vec![vec![ChordInfo {
-                            chord: ChordExpression::Chord(Chord {
+                            chord_expression: ChordExpression::Chord(Chord {
                                 plain: "C".to_string(),
                                 detailed: ChordDetailed {
                                     base: Base::C,
@@ -728,7 +728,7 @@ mod tests {
 
     #[cfg(test)]
     mod failure {
-        use crate::{tokenizer::types::token::Token, errors, parser::{parse, types::{chord_info::ChordInfo, chord_expression::ChordExpression, chord::Chord, base::Base, extension::Extension, chord_type::ChordType, chord_detailed::ChordDetailed, section::Section}}};
+        use crate::{tokenizer::types::token::Token, errors, parser::parse};
 
         #[test]
         fn section_meta_info_value_of_repeat_needs_to_be_number() {
