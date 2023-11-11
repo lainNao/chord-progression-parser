@@ -2,28 +2,37 @@ mod errors;
 mod parser;
 mod tokenizer;
 
-use parser::parse;
-use serde_json::json;
+use parser::{parse, Ast};
 use tokenizer::tokenize;
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
-pub fn run(input: &str) -> Result<String, String> {
-    let tokens = match tokenize(input) {
-        Ok(t) => t,
-        Err(e) => {
-            return Err(format!("Tokenization Error: {}", e));
-        }
-    };
-    let ast = match parse(&tokens) {
-        Ok(ast) => ast,
-        Err(e) => {
-            return Err(format!("Parse Error: {}", e));
-        }
-    };
+pub fn run(input: &str) -> Result<JsValue, String> {
+    let result = parse_chord_progression_string(input);
 
-    let json = json!(ast);
-    Ok(json.to_string())
+    if result.is_err() {
+        return Err(result.err().unwrap());
+    }
+
+    serde_wasm_bindgen::to_value(&result.unwrap())
+        .map_err(|e| format!("Serialization Error: {}", e))
+}
+
+pub fn parse_chord_progression_string(input: &str) -> Result<Ast, String> {
+    let tokenized_result = tokenize(input);
+    if tokenized_result.is_err() {
+        return Err(format!(
+            "Tokenization Error: {}",
+            tokenized_result.err().unwrap()
+        ));
+    }
+
+    let parsed_result = parse(&tokenized_result.unwrap());
+    if parsed_result.is_err() {
+        return Err(format!("Parse Error: {}", parsed_result.err().unwrap()));
+    }
+
+    Ok(parsed_result.unwrap())
 }
 
 #[cfg(test)]

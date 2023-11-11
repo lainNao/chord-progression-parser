@@ -3,5 +3,4 @@
 
 # build artifacts
 /pkg-node
-/pkg-web
 /pkg-bundler

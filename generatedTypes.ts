@@ -23,7 +23,7 @@ export type ChordExpression =
 
 export interface ChordInfo {
 	metaInfos: ChordInfoMeta[];
-	chord: ChordExpression;
+	chordExpression: ChordExpression;
 	denominator?: string;
 }
 

@@ -5,7 +5,7 @@ use std::str::FromStr;
 use crate::errors;
 use crate::tokenizer::types::token::Token;
 
-use types::ast::Ast;
+pub use types::ast::Ast;
 use types::chord::Chord;
 use types::chord_detailed::ChordDetailed;
 use types::chord_info::ChordInfo;
