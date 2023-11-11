@@ -77,8 +77,12 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                         // If the result of tracing back is "]" or "|", it is a code, and if it is "(", it is an Extension.
                         let mut is_code = false;
                         let mut is_extension = false;
-                        let mut prev_token_index = tokens.len() - 1;
+                        let mut prev_token_index = tokens.len();
+
+                        // get previous token type
+                        // To take into account line feed codes, use while
                         while prev_token_index > 0 {
+                            prev_token_index -= 1;
                             let prev_token = tokens.get(prev_token_index).unwrap();
                             match prev_token {
                                 Token::MetaInfoEnd => {
@@ -95,7 +99,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                                 }
                                 _ => {}
                             };
-                            prev_token_index -= 1;
                         }
 
                         if is_code {
@@ -166,6 +169,22 @@ mod tests {
     #[cfg(test)]
     mod success {
         use super::*;
+
+        #[test]
+        fn without_any_line_break() {
+            let input = "|C|";
+            let expected = vec![
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+
+            let lex_result = tokenize(input);
+            println!("111 {:?}", lex_result);
+            assert!(lex_result.is_ok());
+            let tokens = lex_result.unwrap();
+            assert_eq!(tokens, expected);
+        }
 
         #[test]
         fn section_meta_info() {
