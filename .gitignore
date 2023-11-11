@@ -4,3 +4,4 @@
 # build artifacts
 /pkg-node
 /pkg-bundler
+generatedTypes.tmp.ts
