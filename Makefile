@@ -45,24 +45,24 @@ build-wasm-bundler:
 # FIXME: this is not good way. do it by wasm_bindgen directly
 generate-ts-declare-file-for-pkg-node:
 	make generate-ts-types
-# pkg-node/chord_progression_ast_parser.d.tsに、generatedTypes.tsのコンテンツを追記する	
-	cat generatedTypes.ts >> pkg-node/chord_progression_ast_parser.d.ts
-# pkg-node/chord_progression_ast_parser.d.tsのrun関数の戻り値の定義を「Ast」に書き換える
+# append contents of generatedTypes.tmp.ts to pkg-node/chord_progression_ast_parser.d.ts
+	cat generatedTypes.tmp.ts >> pkg-node/chord_progression_ast_parser.d.ts
+# Rewrite definition of return value of run function in pkg-node/chord_progression_ast_parser.d.ts to "Ast"
 	sed -i.bak 's/any/Ast/g' pkg-node/chord_progression_ast_parser.d.ts && rm pkg-node/chord_progression_ast_parser.d.ts.bak
 
 # generate and modify d.ts
 # FIXME: this is not good way. do it by wasm_bindgen directly
 generate-ts-declare-file-for-pkg-bundler:
 	make generate-ts-types
-# pkg-bundler/chord_progression_ast_parser.d.tsに、generatedTypes.tsのコンテンツを追記する	
-	cat generatedTypes.ts >> pkg-bundler/chord_progression_ast_parser.d.ts
-# pkg-bundler/chord_progression_ast_parser.d.tsのrun関数の戻り値の定義を「Ast」に書き換える
+# append contents of generatedTypes.tmp.ts to pkg-bundler/chord_progression_ast_parser.d.ts
+	cat generatedTypes.tmp.ts >> pkg-bundler/chord_progression_ast_parser.d.ts
+# Rewrite definition of return value of run function in pkg-bundler/chord_progression_ast_parser.d.ts to "Ast"
 	sed -i.bak 's/any/Ast/g' pkg-bundler/chord_progression_ast_parser.d.ts && rm pkg-bundler/chord_progression_ast_parser.d.ts.bak
 
 generate-ts-types:
 	typeshare ./src \
 		--lang=typescript \
-		--output-file=generatedTypes.ts
+		--output-file=generatedTypes.tmp.ts
 
 # release
 release:
