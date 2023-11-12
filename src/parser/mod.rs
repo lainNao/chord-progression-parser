@@ -8,8 +8,8 @@ use crate::tokenizer::types::token::Token;
 pub use types::ast::Ast;
 use types::chord::Chord;
 use types::chord_detailed::ChordDetailed;
-use types::chord_info::ChordInfo;
 use types::chord_expression::ChordExpression;
+use types::chord_info::ChordInfo;
 use types::chord_info_meta::ChordInfoMeta;
 use types::section::Section;
 use types::section_meta::SectionMeta;
@@ -28,9 +28,8 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
         match token {
             // section meta info
             Token::SectionMetaInfoStart => {
-                let is_new_section = 
-                    // last section's chord_blocks is not empty
-                    !sections.last().unwrap().chord_blocks.is_empty();
+                // last section's chord_blocks is not empty
+                let is_new_section = !sections.last().unwrap().chord_blocks.is_empty();
 
                 // if is_new_section, initialize new section
                 if is_new_section {
@@ -98,7 +97,8 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                         return Err([
                             errors::SECTION_META_INFO_KEY_IS_INVALID.to_string(),
                             section_meta_info_key.to_string(),
-                        ].join(": "));
+                        ]
+                        .join(": "));
                     }
                 }
 
@@ -163,13 +163,13 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
             }
             // chord
             Token::Chord(chord_string) => {
-
                 if chord_string.eq("-") || chord_string.eq("?") || chord_string.eq("%") {
                     // if chord_blocks is empty, make new chord_block
                     if sections.last_mut().unwrap().chord_blocks.is_empty() {
                         if chord_string == "%" {
                             return Err(
-                                errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK.to_string()
+                                errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK
+                                    .to_string(),
                             );
                         }
                         sections.last_mut().unwrap().chord_blocks.push(Vec::new());
@@ -254,24 +254,22 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     _ => { /* Nothing */ }
                 }
             }
-            Token::Extension(ext_str) => { 
+            Token::Extension(ext_str) => {
                 match &sections
-                .last_mut()
-                .unwrap()
-                .chord_blocks
-                .last_mut()
-                .unwrap()
-                .last_mut()
-                .unwrap()
-                .chord_expression {
-                    ChordExpression::Unidentified => {},
-                    ChordExpression::Same => {},
-                    ChordExpression::NoChord => {},
+                    .last_mut()
+                    .unwrap()
+                    .chord_blocks
+                    .last_mut()
+                    .unwrap()
+                    .last_mut()
+                    .unwrap()
+                    .chord_expression
+                {
+                    ChordExpression::Unidentified => {}
+                    ChordExpression::Same => {}
+                    ChordExpression::NoChord => {}
                     ChordExpression::Chord(c) => {
-
-                        let mut parsed_extensions = vec![
-                            Extension::from_str(ext_str).unwrap()
-                        ];
+                        let mut parsed_extensions = vec![Extension::from_str(ext_str).unwrap()];
                         for t in tokens.by_ref() {
                             match t {
                                 Token::ExtensionEnd => {
@@ -288,10 +286,15 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                                 }
                             }
                         }
-                        let extension_str_with_parenthesis = format!("({})", 
-                            parsed_extensions.iter().map(|e| e.to_string()).collect::<Vec<String>>().join(",")
+                        let extension_str_with_parenthesis = format!(
+                            "({})",
+                            parsed_extensions
+                                .iter()
+                                .map(|e| e.to_string())
+                                .collect::<Vec<String>>()
+                                .join(",")
                         );
-                        
+
                         sections
                             .last_mut()
                             .unwrap()
@@ -301,26 +304,22 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                             .last_mut()
                             .unwrap()
                             .chord_expression = ChordExpression::Chord(Chord {
-                                    plain: [c.plain.clone(), extension_str_with_parenthesis.to_string()].concat(),
-                                    detailed: ChordDetailed { 
-                                        base: c.detailed.base.clone(),
-                                        accidental: c.detailed.accidental.clone(),
-                                        chord_type: c.detailed.chord_type.clone(),
-                                        extensions: parsed_extensions, 
-                                    },
-                                });
+                            plain: [c.plain.clone(), extension_str_with_parenthesis.to_string()]
+                                .concat(),
+                            detailed: ChordDetailed {
+                                base: c.detailed.base.clone(),
+                                accidental: c.detailed.accidental.clone(),
+                                chord_type: c.detailed.chord_type.clone(),
+                                extensions: parsed_extensions,
+                            },
+                        });
                     }
                 }
             }
             Token::Denominator(denominator) => {
-
-                if sections
-                    .last_mut()
-                    .unwrap()
-                    .chord_blocks
-                    .last().is_none() {
-                        return Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string());
-                    }
+                if sections.last_mut().unwrap().chord_blocks.last().is_none() {
+                    return Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string());
+                }
 
                 // if denominator is already set, DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD
                 if sections
@@ -331,9 +330,11 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     .unwrap()
                     .last_mut()
                     .unwrap()
-                    .denominator.is_some() {
-                        return Err(errors::DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD.to_string());
-                    }
+                    .denominator
+                    .is_some()
+                {
+                    return Err(errors::DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD.to_string());
+                }
 
                 sections
                     .last_mut()
@@ -344,12 +345,11 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     .last_mut()
                     .unwrap()
                     .denominator = Some(denominator.clone());
-            },
+            }
             Token::Comma => { /* Nothing */ }
-            Token::ChordBlockSeparator => { 
-                match tokens.peek() {                
+            Token::ChordBlockSeparator => {
+                match tokens.peek() {
                     Some(Token::ChordBlockSeparator) => {
-
                         // if chord_blocks is empty, make new chord_block
                         if sections.last_mut().unwrap().chord_blocks.is_empty() {
                             sections.last_mut().unwrap().chord_blocks.push(Vec::new());
@@ -366,15 +366,14 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                                 chord_expression: ChordExpression::NoChord,
                                 denominator: None,
                                 meta_infos: tmp_chord_info_meta_infos.clone(),
-                            });                        
-                    },
+                            });
+                    }
                     _ => { /* Nothing */ }
                 }
             }
             Token::Equal => { /* Nothing */ }
             Token::Slash => { /* Nothing */ }
-            Token::ExtensionStart => { 
-
+            Token::ExtensionStart => {
                 // if next token is not Extension, error
                 match tokens.peek() {
                     Some(Token::Extension(_)) => { /* Nothing */ }
@@ -383,13 +382,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     }
                 }
             }
-            Token::ExtensionEnd => { /* Nothing */}
+            Token::ExtensionEnd => { /* Nothing */ }
             _ => {
                 // invalid token
-                return Err([
-                    errors::INVALID_TOKEN_TYPE.to_string(),
-                    token.to_string(),
-                ].join(": "));
+                return Err([errors::INVALID_TOKEN_TYPE.to_string(), token.to_string()].join(": "));
             }
         }
     }
@@ -410,26 +406,23 @@ mod tests {
     mod success {
         use super::*;
 
-
         #[test]
         fn no_chord() {
-            let input = [
-                Token::ChordBlockSeparator,
-                Token::ChordBlockSeparator,
-            ];
+            let input = [Token::ChordBlockSeparator, Token::ChordBlockSeparator];
             let result = parse(&input);
 
             println!("1111 {:?}", result);
-            assert_eq!(result.unwrap(), [
-                Section {
+            assert_eq!(
+                result.unwrap(),
+                [Section {
                     meta_infos: Vec::new(),
                     chord_blocks: vec![vec![ChordInfo {
                         chord_expression: ChordExpression::NoChord,
                         denominator: None,
                         meta_infos: Vec::new(),
                     },],],
-                }
-            ]);
+                }]
+            );
         }
 
         #[test]
@@ -454,9 +447,7 @@ mod tests {
                         SectionMeta::Section {
                             value: "A".to_string(),
                         },
-                        SectionMeta::Repeat {
-                            value: 3,
-                        },
+                        SectionMeta::Repeat { value: 3 },
                     ],
                     chord_blocks: Vec::new(),
                 }]
@@ -597,10 +588,7 @@ mod tests {
                                 base: Base::F,
                                 accidental: Some(Accidental::Sharp),
                                 chord_type: ChordType::Minor,
-                                extensions: vec![
-                                    Extension::Seven,
-                                    Extension::FlatFive,
-                                ],
+                                extensions: vec![Extension::Seven, Extension::FlatFive],
                             },
                         }),
                         denominator: Some("F#m(7,b5)".to_string()),
@@ -636,7 +624,9 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err(errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK.to_string())
+                Err(
+                    errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK.to_string()
+                )
             );
         }
 
@@ -652,23 +642,21 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Ok([
-                    Section {
-                        meta_infos: Vec::new(),
-                        chord_blocks: vec![vec![
-                            ChordInfo {
-                                chord_expression: ChordExpression::Unidentified,
-                                denominator: None,
-                                meta_infos: Vec::new(),
-                            },
-                            ChordInfo {
-                                chord_expression: ChordExpression::Same,
-                                denominator: None,
-                                meta_infos: Vec::new(),
-                            },
-                        ],],
-                    },
-                ]
+                Ok([Section {
+                    meta_infos: Vec::new(),
+                    chord_blocks: vec![vec![
+                        ChordInfo {
+                            chord_expression: ChordExpression::Unidentified,
+                            denominator: None,
+                            meta_infos: Vec::new(),
+                        },
+                        ChordInfo {
+                            chord_expression: ChordExpression::Same,
+                            denominator: None,
+                            meta_infos: Vec::new(),
+                        },
+                    ],],
+                },]
                 .to_vec())
             );
         }
@@ -728,7 +716,7 @@ mod tests {
 
     #[cfg(test)]
     mod failure {
-        use crate::{tokenizer::types::token::Token, errors, parser::parse};
+        use crate::{errors, parser::parse, tokenizer::types::token::Token};
 
         #[test]
         fn section_meta_info_value_of_repeat_needs_to_be_number() {
@@ -758,7 +746,11 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err([errors::SECTION_META_INFO_KEY_IS_INVALID.to_string(), ": asdf".to_string()].concat())
+                Err([
+                    errors::SECTION_META_INFO_KEY_IS_INVALID.to_string(),
+                    ": asdf".to_string()
+                ]
+                .concat())
             );
         }
 
@@ -788,7 +780,10 @@ mod tests {
                 Token::ChordBlockSeparator,
             ];
 
-            assert_eq!(parse(&input), Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string()));
+            assert_eq!(
+                parse(&input),
+                Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string())
+            );
         }
 
         #[test]
@@ -824,7 +819,5 @@ mod tests {
                 Err(errors::EXTENSION_MUST_NOT_BE_EMPTY.to_string())
             );
         }
-
-        
     }
 }

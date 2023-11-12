@@ -1,6 +1,7 @@
 check-not-broken:
 	make lint-check
 	make check
+	make format-check
 	make build-wasm-web
 	make build-wasm-node
 	make build-wasm-bundler
@@ -98,6 +99,10 @@ lint-check:
 # check
 check:
 	cargo check
+
+# format check
+format-check:
+	cargo fmt --all -- --check
 
 # unit & integration test
 test-rust:
