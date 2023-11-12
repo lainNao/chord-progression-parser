@@ -5,3 +5,5 @@
 - rustの周辺機能
   - rustup component add rustfmt
   - rustup component add clippy
+
+- bunは開発においては使わない。QAの時に使うだけにする
