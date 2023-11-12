@@ -4,3 +4,6 @@
 # build artifacts
 /pkg
 /generatedTypes.tmp.ts
+
+# js
+node_modules

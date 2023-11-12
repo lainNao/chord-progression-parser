@@ -1,0 +1,12 @@
+{
+  "engines": {
+    "node": "please use bun",
+    "yarn": "please use bun",
+    "pnpm": "please use bun",
+    "bun": "^1.0.11"
+  },
+  "dependencies": {
+    "install": "^0.13.0",
+    "lefthook": "^1.5.2"
+  }
+}
