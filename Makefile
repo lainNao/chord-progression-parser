@@ -1,13 +1,13 @@
 check-not-broken:
 	make lint-check
-	make check
+	make build-check
 	make format-check
 	make build-wasm-web
 	make build-wasm-node
 	make build-wasm-bundler
 	make test-rust
 	make test-e2e
-# TODO: pkg配下のがts的にエラー起きてないかどうかも見る
+# TODO: pkg配下のがts的にエラー起きてないかどうかも見る。それもe2e落ちてると考える
 
 ############### common
 
@@ -96,8 +96,8 @@ fix:
 lint-check:
 	cargo clippy
 
-# check
-check:
+# build check
+build-check:
 	cargo check
 
 # format check

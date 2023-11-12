@@ -6,14 +6,11 @@
   - `RuntimeError: unreachable`が嫌なので、どうにかしたいな。
     - unwrapが失敗してる時にこのエラーに変換されてるっぽいのでunwrapをハンドリングすればいいんだ。
   - 後何も入力してない時に1つのセクションができちゃってるな。これは意図通りでない
-  - wasm-bindgen-testの盛り込み
-    - <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
+  - wasm-bindgen-testの盛り込み <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
   - makefileにあるTODOの対応
   - カバレッジ見て足りてないところをリファクタしていく
-- `CI`
-  - commit hookでtestとかbuildとかlintとかgenerateとか
-- リリース設計（ここらへんは別リポジトリでテストしてから持ってくる形で…色々試すの汚いので）
-  - 1コマンド打てば、以下が終わるようにしたい
+- `リリース設計`（ここらへんは別リポジトリでテストしてから持ってくる形で…色々試すの汚いので）
+  - 1コマンド打てば、以下が終わるようにしたい。それをgithub actionsでもローカルでもどちらでも行えるように
     - 1. cloudflare
       - ASTをパースする静的ページ一つを作ってそれを使えるようにする
     - 2. jsDeliver
@@ -33,9 +30,9 @@
       - 良いツールなければ自前。semantic-releaseは使いづらかった。
       - タグつけたものをプッシュしたら、勝手にCIが「まだリリースされてないタグが見つかったらリリースしておく」というのをやってくれるような感じにしたら楽そう。あまり意識したくないので。
 - `ドキュメント`
-  - README.md
-  - DEVELOPMENT.md
-  - _docs配下
+  - [ ] README.md
+  - [x] DEVELOPMENT.md
+  - [ ] _docs配下
 
 ## 仕様面
 
