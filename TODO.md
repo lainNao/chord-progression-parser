@@ -2,16 +2,34 @@
 
 ## 必須
 
+- `RuntimeError: unreachable`が嫌なので、どうにかしたいな。
+  - unwrapが失敗してる時にこのエラーに変換されてるっぽいのでunwrapをハンドリングすればいいんだ。
 - 後何も入力してない時に1つのセクションができちゃってるな。これは意図通りでない
 - エラーを全部網羅して実装してテストに組み込む
   - メタ情報が重複した時のエラーが不足しているので追加
 - CI
   - commit hookでtestとかbuildとかlintとかgenerateとか
-- 生成したtsの型ファイル、importして使えるようにしたい。
-  - そもそも生成したwasmも同じくなのでそこを対応する
-  - ビルドした`pkg-*`系のフォルダの中に突っ込んでしまったほうがいいのかも
-    - そもそも`pkg-*`系フォルダ、どうやってアプリケーション側のプロジェクトに持っていこう
-      - relay-compiler周りが参考になるのかも。というかむしろ他のwasm系PJも見てみる
+- wasm-bindgen-testの盛り込み
+  - <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
+- リリース設計（ここらへんは別リポジトリでテストしてから持ってくる形で…色々試すの汚いので）
+  - 1コマンド打てば、以下が終わる
+    - npm、github、crates.ioでのリリース。タグでまとめる
+      - githubでのリリースはまとめてでいい。npmは別々で。crates.ioはrustのやつのみ。
+        - browserはjsDeliverとかのCDNからリリース
+        - nodeとbundlerは別々でnpmでリリース
+      - リリースノートは自動生成（そんなに重要じゃないので、これまでのコミットを全部リストアップでいい）
+        - CHANGELOGも自動生成したい。メジャーバージョンごとにCHANGELOG.v{n}.mdを作る感じで
+          - リリースノート自動生成はgithub自体が機能として持っているっぽい　<https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes>
+      - githubの方はghコマンドで、npmの方はnpmコマンドでやりたい
+      - semantic-releaseは使いづらかった。良いツールあれば探す
+        - 自前でいいのでは
+      - タグつけたものをプッシュしたら、勝手にCIが「まだリリースされてないタグが見つかったらリリースしておく」というのをやってくれるような感じにしたら楽そう。あまり意識したくないので。
+    - 素振り
+      - まずビルド
+      - で、ビルドしたもののpackage.jsonのnameをそれぞれ別のにする？（sed？）
+      - で、リリース
+        - `cd pkg-bundler && npm publish`
+        - `cd pkg-node && npm publish`
 
 ## 仕様面
 
