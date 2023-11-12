@@ -1,5 +1,5 @@
 import "./main.css";
-import { run } from "../../../pkg-bundler/chord_progression_ast_parser";
+import { run } from "../../../pkg/pkg-bundler/chord_progression_ast_parser";
 import sampleChords from "./sample-chord-progression.txt?raw";
 
 function debounce(callback: Function, wait: number) {

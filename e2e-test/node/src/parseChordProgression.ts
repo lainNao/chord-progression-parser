@@ -1,4 +1,4 @@
-import parser from "../../../pkg-node/chord_progression_ast_parser";
+import parser from "../../../pkg/pkg-node/chord_progression_ast_parser";
 
 type ParseChordProgressionResult =
   | {
