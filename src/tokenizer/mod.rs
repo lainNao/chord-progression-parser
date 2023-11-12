@@ -97,6 +97,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                                     is_extension = true;
                                     break;
                                 }
+                                Token::ExtensionEnd => {
+                                    is_code = true;
+                                    break;
+                                }
                                 _ => {}
                             };
                         }
@@ -180,7 +184,26 @@ mod tests {
             ];
 
             let lex_result = tokenize(input);
-            println!("111 {:?}", lex_result);
+            assert!(lex_result.is_ok());
+            let tokens = lex_result.unwrap();
+            assert_eq!(tokens, expected);
+        }
+
+        #[test]
+        fn chord_after_extension_and_comma() {
+            let input = "|C(9),C|";
+            let expected = vec![
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("9".to_string()),
+                Token::ExtensionEnd,
+                Token::Comma,
+                Token::Chord("C".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+
+            let lex_result = tokenize(input);
             assert!(lex_result.is_ok());
             let tokens = lex_result.unwrap();
             assert_eq!(tokens, expected);
