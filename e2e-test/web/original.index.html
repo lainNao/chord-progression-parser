@@ -13,7 +13,7 @@
       import * as mod from "./chord_progression_ast_parser.js";
       (async () => {
         await mod.default();
-        const result = mod.run("|C#m(9,13),D|E(o)|");
+        const result = mod.parseChordProgressionString("|C#m(9,13),D|E(o)|");
         console.log(result);
         document.querySelector("#result").innerHTML = JSON.stringify(
           result,

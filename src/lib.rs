@@ -4,19 +4,31 @@ mod tokenizer;
 
 use error_code::ErrorInfo;
 use parser::{parse, Ast};
+use serde_json::json;
 use tokenizer::tokenize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-#[wasm_bindgen]
-pub fn run(input: &str) -> Result<JsValue, String> {
+/// @param {string} input - The chord progression string to parse.
+/// @param {string} lang - The language to use for error messages.
+/// @returns {Ast} - The parsed chord progression.
+/// @throws {{code: string, additionalInfo: string} | string} - The error information.
+#[wasm_bindgen(js_name = "parseChordProgressionString", skip_jsdoc)]
+pub fn run(input: &str) -> Result<JsValue, JsValue> {
     let result = parse_chord_progression_string(input);
 
     if result.is_err() {
-        return Err(result.err().unwrap().to_string());
+        let error_info = result.err().unwrap();
+        return Err(JsValue::from_str(
+            &json!({
+                "code": error_info.code.to_string(),
+                "additionalInfo": error_info.additional_info,
+            })
+            .to_string(),
+        ));
     }
 
     serde_wasm_bindgen::to_value(&result.unwrap())
-        .map_err(|e| format!("Serialization Error: {}", e))
+        .map_err(|err| JsValue::from_str(&format!("{}", err)))
 }
 
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfo> {

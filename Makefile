@@ -39,6 +39,7 @@ build-wasm-web:
 		--scope lainNao \
 		--out-dir ./pkg/pkg-web \
 		--target web
+	make generate-ts-declare-file-for-pkg-web
 
 # build wasm for node (use for server javascript without any bundler?)
 build-wasm-node:
@@ -68,12 +69,35 @@ generate-error-code-rs:
 
 # generate and modify d.ts
 # FIXME: this is not good way. do it by wasm_bindgen directly
+generate-ts-declare-file-for-pkg-web:
+	make generate-ts-types
+# append contents of generatedTypes.ts to pkg-web/chord_progression_ast_parser.d.ts
+	cat generatedTypes.ts >> pkg/pkg-web/chord_progression_ast_parser.d.ts
+# Rewrite definition of return value of run function in pkg-web/chord_progression_ast_parser.d.ts to "Ast"
+	sed -i.bak 's/any/Ast/g' pkg/pkg-web/chord_progression_ast_parser.d.ts && rm pkg/pkg-web/chord_progression_ast_parser.d.ts.bak
+# copy resources/error_code_message_map.ts under pkg/pkg-web, overwriting
+	cp resources/error_code_message_map.ts pkg/pkg-web
+# compile it to .js and d.ts
+	cd pkg/pkg-web && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
+# add error_code_message_map.js and d.ts to pkg/pkg-web/package.json files
+	sed -i.bak 's/"files": \[/"files": \[\
+		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
+
+# generate and modify d.ts
+# FIXME: this is not good way. do it by wasm_bindgen directly
 generate-ts-declare-file-for-pkg-node:
 	make generate-ts-types
 # append contents of generatedTypes.ts to pkg-node/chord_progression_ast_parser.d.ts
 	cat generatedTypes.ts >> pkg/pkg-node/chord_progression_ast_parser.d.ts
 # Rewrite definition of return value of run function in pkg-node/chord_progression_ast_parser.d.ts to "Ast"
 	sed -i.bak 's/any/Ast/g' pkg/pkg-node/chord_progression_ast_parser.d.ts && rm pkg/pkg-node/chord_progression_ast_parser.d.ts.bak
+# copy resources/error_code_message_map.ts under pkg/pkg-node, overwriting
+	cp resources/error_code_message_map.ts pkg/pkg-node
+# compile it to .js and d.ts
+	cd pkg/pkg-node && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
+# add error_code_message_map.js and d.ts to pkg/pkg-node/package.json files
+	sed -i.bak 's/"files": \[/"files": \[\
+		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
 
 # generate and modify d.ts
 # FIXME: this is not good way. do it by wasm_bindgen directly
@@ -83,6 +107,13 @@ generate-ts-declare-file-for-pkg-bundler:
 	cat generatedTypes.ts >> pkg/pkg-bundler/chord_progression_ast_parser.d.ts
 # Rewrite definition of return value of run function in pkg-bundler/chord_progression_ast_parser.d.ts to "Ast"
 	sed -i.bak 's/any/Ast/g' pkg/pkg-bundler/chord_progression_ast_parser.d.ts && rm pkg/pkg-bundler/chord_progression_ast_parser.d.ts.bak
+# copy resources/error_code_message_map.ts under pkg/pkg-bundler, overwriting
+	cp resources/error_code_message_map.ts pkg/pkg-bundler
+# compile it to .js and d.ts
+	cd pkg/pkg-bundler && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
+# add error_code_message_map.j and d.tss to pkg/pkg-bundler/package.json files
+	sed -i.bak 's/"files": \[/"files": \[\
+		"error_code_message_map.js", "error_code_message_map.ts","error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
 
 generate-ts-types:
 	typeshare ./src \
@@ -130,11 +161,11 @@ test-e2e:
 	make run-web-e2e
 
 run-web-e2e:
-# copy pkg-web to e2e-test/web/src, by overrite
-	rm -rf ./e2e-test/web/src && cp -r ./pkg/pkg-web ./e2e-test/web/generated-src
+# copy pkg-web to e2e-test/web/generated-src, by overrite
+	rm -rf ./e2e-test/web/generated-src && cp -r ./pkg/pkg-web ./e2e-test/web/generated-src
 # copy e2e-test/web/originl.index.html to e2e-test/web/src/index.html
 	cp ./e2e-test/web/original.index.html ./e2e-test/web/generated-src/index.html
-# NOTE: 一旦やらない cd e2e-test/web/generated-src && npx http-server .
+# NOTE: 一旦やらないが、 cd e2e-test/web/generated-src && npx http-server .　でテストしたい
 	echo "TODO: test"
 
 ################################################################

@@ -1,5 +1,9 @@
 import "./main.css";
-import { run } from "../../../pkg/pkg-bundler/chord_progression_ast_parser";
+import { parseChordProgressionString } from "../../../pkg/pkg-bundler/chord_progression_ast_parser";
+import {
+  ErrorCode,
+  getErrorMessage,
+} from "../../../pkg/pkg-bundler/error_code_message_map";
 import sampleChords from "./sample-chord-progression.txt?raw";
 
 function debounce(callback: Function, wait: number) {
@@ -24,14 +28,32 @@ function main() {
   const applyValue = (value: string) => {
     try {
       const start = performance.now();
-      const ast = run(value);
+      const ast = parseChordProgressionString(value);
       const end = performance.now();
       elms.time.innerHTML = `${((end - start) * 0.001).toFixed(5)}sec`;
       elms.result.innerHTML = JSON.stringify(ast, null, 2);
       console.info(ast);
     } catch (e: unknown) {
-      elms.result.innerHTML = String(e);
-      console.error(e);
+      console.log(e);
+      if (typeof e === "string") {
+        const parsedError = JSON.parse(e);
+        if (typeof parsedError === "string") {
+          elms.result.innerHTML = String(parsedError);
+          return;
+        }
+
+        if (
+          typeof parsedError == "object" &&
+          parsedError !== null &&
+          "code" in parsedError
+        ) {
+          const errorMessage = getErrorMessage({
+            errorCode: parsedError.code as ErrorCode,
+            lang: "ja",
+          });
+          elms.result.innerHTML = errorMessage ?? "Unknown error";
+        }
+      }
     }
   };
 
