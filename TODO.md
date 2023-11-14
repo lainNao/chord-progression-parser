@@ -2,8 +2,13 @@
 
 ## 必須
 
+- TODO catch_unwindとか使って、panicしても{code, additionalInfo}を返すようにする
+- ASTパーサーではなくない？最終成果物がASTになるパーサーでは？「chord-progression-parser」の方が正しいのでは説
+- doc配下を静的ページとしてデプロイしたい
+- CI、OSSなら無料みたいなやつあるはず。色々探してみたい
+  - これとか <https://zenn.dev/binnmti/articles/7e3690ebe80951>
 - `実装`
-  - line!をErrorInfoにあてがうようにしたい（フィールド追加）
+  - line!をErrorInfoにあてがうようにしたい（フィールド追加） <https://qiita.com/elipmoc101/items/f76a47385b2669ec6db3>
     - できればline, column, fileのように細かくできればより嬉しい
   - `CHORD_SHOULD_NOT_BE_EMPTY`、これいらないのでは？空にすることは可能なはず。エラーメッセージ自体がおかしいだけか？
   - `RuntimeError: unreachable`が嫌なので、どうにかしたいな。

@@ -150,3 +150,14 @@ type ExtractKeys<T> = T extends T ? keyof T : never;
 export type ErrorCode = ExtractKeys<
   (typeof ERROR_CODE_MESSAGE_MAP)[keyof typeof ERROR_CODE_MESSAGE_MAP]
 >;
+
+export function getErrorMessage({
+  errorCode,
+  lang,
+}: {
+  errorCode: ErrorCode;
+  lang: "en" | "ja";
+}): string | undefined {
+  const [genreName, _] = errorCode.split("-") as [ShortErrorGenre, string];
+  return (ERROR_CODE_MESSAGE_MAP[genreName] as any)?.[errorCode]?.[lang];
+}
