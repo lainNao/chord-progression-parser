@@ -7,10 +7,14 @@
   // words - list of words to be always considered correct
   "words": [
     "bindgen",
+    "CIMK",
+    "CIMV",
     "clippy",
     "peekable",
     "rustfmt",
     "rustup",
+    "SMIK",
+    "SMIV",
     "typeshare"
   ],
   // flagWords - list of words to be always considered incorrect
