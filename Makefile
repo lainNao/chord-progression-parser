@@ -1,4 +1,5 @@
 check-not-broken:
+	make generate-error-code-rs
 	make lint-check
 	make build-check
 	make format-check
@@ -8,8 +9,11 @@ check-not-broken:
 	make test-rust
 	make test-e2e
 # TODO: pkg配下のがts的にエラー起きてないかどうかも見る。それもe2e落ちてると考える
+# TODO: ts等のツールも型チェック
 
-############### common
+################################################################
+################################################################ common 
+################################################################
 
 # run
 run:
@@ -28,8 +32,7 @@ clean:
 release:
 	cargo build --release
 
-# build wasm for web 
-# use for browser javascript without any bundler?
+# build wasm for web (use for browser javascript without any bundler?)
 build-wasm-web:
 	wasm-pack build \
 		--release \
@@ -37,8 +40,7 @@ build-wasm-web:
 		--out-dir ./pkg/pkg-web \
 		--target web
 
-# build wasm for node
-# use for server javascript without any bundler?
+# build wasm for node (use for server javascript without any bundler?)
 build-wasm-node:
 	wasm-pack build \
 		--release \
@@ -47,8 +49,7 @@ build-wasm-node:
 		--target nodejs
 	make generate-ts-declare-file-for-pkg-node
 
-# build wasm for bundler
-# use for server/client javascript with bundler?
+# build wasm for bundler (use for server/client javascript with bundler?)
 build-wasm-bundler:
 	wasm-pack build \
 		--release \
@@ -56,6 +57,14 @@ build-wasm-bundler:
 		--out-dir ./pkg/pkg-bundler \
 		--target bundler
 	make generate-ts-declare-file-for-pkg-bundler
+
+################################################################
+################################################################ generator 
+################################################################
+
+# generate src/error_code.rs
+generate-error-code-rs:
+	bun resources/error_code_message_map.util.ts
 
 # generate and modify d.ts
 # FIXME: this is not good way. do it by wasm_bindgen directly
@@ -80,7 +89,9 @@ generate-ts-types:
 		--lang=typescript \
 		--output-file=generatedTypes.ts
 
-############### fixer
+################################################################
+################################################################ fixer 
+################################################################
 
 # format
 fmt:
@@ -90,7 +101,9 @@ fmt:
 fix:
 	cargo fix
 
-############### tester
+################################################################
+################################################################ tester 
+################################################################
 
 # lint check
 lint-check:
@@ -124,7 +137,9 @@ run-web-e2e:
 # NOTE: 一旦やらない cd e2e-test/web/generated-src && npx http-server .
 	echo "TODO: test"
 
-############### util
+################################################################
+################################################################ util 
+################################################################
 
 # doc by comments
 doc:

@@ -1,4 +1,4 @@
-use crate::errors;
+use crate::error_code::{ErrorCode, ErrorInfo};
 
 pub mod types;
 pub mod util;
@@ -7,7 +7,7 @@ use types::token::Token;
 use types::value_token::ValueToken;
 use util::is_token_char;
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
+pub fn tokenize(input: &str) -> Result<Vec<Token>, ErrorInfo> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
 
@@ -25,18 +25,28 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
             ' ' | '　' | '\t' => {}
             '\n' | '\r' => match tokens.last() {
                 Some(Token::SectionMetaInfoKey(_)) => {
-                    return Err(
-                        errors::SECTION_META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK.to_string()
-                    );
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Smik2,
+                        additional_info: None,
+                    });
                 }
                 Some(Token::MetaInfoKey(_)) => {
-                    return Err(errors::META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK.to_string());
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Cimk1,
+                        additional_info: None,
+                    });
                 }
                 Some(Token::MetaInfoValue(_)) => {
-                    return Err(errors::META_INFO_VALUE_SHOULD_NOT_CONTAINS_LINE_BREAK.to_string());
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Cimv1,
+                        additional_info: None,
+                    });
                 }
                 Some(Token::Comma) => {
-                    return Err(errors::CHORD_BLOCK_SHOULD_NOT_CONTAINS_LINE_BREAK.to_string());
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Chb2,
+                        additional_info: None,
+                    });
                 }
                 _ => tokens.push(Token::LineBreak),
             },
@@ -64,11 +74,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                             }
                             Some(Token::MetaInfoKey(_)) => Ok(Some(ValueToken::MetaInfoValue)),
                             _ => {
-                                return Err([
-                                    errors::INVALID_TOKEN_TYPE.to_string(),
-                                    token_before_equal.unwrap().to_string(),
-                                ]
-                                .join(": "));
+                                return Err(ErrorInfo {
+                                    code: ErrorCode::Tkn1,
+                                    additional_info: Some(token_before_equal.unwrap().to_string()),
+                                });
                             }
                         }
                     }
@@ -110,7 +119,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                         } else if is_extension {
                             Ok(Some(ValueToken::Extension))
                         } else {
-                            Err(errors::INVALID_TOKEN_TYPE.to_string())
+                            Err(ErrorInfo {
+                                code: ErrorCode::Tkn1,
+                                additional_info: None,
+                            })
                         }
                     }
                 };
@@ -146,17 +158,19 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                     Some(ValueToken::Chord) => {
                         // If the chord is invalid (contains some number or o), an error occurs.
                         if token.chars().any(|c| c.is_numeric() || c == 'o') {
-                            return Err([errors::INVALID_CHORD.to_string(), token].join(": "));
+                            return Err(ErrorInfo {
+                                code: ErrorCode::Cho1,
+                                additional_info: Some(token),
+                            });
                         }
                         tokens.push(Token::Chord(token))
                     }
                     Some(ValueToken::Denominator) => tokens.push(Token::Denominator(token)),
                     None => {
-                        return Err([
-                            errors::INVALID_TOKEN_TYPE.to_string(),
-                            token_type.unwrap().to_string(),
-                        ]
-                        .join(": "));
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Tkn1,
+                            additional_info: Some(token_type.unwrap().to_string()),
+                        });
                     }
                 }
             }
@@ -499,10 +513,7 @@ mod tests {
 
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(
-                lex_result.unwrap_err(),
-                errors::SECTION_META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK
-            );
+            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Smik2);
         }
 
         #[test]
@@ -515,10 +526,7 @@ mod tests {
 
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(
-                lex_result.unwrap_err(),
-                errors::META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK
-            );
+            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Cimk1);
         }
 
         #[test]
@@ -530,10 +538,7 @@ mod tests {
 
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(
-                lex_result.unwrap_err(),
-                errors::META_INFO_VALUE_SHOULD_NOT_CONTAINS_LINE_BREAK
-            );
+            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Cimv1);
         }
 
         #[test]
@@ -545,10 +550,7 @@ mod tests {
 
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(
-                lex_result.unwrap_err(),
-                errors::CHORD_BLOCK_SHOULD_NOT_CONTAINS_LINE_BREAK
-            );
+            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Chb2,);
         }
     }
 }

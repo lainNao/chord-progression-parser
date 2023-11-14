@@ -1,4 +1,15 @@
 {
+  "name": "chord-progression-ast-parser",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
   "engines": {
     "node": "please use bun",
     "yarn": "please use bun",

@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::errors;
+use crate::error_code::{ErrorCode, ErrorInfo};
 use typeshare::typeshare;
 
 use super::{accidental::Accidental, base::Base, chord_type::ChordType, extension::Extension};
@@ -25,7 +25,7 @@ fn try_remove_prefix(input: &str, prefix: &str) -> String {
 }
 
 impl ChordDetailed {
-    pub fn from_str(s: &str) -> Result<Self, String> {
+    pub fn from_str(s: &str) -> Result<Self, ErrorInfo> {
         let base = match s.chars().next() {
             Some('A') => Base::A,
             Some('B') => Base::B,
@@ -34,7 +34,12 @@ impl ChordDetailed {
             Some('E') => Base::E,
             Some('F') => Base::F,
             Some('G') => Base::G,
-            _ => return Err("Invalid base.".to_string()),
+            _ => {
+                return Err(ErrorInfo {
+                    code: ErrorCode::Bs1,
+                    additional_info: None,
+                })
+            }
         };
 
         let mut idx = 1; // Start after the base note
@@ -88,11 +93,10 @@ impl ChordDetailed {
         if !extensions_str_with_parenthesis.starts_with('(')
             || !extensions_str_with_parenthesis.ends_with(')')
         {
-            return Err([
-                errors::EXTENSION_STRING_MUST_BE_SURROUNDED_BY_PARENTHESIS,
-                &extensions_str_with_parenthesis.to_string(),
-            ]
-            .join(": "));
+            return Err(ErrorInfo {
+                code: ErrorCode::Ext3,
+                additional_info: Some(extensions_str_with_parenthesis.to_string()),
+            });
         }
 
         // strip surrounded parenthesis
@@ -124,7 +128,10 @@ impl ChordDetailed {
                     parsed_extensions.push(Extension::from_str(extension_str_result).unwrap());
                 }
                 None => {
-                    return Err([errors::INVALID_EXTENSION, extension_str].join(": "));
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Ext1,
+                        additional_info: Some(extension_str.to_string()),
+                    })
                 }
             }
         }

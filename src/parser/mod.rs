@@ -2,7 +2,7 @@ mod types;
 
 use std::str::FromStr;
 
-use crate::errors;
+use crate::error_code::{ErrorCode, ErrorInfo};
 use crate::tokenizer::types::token::Token;
 
 pub use types::ast::Ast;
@@ -16,7 +16,7 @@ use types::section_meta::SectionMeta;
 
 use self::types::extension::Extension;
 
-pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
+pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
     let mut sections: Vec<Section> = vec![Section {
         meta_infos: Vec::new(),
         chord_blocks: Vec::new(),
@@ -43,8 +43,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 let section_meta_info_key = match tokens.next() {
                     Some(Token::SectionMetaInfoKey(value)) => value,
                     _ => {
-                        return Err(errors::SECTION_META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK
-                            .to_string())
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Smik2,
+                            additional_info: None,
+                        })
                     }
                 };
 
@@ -52,8 +54,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 match tokens.next() {
                     Some(Token::Equal) => {}
                     _ => {
-                        return Err(errors::SECTION_META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK
-                            .to_string())
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Smik2,
+                            additional_info: None,
+                        })
                     }
                 }
 
@@ -61,7 +65,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 let section_meta_info_value = match tokens.next() {
                     Some(Token::SectionMetaInfoValue(value)) => value,
                     _ => {
-                        return Err(errors::SECTION_META_INFO_VALUE_SHOULD_NOT_BE_EMPTY.to_string())
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Smiv1,
+                            additional_info: None,
+                        })
                     }
                 };
 
@@ -79,10 +86,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     "repeat" => {
                         // if section_meta_info_value cannot parse as u32, return error
                         if section_meta_info_value.parse::<u32>().is_err() {
-                            return Err(
-                                errors::SECTION_META_INFO_VALUE_OF_REPEAT_NEEDS_TO_BE_NUMBER
-                                    .to_string(),
-                            );
+                            return Err(ErrorInfo {
+                                code: ErrorCode::Smiv3,
+                                additional_info: None,
+                            });
                         }
 
                         sections
@@ -94,20 +101,20 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                             });
                     }
                     _ => {
-                        return Err([
-                            errors::SECTION_META_INFO_KEY_IS_INVALID.to_string(),
-                            section_meta_info_key.to_string(),
-                        ]
-                        .join(": "));
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Smik1,
+                            additional_info: Some(section_meta_info_key.to_string()),
+                        });
                     }
                 }
 
                 match tokens.peek() {
                     Some(Token::LineBreak) => {}
                     _ => {
-                        return Err(
-                            errors::SECTION_META_INFO_VALUE_NEEDS_LINE_BREAK_AFTER.to_string()
-                        );
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Smiv2,
+                            additional_info: None,
+                        });
                     }
                 }
             }
@@ -118,21 +125,34 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 // if next token is not Token::MetaInfoKey, return error
                 let meta_info_key = match tokens.next() {
                     Some(Token::MetaInfoKey(value)) => value,
-                    _ => return Err(errors::META_INFO_KEY_SHOULD_NOT_BE_EMPTY.to_string()),
+                    _ => {
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Cimk2,
+                            additional_info: None,
+                        })
+                    }
                 };
 
                 // if next token is not Token::Equal, return error
                 match tokens.next() {
                     Some(Token::Equal) => {}
                     _ => {
-                        return Err(errors::META_INFO_KEY_SHOULD_NOT_CONTAINS_LINE_BREAK.to_string())
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Cimk1,
+                            additional_info: None,
+                        })
                     }
                 }
 
                 // if next token is not Token::MetaInfoValue, return error
                 let meta_info_value = match tokens.next() {
                     Some(Token::MetaInfoValue(value)) => value,
-                    _ => return Err(errors::META_INFO_VALUE_SHOULD_NOT_BE_EMPTY.to_string()),
+                    _ => {
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Cimv2,
+                            additional_info: None,
+                        })
+                    }
                 };
 
                 // add meta info to last chord block
@@ -140,14 +160,22 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     "key" => {
                         let key_name = match meta_info_value.parse() {
                             Ok(key) => key,
-                            Err(_) => return Err(errors::META_INFO_VALUE_IS_INVALID.to_string()),
+                            Err(_) => {
+                                return Err(ErrorInfo {
+                                    code: ErrorCode::Cimv4,
+                                    additional_info: None,
+                                })
+                            }
                         };
 
                         // add ChordInfoMeta to temporary variable
                         tmp_chord_info_meta_infos.push(ChordInfoMeta::Key { value: key_name });
                     }
                     _ => {
-                        return Err(errors::META_INFO_KEY_IS_INVALID.to_string());
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Cimk3,
+                            additional_info: None,
+                        });
                     }
                 }
 
@@ -155,9 +183,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 match tokens.next() {
                     Some(Token::MetaInfoEnd) => {}
                     _ => {
-                        return Err(
-                            errors::META_INFO_VALUE_NEEDS_CLOSE_PARENTHESIS_AFTER.to_string()
-                        )
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Cimv3,
+                            additional_info: None,
+                        })
                     }
                 }
             }
@@ -167,10 +196,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     // if chord_blocks is empty, make new chord_block
                     if sections.last_mut().unwrap().chord_blocks.is_empty() {
                         if chord_string == "%" {
-                            return Err(
-                                errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK
-                                    .to_string(),
-                            );
+                            return Err(ErrorInfo {
+                                code: ErrorCode::Chb1,
+                                additional_info: None,
+                            });
                         }
                         sections.last_mut().unwrap().chord_blocks.push(Vec::new());
                     }
@@ -187,7 +216,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                                 "?" => ChordExpression::Unidentified,
                                 "%" => ChordExpression::Same,
                                 _ => {
-                                    return Err(errors::CHORD_IS_INVALID.to_string());
+                                    return Err(ErrorInfo {
+                                        code: ErrorCode::Cho1,
+                                        additional_info: None,
+                                    });
                                 }
                             },
                             denominator: None,
@@ -228,12 +260,16 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     // reset tmp_chord_info_meta_infos
                     tmp_chord_info_meta_infos = Vec::new();
                 } else {
-                    return Err([
-                        errors::CHORD_IS_INVALID.to_string(),
-                        chord_detailed_result.err().unwrap(),
-                        chord_string.to_string(),
-                    ]
-                    .join(": "));
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Cho1,
+                        additional_info: Some(
+                            [
+                                chord_detailed_result.err().unwrap().code.to_string(),
+                                chord_string.to_string(),
+                            ]
+                            .join(": "),
+                        ),
+                    });
                 }
             }
             Token::LineBreak => {
@@ -282,7 +318,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                                     parsed_extensions.push(Extension::from_str(ext_str).unwrap());
                                 }
                                 _ => {
-                                    return Err(errors::INVALID_EXTENSION.to_string());
+                                    return Err(ErrorInfo {
+                                        code: ErrorCode::Ext1,
+                                        additional_info: Some(t.to_string()),
+                                    });
                                 }
                             }
                         }
@@ -318,7 +357,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
             }
             Token::Denominator(denominator) => {
                 if sections.last_mut().unwrap().chord_blocks.last().is_none() {
-                    return Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string());
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Cho3,
+                        additional_info: None,
+                    });
                 }
 
                 // if denominator is already set, DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD
@@ -333,7 +375,10 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                     .denominator
                     .is_some()
                 {
-                    return Err(errors::DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD.to_string());
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Den1,
+                        additional_info: None,
+                    });
                 }
 
                 sections
@@ -378,14 +423,20 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, String> {
                 match tokens.peek() {
                     Some(Token::Extension(_)) => { /* Nothing */ }
                     _ => {
-                        return Err(errors::EXTENSION_MUST_NOT_BE_EMPTY.to_string());
+                        return Err(ErrorInfo {
+                            code: ErrorCode::Ext2,
+                            additional_info: None,
+                        });
                     }
                 }
             }
             Token::ExtensionEnd => { /* Nothing */ }
             _ => {
                 // invalid token
-                return Err([errors::INVALID_TOKEN_TYPE.to_string(), token.to_string()].join(": "));
+                return Err(ErrorInfo {
+                    code: ErrorCode::Tkn1,
+                    additional_info: Some(token.to_string()),
+                });
             }
         }
     }
@@ -624,9 +675,10 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err(
-                    errors::SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK.to_string()
-                )
+                Err(ErrorInfo {
+                    code: ErrorCode::Chb1,
+                    additional_info: None,
+                })
             );
         }
 
@@ -716,7 +768,11 @@ mod tests {
 
     #[cfg(test)]
     mod failure {
-        use crate::{errors, parser::parse, tokenizer::types::token::Token};
+        use crate::{
+            error_code::{ErrorCode, ErrorInfo},
+            parser::parse,
+            tokenizer::types::token::Token,
+        };
 
         #[test]
         fn section_meta_info_value_of_repeat_needs_to_be_number() {
@@ -730,7 +786,10 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err(errors::SECTION_META_INFO_VALUE_OF_REPEAT_NEEDS_TO_BE_NUMBER.to_string())
+                Err(ErrorInfo {
+                    code: ErrorCode::Smiv3,
+                    additional_info: None
+                })
             );
         }
 
@@ -746,11 +805,10 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err([
-                    errors::SECTION_META_INFO_KEY_IS_INVALID.to_string(),
-                    ": asdf".to_string()
-                ]
-                .concat())
+                Err(ErrorInfo {
+                    code: ErrorCode::Smik1,
+                    additional_info: Some("asdf".to_string()),
+                })
             );
         }
 
@@ -767,7 +825,10 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err(errors::SECTION_META_INFO_VALUE_NEEDS_LINE_BREAK_AFTER.to_string())
+                Err(ErrorInfo {
+                    code: ErrorCode::Smiv2,
+                    additional_info: None,
+                })
             );
         }
 
@@ -782,7 +843,10 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err(errors::CHORD_SHOULD_NOT_BE_EMPTY.to_string())
+                Err(ErrorInfo {
+                    code: ErrorCode::Cho3,
+                    additional_info: None,
+                })
             );
         }
 
@@ -800,7 +864,10 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err(errors::DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD.to_string())
+                Err(ErrorInfo {
+                    code: ErrorCode::Den1,
+                    additional_info: None,
+                })
             );
         }
 
@@ -816,7 +883,10 @@ mod tests {
 
             assert_eq!(
                 parse(&input),
-                Err(errors::EXTENSION_MUST_NOT_BE_EMPTY.to_string())
+                Err(ErrorInfo {
+                    code: ErrorCode::Ext2,
+                    additional_info: None,
+                })
             );
         }
     }
