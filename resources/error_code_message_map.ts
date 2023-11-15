@@ -10,6 +10,7 @@ const ErrorGenreSummary = {
   EXT: "Extension",
   TKN: "Token",
   BS: "Base",
+  BL: "BreakLine",
   OTHER: "Other",
 } as const;
 
@@ -132,6 +133,10 @@ export const ERROR_CODE_MESSAGE_MAP = {
       en: "Extension must be surrounded by parenthesis",
       ja: "テンションは括弧で囲む必要があります",
     },
+    "EXT-4": {
+      en: "No multiple extension parenthesis",
+      ja: "テンションの括弧は1つまでです",
+    },
   },
   TKN: {
     "TKN-1": {
@@ -143,6 +148,12 @@ export const ERROR_CODE_MESSAGE_MAP = {
     "BS-1": {
       en: "Invalid base",
       ja: "不正なベース音です",
+    },
+  },
+  BL: {
+    "BL-1": {
+      en: "Continuous blank lines are not allowed",
+      ja: "連続した空行は許可されていません",
     },
   },
   OTHER: {

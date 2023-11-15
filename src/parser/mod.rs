@@ -114,7 +114,25 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
                 }
 
                 match tokens.peek() {
-                    Some(Token::LineBreak) => {}
+                    Some(Token::LineBreak) => {
+                        tokens.next();
+                        match tokens.peek() {
+                            Some(Token::LineBreak) => {
+                                tokens.next();
+                                match tokens.peek() {
+                                    Some(Token::LineBreak) => {
+                                        // if line break appears three times in a row, return error
+                                        return Err(ErrorInfo {
+                                            code: ErrorCode::Bl1,
+                                            additional_info: None,
+                                        });
+                                    }
+                                    _ => { /* Nothing */ }
+                                }
+                            }
+                            _ => { /* Nothing */ }
+                        }
+                    }
                     _ => {
                         return Err(ErrorInfo {
                             code: ErrorCode::Smiv2,
@@ -281,16 +299,26 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
                 // if Token::LineBreak appears two or more times in a row, create new section
                 match tokens.peek() {
                     Some(Token::LineBreak) => {
-                        // if last section is empty, remove it
-                        if sections.last().unwrap().chord_blocks.is_empty() {
-                            sections.pop();
-                        }
+                        tokens.next();
 
-                        // create new section
-                        sections.push(Section {
-                            meta_infos: Vec::new(),
-                            chord_blocks: Vec::new(),
-                        });
+                        // if next is ChordBlockSeparator, create new section
+                        match tokens.peek() {
+                            Some(Token::ChordBlockSeparator) => {
+                                // create new section
+                                sections.push(Section {
+                                    meta_infos: Vec::new(),
+                                    chord_blocks: Vec::new(),
+                                });
+                            }
+                            Some(Token::LineBreak) => {
+                                // error
+                                return Err(ErrorInfo {
+                                    code: ErrorCode::Bl1,
+                                    additional_info: None,
+                                });
+                            }
+                            _ => { /* Nothing */ }
+                        }
                     }
                     _ => { /* Nothing */ }
                 }
@@ -322,12 +350,26 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
                         for t in tokens.by_ref() {
                             match t {
                                 Token::ExtensionEnd => {
+                                    // if next token is ExtensionStart, error
+                                    if let Some(Token::ExtensionStart) = tokens.peek() {
+                                        return Err(ErrorInfo {
+                                            code: ErrorCode::Ext4,
+                                            additional_info: None,
+                                        });
+                                    }
+
                                     break;
                                 }
                                 Token::Comma => {
                                     continue;
                                 }
                                 Token::Extension(ext_str) => {
+                                    if Extension::from_str(ext_str).is_err() {
+                                        return Err(ErrorInfo {
+                                            code: ErrorCode::Ext1,
+                                            additional_info: Some(ext_str.to_string()),
+                                        });
+                                    }
                                     parsed_extensions.push(Extension::from_str(ext_str).unwrap());
                                 }
                                 _ => {
@@ -406,6 +448,8 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
             }
             Token::Comma => { /* Nothing */ }
             Token::ChordBlockSeparator => {
+                // if last and second last token is BreakLine, create new Section
+
                 match tokens.peek() {
                     Some(Token::ChordBlockSeparator) => {
                         // if chord_blocks is empty, make new chord_block
@@ -468,28 +512,43 @@ mod tests {
 
     #[cfg(test)]
     mod success {
-        use std::f32::consts::E;
-
         use super::*;
 
         #[test]
-        fn invalid_extension() {
+        fn multiple_break_line_under_section_meta_line() {
             let input = [
+                Token::SectionMetaInfoStart,
+                Token::SectionMetaInfoKey("section".to_string()),
+                Token::Equal,
+                Token::SectionMetaInfoValue("A".to_string()),
+                Token::LineBreak,
+                Token::LineBreak,
                 Token::ChordBlockSeparator,
                 Token::Chord("C".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("1".to_string()),
-                Token::ExtensionEnd,
                 Token::ChordBlockSeparator,
             ];
             let result = parse(&input);
 
             assert_eq!(
-                result,
-                Err(ErrorInfo {
-                    code: ErrorCode::Ext1,
-                    additional_info: Some("1".to_string()),
-                })
+                result.unwrap(),
+                [Section {
+                    meta_infos: vec![SectionMeta::Section {
+                        value: "A".to_string(),
+                    },],
+                    chord_blocks: vec![vec![ChordInfo {
+                        chord_expression: ChordExpression::Chord(Chord {
+                            plain: "C".to_string(),
+                            detailed: ChordDetailed {
+                                base: Base::C,
+                                accidental: None,
+                                chord_type: ChordType::Major,
+                                extensions: Vec::new(),
+                            },
+                        }),
+                        denominator: None,
+                        meta_infos: Vec::new(),
+                    },],],
+                },]
             );
         }
 
@@ -816,6 +875,98 @@ mod tests {
             parser::parse,
             tokenizer::types::token::Token,
         };
+
+        #[test]
+        fn invalid_extension_after_comma() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("9".to_string()),
+                Token::Comma,
+                Token::Extension("1".to_string()),
+                Token::ExtensionEnd,
+                Token::ChordBlockSeparator,
+            ];
+            let result = parse(&input);
+
+            assert_eq!(
+                result,
+                Err(ErrorInfo {
+                    code: ErrorCode::Ext1,
+                    additional_info: Some("1".to_string()),
+                })
+            );
+        }
+
+        #[test]
+        fn no_multiple_extension_parenthesis() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("9".to_string()),
+                Token::ExtensionEnd,
+                Token::ExtensionStart,
+                Token::Extension("13".to_string()),
+                Token::ExtensionEnd,
+                Token::ChordBlockSeparator,
+            ];
+            let result = parse(&input);
+
+            assert_eq!(
+                result,
+                Err(ErrorInfo {
+                    code: ErrorCode::Ext4,
+                    additional_info: None,
+                })
+            );
+        }
+
+        #[test]
+        fn empty_line_continue() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ChordBlockSeparator,
+                Token::LineBreak,
+                Token::LineBreak,
+                Token::LineBreak,
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ChordBlockSeparator,
+            ];
+            let result = parse(&input);
+
+            assert_eq!(
+                result,
+                Err(ErrorInfo {
+                    code: ErrorCode::Bl1,
+                    additional_info: None,
+                })
+            );
+        }
+
+        #[test]
+        fn invalid_extension() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("1".to_string()),
+                Token::ExtensionEnd,
+                Token::ChordBlockSeparator,
+            ];
+            let result = parse(&input);
+
+            assert_eq!(
+                result,
+                Err(ErrorInfo {
+                    code: ErrorCode::Ext1,
+                    additional_info: Some("1".to_string()),
+                })
+            );
+        }
 
         #[test]
         fn section_meta_info_value_of_repeat_needs_to_be_number() {

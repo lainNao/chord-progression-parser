@@ -157,6 +157,13 @@ pub enum ErrorCode {
      */
     Ext3,
 
+    #[strum(serialize = "EXT-4")]
+    /**
+     * en: No multiple extension parenthesis
+     * ja: テンションの括弧は1つまでです
+     */
+    Ext4,
+
     #[strum(serialize = "TKN-1")]
     /**
      * en: Invalid token type
@@ -170,6 +177,13 @@ pub enum ErrorCode {
      * ja: 不正なベース音です
      */
     Bs1,
+
+    #[strum(serialize = "BL-1")]
+    /**
+     * en: Continuous blank lines are not allowed
+     * ja: 連続した空行は許可されていません
+     */
+    Bl1,
 
     #[strum(serialize = "OTHER-1")]
     /**
