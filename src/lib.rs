@@ -2,11 +2,15 @@ mod error_code;
 mod parser;
 mod tokenizer;
 
+use std::panic;
+
 use error_code::ErrorInfo;
 use parser::{parse, Ast};
 use serde_json::json;
 use tokenizer::tokenize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+
+use crate::error_code::ErrorCode;
 
 /// @param {string} input - The chord progression string to parse.
 /// @param {string} lang - The language to use for error messages.
@@ -14,7 +18,19 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 /// @throws {{code: string, additionalInfo: string} | string} - The error information.
 #[wasm_bindgen(js_name = "parseChordProgressionString", skip_jsdoc)]
 pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue> {
-    let result = parse_chord_progression_string(input);
+    let result_of_result = panic::catch_unwind(|| parse_chord_progression_string(input));
+
+    if result_of_result.is_err() {
+        return Err(JsValue::from_str(
+            &json!({
+                "code": ErrorCode::Other1.to_string(),
+                "additionalInfo": "",
+            })
+            .to_string(),
+        ));
+    }
+
+    let result = result_of_result.unwrap();
 
     if result.is_err() {
         let error_info = result.err().unwrap();

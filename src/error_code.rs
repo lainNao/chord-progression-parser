@@ -170,6 +170,13 @@ pub enum ErrorCode {
      * ja: 不正なベース音です
      */
     Bs1,
+
+    #[strum(serialize = "OTHER-1")]
+    /**
+     * en: Unknown error
+     * ja: 不明なエラーです
+     */
+    Other1,
 }
 
 #[derive(Debug, PartialEq)]
