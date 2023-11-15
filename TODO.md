@@ -3,7 +3,6 @@
 ## 必須
 
 - TODO catch_unwindとか使って、panicしても{code, additionalInfo}を返すようにする
-- ASTパーサーではなくない？最終成果物がASTになるパーサーでは？「chord-progression-parser」の方が正しいのでは説
 - doc配下を静的ページとしてデプロイしたい
 - CI、OSSなら無料みたいなやつあるはず。色々探してみたい
   - これとか <https://zenn.dev/binnmti/articles/7e3690ebe80951>
@@ -17,9 +16,8 @@
         - で、json等でエラーコードとエラーメッセージの対応表を作る。
           - こうしたほうが、エラーメッセージもリファクタしやすい。本当は「こういう時は、こういうことはNGです」というのが真実だけど「◯◯は空ではいけません」みたいな嘘になってしまっている。
           - エラーコードが「ER-◯◯」の形式なのは検索ビリティ高いのでよいのかなとは思う
-  - 後何も入力してない時に1つのセクションができちゃってるな。これは意図通りでない
   - wasm-bindgen-testの盛り込み <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
-  - makefileにあるTODOの対応
+  - makefile等にあるTODOの対応
   - カバレッジ見て足りてないところをリファクタしていく
 - `リリース設計`（ここらへんは別リポジトリでテストしてから持ってくる形で…色々試すの汚いので）
   - 1コマンド打てば、以下が終わるようにしたい。それをgithub actionsでもローカルでもどちらでも行えるように

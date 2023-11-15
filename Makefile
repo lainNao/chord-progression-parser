@@ -156,8 +156,8 @@ test-rust:
 # TODO: clientの方も作る
 test-e2e:
 	make build-wasm-bundler
-	cd e2e-test/node && bun test
-	cd e2e-test/bundler && bun test
+	cd e2e-test/node && bun i --frozen-lockfile && bun test
+	cd e2e-test/bundler && bun i --frozen-lockfile && bun test
 	make run-web-e2e
 
 run-web-e2e:
@@ -185,6 +185,7 @@ see-coverage:
 	cargo llvm-cov --show-missing-lines --open
 
 # needs: "chmod +x _tools/find_files_include_multibyte_characters.sh"
+# TODO: DEVELOMENT.mdに必要かどうか見てみる。CIにはどうかな？
 find-multibyte:
 	./_tools/find_files_include_multibyte_characters.sh
 

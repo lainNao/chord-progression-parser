@@ -17,6 +17,11 @@ use types::section_meta::SectionMeta;
 use self::types::extension::Extension;
 
 pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
+    // if no tokens, return empty Ast
+    if tokens.is_empty() {
+        return Ok(Vec::new());
+    }
+
     let mut sections: Vec<Section> = vec![Section {
         meta_infos: Vec::new(),
         chord_blocks: Vec::new(),
@@ -458,11 +463,18 @@ mod tests {
         use super::*;
 
         #[test]
+        fn empty() {
+            let input = [];
+            let result = parse(&input);
+
+            assert_eq!(result.unwrap(), []);
+        }
+
+        #[test]
         fn no_chord() {
             let input = [Token::ChordBlockSeparator, Token::ChordBlockSeparator];
             let result = parse(&input);
 
-            println!("1111 {:?}", result);
             assert_eq!(
                 result.unwrap(),
                 [Section {
