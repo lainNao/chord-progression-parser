@@ -3,6 +3,7 @@
 ## 必須
 
 - TODO catch_unwindとか使って、panicしても{code, additionalInfo}を返すようにする
+  - それに値するUNEXPECTED_ERROR的なエラーコードを作りたい
 - doc配下を静的ページとしてデプロイしたい
 - CI、OSSなら無料みたいなやつあるはず。色々探してみたい
   - これとか <https://zenn.dev/binnmti/articles/7e3690ebe80951>
