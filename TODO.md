@@ -1,19 +1,7 @@
 # TODO
 
-## 必須1
-
-- 以下のように改行複数あるとバグる＆かっこを複数つけられちゃう
-
-    ```txt
-    @section=""
-
-    |A(o)(o)|
-    ```
-
 ## 必須
 
-- TODO catch_unwindとか使って、panicしても{code, additionalInfo}を返すようにする
-  - それに値するUNEXPECTED_ERROR的なエラーコードを作りたい
 - doc配下を静的ページとしてデプロイしたい
 - CI、OSSなら無料みたいなやつあるはず。色々探してみたい
   - これとか <https://zenn.dev/binnmti/articles/7e3690ebe80951>
@@ -36,10 +24,12 @@
       - ASTをパースする静的ページ一つを作ってそれを使えるようにする
     - 2. jsDeliver
       - browser版のビルドのみ
+      - 参考 <https://zenn.dev/nino_cast/articles/98a0a87f58026f#cdn%E5%8B%95%E4%BD%9C%E3%81%AE%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%83%81%E3%82%A7%E3%83%83%E3%82%AF>
     - 2. npm
       - browser、node、bundlerいずれも
         - これやるために出力したpkgのpackage.jsonの内容にリネームかけないといけない
       - npmコマンドとかで
+      - 参考 <https://docs.npmjs.com/creating-and-publishing-private-packages> <https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/packaging-and-publishing.html>
     - 3. github
       - ghコマンドで
     - 4. crates.io
@@ -73,6 +63,7 @@
   - dependabotや、そのrust版のようなもの
   - githubにプライベートなセキュリティチェック機能もあったはず
 - `rust知識系`
+  - serde詳しくなる <https://serde.rs/container-attrs.html>
   - PartialEqとかDebugとかのderiveの値は何なのか
   - exhaustive matchできてないところがあるかもなので網羅
   - unwrap()多すぎ問題。panic起こるので適切にハンドリングした方がjs側でエラーメッセージが親切になるにはなる。けどそこは親切にする必要無さそう。だけどエラーメッセージはJS側で制御できるのか…？
