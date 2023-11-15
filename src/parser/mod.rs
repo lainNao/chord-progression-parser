@@ -296,6 +296,14 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
                 }
             }
             Token::Extension(ext_str) => {
+                // if ext_str doesn't in Extension enum, error
+                if Extension::from_str(ext_str).is_err() {
+                    return Err(ErrorInfo {
+                        code: ErrorCode::Ext1,
+                        additional_info: Some(ext_str.to_string()),
+                    });
+                }
+
                 match &sections
                     .last_mut()
                     .unwrap()
@@ -460,7 +468,30 @@ mod tests {
 
     #[cfg(test)]
     mod success {
+        use std::f32::consts::E;
+
         use super::*;
+
+        #[test]
+        fn invalid_extension() {
+            let input = [
+                Token::ChordBlockSeparator,
+                Token::Chord("C".to_string()),
+                Token::ExtensionStart,
+                Token::Extension("1".to_string()),
+                Token::ExtensionEnd,
+                Token::ChordBlockSeparator,
+            ];
+            let result = parse(&input);
+
+            assert_eq!(
+                result,
+                Err(ErrorInfo {
+                    code: ErrorCode::Ext1,
+                    additional_info: Some("1".to_string()),
+                })
+            );
+        }
 
         #[test]
         fn empty() {

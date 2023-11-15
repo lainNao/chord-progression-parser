@@ -1,3 +1,4 @@
+// to use this file: make generate-error-code-rs
 const ErrorGenreSummary = {
   SMIK: "SectionMetaInfo key",
   SMIV: "SectionMetaInfo value",
@@ -9,6 +10,7 @@ const ErrorGenreSummary = {
   EXT: "Extension",
   TKN: "Token",
   BS: "Base",
+  OTHER: "Other",
 } as const;
 
 export type ShortErrorGenre = keyof typeof ErrorGenreSummary;
@@ -141,6 +143,12 @@ export const ERROR_CODE_MESSAGE_MAP = {
     "BS-1": {
       en: "Invalid base",
       ja: "不正なベース音です",
+    },
+  },
+  OTHER: {
+    "OTHER-1": {
+      en: "Unknown error",
+      ja: "不明なエラーです",
     },
   },
 } as const satisfies UniqueErrorCodeAndMessageMap;

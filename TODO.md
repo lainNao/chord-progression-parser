@@ -1,5 +1,15 @@
 # TODO
 
+## 必須1
+
+- 以下のように改行複数あるとバグる＆かっこを複数つけられちゃう
+
+    ```txt
+    @section=""
+
+    |A(o)(o)|
+    ```
+
 ## 必須
 
 - TODO catch_unwindとか使って、panicしても{code, additionalInfo}を返すようにする
