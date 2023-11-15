@@ -10,6 +10,7 @@
     "CIMK",
     "CIMV",
     "clippy",
+    "jsdoc",
     "peekable",
     "rustfmt",
     "rustup",

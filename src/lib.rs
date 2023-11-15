@@ -13,7 +13,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 /// @returns {Ast} - The parsed chord progression.
 /// @throws {{code: string, additionalInfo: string} | string} - The error information.
 #[wasm_bindgen(js_name = "parseChordProgressionString", skip_jsdoc)]
-pub fn run(input: &str) -> Result<JsValue, JsValue> {
+pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue> {
     let result = parse_chord_progression_string(input);
 
     if result.is_err() {

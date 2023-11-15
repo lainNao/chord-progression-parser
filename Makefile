@@ -165,7 +165,7 @@ run-web-e2e:
 	rm -rf ./e2e-test/web/generated-src && cp -r ./pkg/pkg-web ./e2e-test/web/generated-src
 # copy e2e-test/web/originl.index.html to e2e-test/web/src/index.html
 	cp ./e2e-test/web/original.index.html ./e2e-test/web/generated-src/index.html
-# NOTE: 一旦やらないが、 cd e2e-test/web/generated-src && npx http-server .　でテストしたい
+# NOTE: 一旦やらないが、 cd e2e-test/web/generated-src && npx http-server .　でテストしたい。というかplaywrightか何かでe2eテストをする
 	echo "TODO: test"
 
 ################################################################
