@@ -3,6 +3,19 @@
 ## 必須
 
 - `実装`
+  - こんな感じになってるから途中のを省きたいな
+
+    ```json
+      "metaInfos": [
+          {
+            "type": "section",
+            "value": {
+              "value": "Verse"
+            }
+          }
+        ]
+    ```
+
   - makefile等にあるTODOの対応
   - カバレッジ見て足りてないところをリファクタしていく
   - できればline!をErrorInfoにあてがうようにしたい（フィールド追加） <https://qiita.com/elipmoc101/items/f76a47385b2669ec6db3>
