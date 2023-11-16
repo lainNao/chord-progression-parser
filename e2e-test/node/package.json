@@ -3,12 +3,14 @@
   "module": "src/index.ts",
   "type": "module",
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "tsc": "^2.0.4"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "test": "bun test"
+    "test": "bun test && bun test:type",
+    "test:type": "tsc --noEmit"
   }
 }

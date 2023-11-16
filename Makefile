@@ -9,8 +9,7 @@ check-not-broken:
 	make test-rust
 	make test-e2e
 	make test-resources
-# TODO: pkg配下のがts的にエラー起きてないかどうかも見る。それもe2e落ちてると考える
-# TODO: ts等のツールも型チェック
+# TODO: playwrightとかでのe2eテスト
 
 ################################################################
 ################################################################ common 
@@ -69,7 +68,7 @@ generate-error-code-rs:
 	bun resources/error_code_message_map.util.ts
 
 # generate and modify d.ts
-# FIXME: this is not good way. do it by wasm_bindgen directly
+# HACK: this is not good way. do it by wasm_bindgen directly
 generate-ts-declare-file-for-pkg-web:
 	make generate-ts-types
 # append contents of generatedTypes.ts to pkg-web/chord_progression_ast_parser.d.ts
@@ -85,7 +84,7 @@ generate-ts-declare-file-for-pkg-web:
 		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
 
 # generate and modify d.ts
-# FIXME: this is not good way. do it by wasm_bindgen directly
+# HACK: this is not good way. do it by wasm_bindgen directly
 generate-ts-declare-file-for-pkg-node:
 	make generate-ts-types
 # append contents of generatedTypes.ts to pkg-node/chord_progression_ast_parser.d.ts
@@ -101,7 +100,7 @@ generate-ts-declare-file-for-pkg-node:
 		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
 
 # generate and modify d.ts
-# FIXME: this is not good way. do it by wasm_bindgen directly
+# HACK: this is not good way. do it by wasm_bindgen directly
 generate-ts-declare-file-for-pkg-bundler:
 	make generate-ts-types
 # append contents of generatedTypes.ts to pkg-bundler/chord_progression_ast_parser.d.ts
@@ -157,8 +156,8 @@ test-rust:
 # TODO: clientの方も作る
 test-e2e:
 	make build-wasm-bundler
-	cd e2e-test/node && bun i --frozen-lockfile && bun test
-	cd e2e-test/bundler && bun i --frozen-lockfile && bun test
+	cd e2e-test/node && bun i --frozen-lockfile && bun run test
+	cd e2e-test/bundler && bun i --frozen-lockfile && bun run test
 	make run-web-e2e
 
 run-web-e2e:
