@@ -8,6 +8,7 @@ check-not-broken:
 	make build-wasm-bundler
 	make test-rust
 	make test-e2e
+	make test-resources
 # TODO: pkg配下のがts的にエラー起きてないかどうかも見る。それもe2e落ちてると考える
 # TODO: ts等のツールも型チェック
 
@@ -167,6 +168,9 @@ run-web-e2e:
 	cp ./e2e-test/web/original.index.html ./e2e-test/web/generated-src/index.html
 # NOTE: 一旦やらないが、 cd e2e-test/web/generated-src && npx http-server .　でテストしたい。というかplaywrightか何かでe2eテストをする
 	echo "TODO: test"
+
+test-resources:
+	cd resources && bun test
 
 ################################################################
 ################################################################ util 
