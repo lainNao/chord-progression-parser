@@ -4,13 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 3034",
     "build": "tsc && vite build",
+    "test": "bun run test:type && bun run build && bun run test:e2e",
+    "test:type": "tsc --noEmit",
+    "test:e2e": "bun playwright test",
+    "test:e2e:debug": "bun playwright test --headed --debug",
+    "--------------------------=": "",
     "preview": "vite preview",
-    "test": "bun run test:type && bun run build",
-    "test:type": "tsc --noEmit"
+    "install:playwright": "bun playwright install"
   },
   "devDependencies": {
+    "@playwright/test": "^1.39.0",
+    "bun-types": "latest",
+    "playwright": "^1.39.0",
     "tsc": "^2.0.4",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
