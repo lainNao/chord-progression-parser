@@ -153,7 +153,6 @@ test-rust:
 	cargo test --lib
 
 # e2e test
-# TODO: clientの方も作る
 test-e2e:
 	make build-wasm-bundler
 	cd e2e-test/node && bun i --frozen-lockfile && bun run test
@@ -165,8 +164,8 @@ run-web-e2e:
 	rm -rf ./e2e-test/web/generated-src && cp -r ./pkg/pkg-web ./e2e-test/web/generated-src
 # copy e2e-test/web/originl.index.html to e2e-test/web/src/index.html
 	cp ./e2e-test/web/original.index.html ./e2e-test/web/generated-src/index.html
-# NOTE: 一旦やらないが、 cd e2e-test/web/generated-src && npx http-server .　でテストしたい。というかplaywrightか何かでe2eテストをする
-	echo "TODO: test"
+# test
+	cd ./e2e-test/web && bun i --frozen-lockfile && bun run test
 
 test-resources:
 	cd resources && bun test

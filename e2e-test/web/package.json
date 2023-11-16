@@ -1,0 +1,20 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "vite.config.js",
+  "scripts": {
+    "dev": "bun run http-server ./generated-src -p 3498",
+    "test": "bun run test:e2e",
+    "test:e2e": "bun playwright test",
+    "__install:playwright": "npx playwright install"
+  },
+  "keywords": [],
+  "author": "",
+  "devDependencies": {
+    "@playwright/test": "^1.39.0",
+    "http-server": "^14.1.1",
+    "playwright": "^1.39.0",
+    "typescript": "^5.0.2"
+  }
+}

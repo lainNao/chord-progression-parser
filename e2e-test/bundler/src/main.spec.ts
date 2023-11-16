@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { testData } from "./main.spec.fixtures";
 
-test("has title", async ({ page }) => {
+test("success simple usage", async ({ page }) => {
   await page.goto("http://localhost:3034/");
 
   // input

@@ -7,13 +7,13 @@
   </head>
   <body>
     <h1>load wasm directly example</h1>
-    <h2>parse |C#m(9,13),D|E(o)|</h2>
+    <h2>parse |C|</h2>
     <pre id="result"></pre>
     <script type="module">
       import * as mod from "./chord_progression_ast_parser.js";
       (async () => {
         await mod.default();
-        const result = mod.parseChordProgressionString("|C#m(9,13),D|E(o)|");
+        const result = mod.parseChordProgressionString("|C|");
         console.log(result);
         document.querySelector("#result").innerHTML = JSON.stringify(
           result,

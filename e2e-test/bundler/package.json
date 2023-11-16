@@ -10,9 +10,8 @@
     "test:type": "tsc --noEmit",
     "test:e2e": "bun playwright test",
     "test:e2e:debug": "bun playwright test --headed --debug",
-    "--------------------------=": "",
-    "preview": "vite preview",
-    "install:playwright": "bun playwright install"
+    "__preview": "vite preview",
+    "__install:playwright": "npx playwright install"
   },
   "devDependencies": {
     "@playwright/test": "^1.39.0",
