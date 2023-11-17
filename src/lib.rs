@@ -125,9 +125,7 @@ mod tests {
                                 "metaInfos": [
                                     {
                                         "type": "key",
-                                        "value": {
-                                            "value":"C_M"
-                                        }
+                                        "value": "C_M",
                                     }
                                 ]
                             },

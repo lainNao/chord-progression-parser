@@ -11,9 +11,7 @@ export type SectionMeta =
 }};
 
 export type ChordInfoMeta = 
-	| { type: "key", value: {
-	value: Key;
-}};
+	| { type: "key", value: Key };
 
 export type ChordExpression = 
 	| { type: "chord", value: Chord }

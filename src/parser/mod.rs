@@ -192,7 +192,7 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
                         };
 
                         // add ChordInfoMeta to temporary variable
-                        tmp_chord_info_meta_infos.push(ChordInfoMeta::Key { value: key_name });
+                        tmp_chord_info_meta_infos.push(ChordInfoMeta::Key(key_name));
                     }
                     _ => {
                         return Err(ErrorInfo {
