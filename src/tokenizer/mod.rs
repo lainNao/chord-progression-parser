@@ -505,6 +505,14 @@ mod tests {
         use super::*;
 
         #[test]
+        fn invalid_chord_o() {
+            let input = "|o|";
+            let lex_result = tokenize(input);
+            assert!(lex_result.is_err());
+            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Cho1);
+        }
+
+        #[test]
         fn section_meta_info_key_should_not_contains_line_break() {
             let input = "
             @sect

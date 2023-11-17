@@ -865,6 +865,20 @@ mod tests {
         };
 
         #[test]
+        // if line break appears three times in a row, return error
+        fn no_line_breaks_three_times_in_a_row() {
+            let input = [Token::LineBreak, Token::LineBreak, Token::LineBreak];
+
+            assert_eq!(
+                parse(&input),
+                Err(ErrorInfo {
+                    code: ErrorCode::Bl1,
+                    additional_info: None,
+                })
+            );
+        }
+
+        #[test]
         fn invalid_extension_after_comma() {
             let input = [
                 Token::ChordBlockSeparator,

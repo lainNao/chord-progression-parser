@@ -186,7 +186,6 @@ see-coverage:
 	cargo llvm-cov --show-missing-lines --open
 
 # needs: "chmod +x _tools/find_files_include_multibyte_characters.sh"
-# TODO: 上記コマンドをDEVELOMENT.mdに必要かどうか見てみる。CIにはどうかな？
 find-multibyte:
 	./_tools/find_files_include_multibyte_characters.sh
 
