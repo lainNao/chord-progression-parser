@@ -6,6 +6,6 @@ use typeshare::typeshare;
 #[serde(tag = "type", content = "value", rename_all = "camelCase")]
 pub enum SectionMeta {
     Section(String),
-    Repeat { value: u32 },
+    Repeat(u32),
     // or more
 }

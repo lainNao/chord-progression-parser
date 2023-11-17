@@ -97,9 +97,9 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
                             .last_mut()
                             .unwrap()
                             .meta_infos
-                            .push(SectionMeta::Repeat {
-                                value: section_meta_info_value.parse::<u32>().unwrap(),
-                            });
+                            .push(SectionMeta::Repeat(
+                                section_meta_info_value.parse::<u32>().unwrap(),
+                            ));
                     }
                     _ => {
                         return Err(ErrorInfo {
@@ -592,7 +592,7 @@ mod tests {
                 Ok([Section {
                     meta_infos: vec![
                         SectionMeta::Section("A".to_string()),
-                        SectionMeta::Repeat { value: 3 },
+                        SectionMeta::Repeat(3),
                     ],
                     chord_blocks: Vec::new(),
                 }]
