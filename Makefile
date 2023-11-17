@@ -7,9 +7,8 @@ check-not-broken:
 	make build-wasm-node
 	make build-wasm-bundler
 	make test-rust
-	make test-e2e
 	make test-resources
-# TODO: playwrightとかでのe2eテスト
+	make test-e2e
 
 ################################################################
 ################################################################ common 
@@ -187,7 +186,7 @@ see-coverage:
 	cargo llvm-cov --show-missing-lines --open
 
 # needs: "chmod +x _tools/find_files_include_multibyte_characters.sh"
-# TODO: DEVELOMENT.mdに必要かどうか見てみる。CIにはどうかな？
+# TODO: 上記コマンドをDEVELOMENT.mdに必要かどうか見てみる。CIにはどうかな？
 find-multibyte:
 	./_tools/find_files_include_multibyte_characters.sh
 
