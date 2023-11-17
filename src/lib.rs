@@ -152,9 +152,7 @@ mod tests {
                     "metaInfos": [
                         {
                             "type": "section",
-                            "value": {
-                                "value":"Intro"
-                            }
+                            "value": "Intro"
                         }
                     ]
                 }

@@ -79,15 +79,11 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, ErrorInfo> {
 
                 // add section meta info to last section
                 match section_meta_info_key.as_str() {
-                    "section" => {
-                        sections
-                            .last_mut()
-                            .unwrap()
-                            .meta_infos
-                            .push(SectionMeta::Section {
-                                value: section_meta_info_value.clone(),
-                            });
-                    }
+                    "section" => sections
+                        .last_mut()
+                        .unwrap()
+                        .meta_infos
+                        .push(SectionMeta::Section(section_meta_info_value.clone())),
                     "repeat" => {
                         // if section_meta_info_value cannot parse as u32, return error
                         if section_meta_info_value.parse::<u32>().is_err() {
@@ -532,9 +528,7 @@ mod tests {
             assert_eq!(
                 result.unwrap(),
                 [Section {
-                    meta_infos: vec![SectionMeta::Section {
-                        value: "A".to_string(),
-                    },],
+                    meta_infos: vec![SectionMeta::Section("A".to_string())],
                     chord_blocks: vec![vec![ChordInfo {
                         chord_expression: ChordExpression::Chord(Chord {
                             plain: "C".to_string(),
@@ -597,9 +591,7 @@ mod tests {
                 parse(&input),
                 Ok([Section {
                     meta_infos: vec![
-                        SectionMeta::Section {
-                            value: "A".to_string(),
-                        },
+                        SectionMeta::Section("A".to_string()),
                         SectionMeta::Repeat { value: 3 },
                     ],
                     chord_blocks: Vec::new(),
@@ -628,12 +620,8 @@ mod tests {
                 parse(&input),
                 Ok([Section {
                     meta_infos: vec![
-                        SectionMeta::Section {
-                            value: "A".to_string(),
-                        },
-                        SectionMeta::Section {
-                            value: "AA".to_string(),
-                        }
+                        SectionMeta::Section("A".to_string()),
+                        SectionMeta::Section("AA".to_string())
                     ],
                     chord_blocks: Vec::new(),
                 }]

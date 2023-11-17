@@ -3,9 +3,7 @@
 */
 
 export type SectionMeta = 
-	| { type: "section", value: {
-	value: string;
-}}
+	| { type: "section", value: string }
 	| { type: "repeat", value: {
 	value: number;
 }};
