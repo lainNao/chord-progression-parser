@@ -5,7 +5,7 @@ use typeshare::typeshare;
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(tag = "type", content = "value", rename_all = "camelCase")]
 pub enum SectionMeta {
-    Section { value: String },
+    Section(String),
     Repeat { value: u32 },
     // or more
 }
