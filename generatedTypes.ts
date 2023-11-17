@@ -4,9 +4,7 @@
 
 export type SectionMeta = 
 	| { type: "section", value: string }
-	| { type: "repeat", value: {
-	value: number;
-}};
+	| { type: "repeat", value: number };
 
 export type ChordInfoMeta = 
 	| { type: "key", value: Key };
