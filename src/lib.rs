@@ -29,6 +29,7 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
                 "position": {
                     "lineNumber": 0,
                     "columnNumber": 0,
+                    "length": 0,
                 },
             })
             .to_string(),
@@ -46,6 +47,7 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
                 "position": {
                     "lineNumber": error_info.position.line_number,
                     "columnNumber": error_info.position.column_number,
+                    "length": error_info.position.length,
                 },
             })
             .to_string(),
@@ -74,7 +76,7 @@ pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithP
 mod tests {
     #[cfg(test)]
     mod success {
-        use crate::{parser::parse, tokenizer::tokenize};
+        use crate::parse_chord_progression_string;
         use serde_json::json;
 
         #[test]
@@ -99,7 +101,7 @@ mod tests {
             |[key=C]C(M9)|CM(9)|
             ";
 
-            let result = parse(&tokenize(input).unwrap());
+            let result = parse_chord_progression_string(input);
             assert!(result.is_ok());
         }
 
@@ -110,7 +112,7 @@ mod tests {
             |[key=C]C(M9)|CM(9)|
             ";
 
-            let result_json = json!(parse(&tokenize(input).unwrap()).unwrap());
+            let result_json = json!(parse_chord_progression_string(input).unwrap());
             let expected = json!([
                 {
                     "chordBlocks": [
@@ -168,6 +170,27 @@ mod tests {
             ]);
 
             assert_eq!(result_json, expected);
+        }
+    }
+
+    mod failure {
+        use crate::{parse_chord_progression_string, util::position::Position};
+
+        #[test]
+        fn tension_position_when_error() {
+            let input: &str = "|C(9,111)|";
+
+            println!("111111 {:?}", parse_chord_progression_string(input));
+            let result = parse_chord_progression_string(input);
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err().position,
+                Position {
+                    line_number: 1,
+                    column_number: 6,
+                    length: 3,
+                },
+            )
         }
     }
 }

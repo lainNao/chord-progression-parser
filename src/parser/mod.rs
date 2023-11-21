@@ -114,6 +114,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                                 position: Position {
                                     line_number: cloned_token_with_position.position.line_number,
                                     column_number: error_section_meta_info_value_column_number,
+                                    length: cloned_token_with_position.position.length,
                                 },
                             });
                         }
@@ -135,6 +136,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                             position: Position {
                                 line_number: token_with_position.position.line_number,
                                 column_number: token_with_position.position.column_number + 1,
+                                length: section_meta_info_key.len(),
                             },
                         });
                     }
@@ -401,12 +403,17 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
             Token::Extension(ext_str) => {
                 // if ext_str doesn't in Extension enum, error
                 if Extension::from_str(&ext_str).is_err() {
+                    let cloned_token_with_position = token_with_position.clone();
                     return Err(ErrorInfoWithPosition {
                         error: ErrorInfo {
                             code: ErrorCode::Ext1,
                             additional_info: Some(ext_str.to_string()),
                         },
-                        position: token_with_position.position.clone(),
+                        position: Position {
+                            line_number: cloned_token_with_position.position.line_number,
+                            column_number: cloned_token_with_position.position.column_number,
+                            length: ext_str.len(),
+                        },
                     });
                 }
 
@@ -447,24 +454,52 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                                     continue;
                                 }
                                 Token::Extension(ext_str) => {
-                                    if Extension::from_str(&ext_str).is_err() {
+                                    if Extension::from_str(ext_str).is_err() {
+                                        let cloned_token_with_position =
+                                            token_with_position.clone();
+                                        println!("5555 {:?}", cloned_token_with_position);
+
+                                        let extensions_before_current_length = parsed_extensions
+                                            .iter()
+                                            .map(|e| e.to_string() + ",")
+                                            .collect::<Vec<String>>()
+                                            .join("");
+
                                         return Err(ErrorInfoWithPosition {
                                             error: ErrorInfo {
                                                 code: ErrorCode::Ext1,
                                                 additional_info: Some(ext_str.to_string()),
                                             },
-                                            position: token_with_position.position.clone(),
+                                            position: Position {
+                                                line_number: cloned_token_with_position
+                                                    .position
+                                                    .line_number,
+                                                column_number: cloned_token_with_position
+                                                    .position
+                                                    .column_number
+                                                    + extensions_before_current_length.len(),
+                                                length: ext_str.len(),
+                                            },
                                         });
                                     }
-                                    parsed_extensions.push(Extension::from_str(&ext_str).unwrap());
+                                    parsed_extensions.push(Extension::from_str(ext_str).unwrap());
                                 }
                                 _ => {
+                                    let cloned_token_with_position = token_with_position.clone();
                                     return Err(ErrorInfoWithPosition {
                                         error: ErrorInfo {
                                             code: ErrorCode::Ext1,
                                             additional_info: Some(t.token.to_string()),
                                         },
-                                        position: token_with_position.position.clone(),
+                                        position: Position {
+                                            line_number: cloned_token_with_position
+                                                .position
+                                                .line_number,
+                                            column_number: cloned_token_with_position
+                                                .position
+                                                .column_number,
+                                            length: t.token.to_string().len(),
+                                        },
                                     });
                                 }
                             }
@@ -543,7 +578,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
             }
             Token::Comma => { /* Nothing */ }
             Token::ChordBlockSeparator => {
-                if token_with_position_list.peek() == None {
+                if token_with_position_list.peek().is_none() {
                     continue;
                 }
 
@@ -616,9 +651,8 @@ mod tests {
 
     #[cfg(test)]
     mod success {
-        use crate::util::position::Position;
-
         use super::*;
+        use crate::util::position::Position;
 
         #[test]
         fn multiple_break_line_under_section_meta_line() {
@@ -628,6 +662,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -635,6 +670,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 6,
                     },
                 },
                 TokenWithPosition {
@@ -642,6 +678,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -649,6 +686,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 10,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -656,6 +694,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 11,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -663,6 +702,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -670,6 +710,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -677,6 +718,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -684,6 +726,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 3,
+                        length: 1,
                     },
                 },
             ];
@@ -726,6 +769,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -733,6 +777,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 1,
                     },
                 },
             ];
@@ -759,6 +804,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -766,6 +812,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 6,
                     },
                 },
                 TokenWithPosition {
@@ -773,6 +820,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -780,6 +828,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 10,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -787,6 +836,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 11,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -794,6 +844,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -801,6 +852,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 5,
                     },
                 },
                 TokenWithPosition {
@@ -808,6 +860,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -815,6 +868,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 10,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -822,6 +876,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 11,
+                        length: 1,
                     },
                 },
             ];
@@ -842,22 +897,12 @@ mod tests {
         #[test]
         fn multiple_section_meta_info() {
             let input = [
-                // Token::LineBreak,
-                // Token::SectionMetaInfoStart,
-                // Token::SectionMetaInfoKey("section".to_string()),
-                // Token::Equal,
-                // Token::SectionMetaInfoValue("A".to_string()),
-                // Token::LineBreak,
-                // Token::SectionMetaInfoStart,
-                // Token::SectionMetaInfoKey("section".to_string()),
-                // Token::Equal,
-                // Token::SectionMetaInfoValue("AA".to_string()),
-                // Token::LineBreak,
                 TokenWithPosition {
                     token: Token::LineBreak,
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -865,6 +910,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -872,6 +918,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 6,
                     },
                 },
                 TokenWithPosition {
@@ -879,6 +926,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -886,6 +934,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 10,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -893,6 +942,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 11,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -900,6 +950,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -907,6 +958,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 2,
+                        length: 6,
                     },
                 },
                 TokenWithPosition {
@@ -914,6 +966,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -921,6 +974,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 10,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -928,6 +982,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 12,
+                        length: 1,
                     },
                 },
             ];
@@ -948,44 +1003,12 @@ mod tests {
         #[test]
         fn chord_blocks_with_fraction_chord() {
             let input = [
-                // Token::LineBreak,
-                // Token::ChordBlockSeparator,
-                // Token::Chord("C".to_string()),
-                // Token::ChordBlockSeparator,
-                // Token::Chord("G".to_string()),
-                // Token::Slash,
-                // Token::Denominator("Bb".to_string()),
-                // Token::ChordBlockSeparator,
-                // Token::Chord("Am".to_string()),
-                // Token::ChordBlockSeparator,
-                // Token::Chord("Em".to_string()),
-                // Token::Slash,
-                // Token::Denominator("G".to_string()),
-                // Token::ChordBlockSeparator,
-                // Token::LineBreak,
-                // Token::ChordBlockSeparator,
-                // Token::Chord("F#m".to_string()),
-                // Token::ExtensionStart,
-                // Token::Extension("7".to_string()),
-                // Token::Comma,
-                // Token::Extension("b5".to_string()),
-                // Token::ExtensionEnd,
-                // Token::Slash,
-                // Token::Denominator("F#m(7,b5)".to_string()),
-                // Token::ChordBlockSeparator,
-                // Token::Chord("Fbm".to_string()),
-                // Token::ExtensionStart,
-                // Token::Extension("13".to_string()),
-                // Token::ExtensionEnd,
-                // Token::Slash,
-                // Token::Denominator("G7".to_string()),
-                // Token::ChordBlockSeparator,
-                // Token::LineBreak,
                 TokenWithPosition {
                     token: Token::LineBreak,
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -993,6 +1016,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1000,6 +1024,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1007,6 +1032,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1014,6 +1040,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 4,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1021,6 +1048,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 5,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1028,6 +1056,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 6,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -1035,6 +1064,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 7,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1042,6 +1072,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 8,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -1049,6 +1080,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1056,6 +1088,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 10,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -1063,6 +1096,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 11,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1070,6 +1104,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 12,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1077,6 +1112,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 13,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1084,6 +1120,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 14,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1091,6 +1128,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1098,6 +1136,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 2,
+                        length: 3,
                     },
                 },
                 TokenWithPosition {
@@ -1105,6 +1144,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 5,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1112,6 +1152,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 6,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1119,6 +1160,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 7,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1126,6 +1168,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 8,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -1133,6 +1176,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1140,6 +1184,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 10,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1147,6 +1192,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 11,
+                        length: 8,
                     },
                 },
                 TokenWithPosition {
@@ -1154,6 +1200,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 12,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1161,6 +1208,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 13,
+                        length: 3,
                     },
                 },
                 TokenWithPosition {
@@ -1168,6 +1216,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 16,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1175,6 +1224,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 17,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -1182,6 +1232,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 18,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1189,6 +1240,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 19,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1196,6 +1248,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 20,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -1203,6 +1256,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 21,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1210,6 +1264,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 22,
+                        length: 1,
                     },
                 },
             ];
@@ -1310,6 +1365,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1317,6 +1373,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1324,6 +1381,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 1,
                     },
                 },
             ];
@@ -1338,6 +1396,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 })
             );
@@ -1351,6 +1410,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1358,6 +1418,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1365,6 +1426,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1372,6 +1434,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1379,6 +1442,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 2,
+                        length: 1,
                     },
                 },
             ];
@@ -1412,6 +1476,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1419,6 +1484,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1426,6 +1492,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1433,6 +1500,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1440,6 +1508,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1447,6 +1516,7 @@ mod tests {
                     position: Position {
                         line_number: 4,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1454,6 +1524,7 @@ mod tests {
                     position: Position {
                         line_number: 5,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1461,6 +1532,7 @@ mod tests {
                     position: Position {
                         line_number: 5,
                         column_number: 2,
+                        length: 1,
                     },
                 },
             ];
@@ -1523,6 +1595,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1530,6 +1603,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1537,6 +1611,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 1,
+                        length: 1,
                     },
                 },
             ];
@@ -1551,6 +1626,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 })
             );
@@ -1564,6 +1640,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1571,6 +1648,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1578,6 +1656,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1585,6 +1664,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1592,6 +1672,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 4,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1599,6 +1680,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 5,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1606,6 +1688,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 6,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1613,6 +1696,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 7,
+                        length: 1,
                     },
                 },
             ];
@@ -1627,7 +1711,8 @@ mod tests {
                     },
                     position: Position {
                         line_number: 2,
-                        column_number: 3, // TODO: 5にしたいが、まだextensionは全部まとめて扱ってしまっているので一旦3
+                        column_number: 5,
+                        length: 1,
                     },
                 })
             );
@@ -1641,6 +1726,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1648,6 +1734,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1655,6 +1742,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1662,6 +1750,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 4,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1669,6 +1758,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 5,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1676,6 +1766,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 6,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1683,6 +1774,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 7,
+                        length: 2,
                     },
                 },
                 TokenWithPosition {
@@ -1690,6 +1782,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1697,6 +1790,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 10,
+                        length: 1,
                     },
                 },
             ];
@@ -1712,6 +1806,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 4, // TODO: 6にしたいが、まだextensionは全部まとめて扱ってしまっているので一旦6
+                        length: 1,
                     },
                 })
             );
@@ -1725,6 +1820,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1732,6 +1828,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1739,6 +1836,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1746,6 +1844,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1753,6 +1852,7 @@ mod tests {
                     position: Position {
                         line_number: 3,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1760,6 +1860,7 @@ mod tests {
                     position: Position {
                         line_number: 4,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1767,6 +1868,7 @@ mod tests {
                     position: Position {
                         line_number: 5,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1774,6 +1876,7 @@ mod tests {
                     position: Position {
                         line_number: 5,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1781,6 +1884,7 @@ mod tests {
                     position: Position {
                         line_number: 5,
                         column_number: 3,
+                        length: 1,
                     },
                 },
             ];
@@ -1796,6 +1900,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 3,
+                        length: 1,
                     },
                 })
             );
@@ -1809,6 +1914,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1816,6 +1922,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1823,6 +1930,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1830,6 +1938,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1837,6 +1946,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 4,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1844,6 +1954,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 5,
+                        length: 1,
                     },
                 },
             ];
@@ -1859,6 +1970,7 @@ mod tests {
                     position: Position {
                         line_number: 2,
                         column_number: 3,
+                        length: 1,
                     },
                 })
             );
@@ -1872,6 +1984,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1879,6 +1992,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 6,
                     },
                 },
                 TokenWithPosition {
@@ -1886,6 +2000,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 8,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1893,6 +2008,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1900,6 +2016,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 10,
+                        length: 1,
                     },
                 },
             ];
@@ -1914,6 +2031,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 9,
+                        length: 1,
                     },
                 })
             );
@@ -1927,6 +2045,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1934,6 +2053,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 4,
                     },
                 },
                 TokenWithPosition {
@@ -1941,6 +2061,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 6,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1948,6 +2069,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 7,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1955,6 +2077,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 8,
+                        length: 1,
                     },
                 },
             ];
@@ -1969,6 +2092,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 4,
                     },
                 })
             );
@@ -1982,6 +2106,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -1989,6 +2114,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 7,
                     },
                 },
                 TokenWithPosition {
@@ -1996,6 +2122,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 9,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2003,6 +2130,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 10,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2010,6 +2138,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 11,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2017,6 +2146,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 12,
+                        length: 1,
                     },
                 },
             ];
@@ -2031,6 +2161,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 11,
+                        length: 1,
                     },
                 })
             );
@@ -2044,6 +2175,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2051,6 +2183,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2058,6 +2191,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2065,6 +2199,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 4,
+                        length: 1,
                     },
                 },
             ];
@@ -2079,6 +2214,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 3,
+                        length: 1,
                     },
                 })
             );
@@ -2092,6 +2228,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2099,6 +2236,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2106,6 +2244,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2113,6 +2252,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 4,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2120,6 +2260,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 5,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2127,6 +2268,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 6,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2134,6 +2276,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 7,
+                        length: 1,
                     },
                 },
             ];
@@ -2148,6 +2291,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 6,
+                        length: 1,
                     },
                 })
             );
@@ -2161,6 +2305,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 1,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2168,6 +2313,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 2,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2175,6 +2321,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 3,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2182,6 +2329,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 4,
+                        length: 1,
                     },
                 },
                 TokenWithPosition {
@@ -2189,6 +2337,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 5,
+                        length: 1,
                     },
                 },
             ];
@@ -2203,6 +2352,7 @@ mod tests {
                     position: Position {
                         line_number: 1,
                         column_number: 3,
+                        length: 1,
                     },
                 })
             );

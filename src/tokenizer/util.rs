@@ -1,5 +1,3 @@
-use crate::util::position::Position;
-
 pub fn is_token_char(ch: char) -> bool {
     matches!(
         ch,
@@ -7,17 +5,23 @@ pub fn is_token_char(ch: char) -> bool {
     )
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct LineColumn {
+    pub line_number: usize,
+    pub column_number: usize,
+}
+
 pub fn next_char_with_position<I>(
     iter: &mut std::iter::Peekable<I>,
     line: &mut usize,
     column: &mut usize,
-) -> Option<(char, Position)>
+) -> Option<(char, LineColumn)>
 where
     I: Iterator<Item = char>,
 {
     match iter.next() {
         Some('\n') => {
-            let position = Position {
+            let position = LineColumn {
                 line_number: *line,
                 column_number: *column,
             };
@@ -26,7 +30,7 @@ where
             Some(('\n', position))
         }
         Some(ch) => {
-            let position = Position {
+            let position = LineColumn {
                 line_number: *line,
                 column_number: *column,
             };
