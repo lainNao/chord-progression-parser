@@ -1,3 +1,4 @@
+use crate::error_code::ErrorInfoWithPosition;
 use crate::error_code::{ErrorCode, ErrorInfo};
 
 pub mod types;
@@ -6,82 +7,160 @@ pub mod util;
 use types::token::Token;
 use types::value_token::ValueToken;
 use util::is_token_char;
+use util::next_char_with_position;
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>, ErrorInfo> {
+use self::types::token_with_position::TokenWithPosition;
+
+pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosition> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
 
-    while let Some(ch) = chars.next() {
+    let mut origin_line_number = 1;
+    let mut origin_column_number = 1;
+
+    // while let Some(ch) = chars.next() {
+    while let Some((ch, pos)) = next_char_with_position(
+        &mut chars,
+        &mut origin_line_number,
+        &mut origin_column_number,
+    ) {
         match ch {
-            '@' => tokens.push(Token::SectionMetaInfoStart),
-            '[' => tokens.push(Token::MetaInfoStart),
-            ']' => tokens.push(Token::MetaInfoEnd),
-            '(' => tokens.push(Token::ExtensionStart),
-            ')' => tokens.push(Token::ExtensionEnd),
-            '|' => tokens.push(Token::ChordBlockSeparator),
-            '=' => tokens.push(Token::Equal),
-            ',' => tokens.push(Token::Comma),
-            '/' => tokens.push(Token::Slash),
+            '@' => tokens.push(TokenWithPosition {
+                token: Token::SectionMetaInfoStart,
+                position: pos.clone(),
+            }),
+            '[' => tokens.push(TokenWithPosition {
+                token: Token::MetaInfoStart,
+                position: pos.clone(),
+            }),
+            ']' => tokens.push(TokenWithPosition {
+                token: Token::MetaInfoEnd,
+                position: pos.clone(),
+            }),
+            '(' => tokens.push(TokenWithPosition {
+                token: Token::ExtensionStart,
+                position: pos.clone(),
+            }),
+            ')' => tokens.push(TokenWithPosition {
+                token: Token::ExtensionEnd,
+                position: pos.clone(),
+            }),
+            '|' => tokens.push(TokenWithPosition {
+                token: Token::ChordBlockSeparator,
+                position: pos.clone(),
+            }),
+            '=' => tokens.push(TokenWithPosition {
+                token: Token::Equal,
+                position: pos.clone(),
+            }),
+            ',' => tokens.push(TokenWithPosition {
+                token: Token::Comma,
+                position: pos.clone(),
+            }),
+            '/' => tokens.push(TokenWithPosition {
+                token: Token::Slash,
+                position: pos.clone(),
+            }),
             ' ' | '　' | '\t' => {}
-            '\n' | '\r' => match tokens.last() {
-                Some(Token::SectionMetaInfoKey(_)) => {
-                    return Err(ErrorInfo {
-                        code: ErrorCode::Smik2,
-                        additional_info: None,
+            '\n' | '\r' => {
+                if tokens.is_empty() {
+                    tokens.push(TokenWithPosition {
+                        token: Token::LineBreak,
+                        position: pos.clone(),
                     });
+                    continue;
                 }
-                Some(Token::MetaInfoKey(_)) => {
-                    return Err(ErrorInfo {
-                        code: ErrorCode::Cimk1,
-                        additional_info: None,
-                    });
+
+                match tokens.last().unwrap().token {
+                    Token::SectionMetaInfoKey(_) => {
+                        return Err(ErrorInfoWithPosition {
+                            error: ErrorInfo {
+                                code: ErrorCode::Smik2,
+                                additional_info: None,
+                            },
+                            position: pos.clone(),
+                        });
+                    }
+                    Token::MetaInfoKey(_) => {
+                        return Err(ErrorInfoWithPosition {
+                            error: ErrorInfo {
+                                code: ErrorCode::Cimk1,
+                                additional_info: None,
+                            },
+                            position: pos.clone(),
+                        });
+                    }
+                    Token::MetaInfoValue(_) => {
+                        return Err(ErrorInfoWithPosition {
+                            error: ErrorInfo {
+                                code: ErrorCode::Cimv1,
+                                additional_info: None,
+                            },
+                            position: pos.clone(),
+                        });
+                    }
+                    Token::Comma => {
+                        return Err(ErrorInfoWithPosition {
+                            error: ErrorInfo {
+                                code: ErrorCode::Chb2,
+                                additional_info: None,
+                            },
+                            position: pos.clone(),
+                        });
+                    }
+                    _ => tokens.push(TokenWithPosition {
+                        token: Token::LineBreak,
+                        position: pos.clone(),
+                    }),
                 }
-                Some(Token::MetaInfoValue(_)) => {
-                    return Err(ErrorInfo {
-                        code: ErrorCode::Cimv1,
-                        additional_info: None,
-                    });
-                }
-                Some(Token::Comma) => {
-                    return Err(ErrorInfo {
-                        code: ErrorCode::Chb2,
-                        additional_info: None,
-                    });
-                }
-                _ => tokens.push(Token::LineBreak),
-            },
+            }
             non_functional_char => {
                 let mut token = String::new();
                 token.push(non_functional_char);
 
                 // get token type by using previous token
-                let get_token_type_result = match tokens.last() {
-                    Some(Token::SectionMetaInfoStart) => Ok(Some(ValueToken::SectionMetaInfoKey)),
-                    Some(Token::ExtensionStart) => Ok(Some(ValueToken::Extension)),
-                    Some(Token::MetaInfoStart) => Ok(Some(ValueToken::MetaInfoKey)),
-                    Some(Token::Equal) => {
+                let get_token_type_result = match tokens.last().unwrap().token {
+                    Token::SectionMetaInfoStart => Ok(Some(ValueToken::SectionMetaInfoKey)),
+                    Token::ExtensionStart => Ok(Some(ValueToken::Extension)),
+                    Token::MetaInfoStart => Ok(Some(ValueToken::MetaInfoKey)),
+                    Token::Equal => {
                         // NOTE: In the case of equal, depending on the character before equal,
                         //       it may be a section meta or a code meta, so get it in advance.
-                        let token_before_equal: Option<&Token> = if tokens.len() >= 2 {
+                        let token_before_equal = if tokens.len() >= 2 {
                             tokens.get(tokens.len() - 2)
                         } else {
                             None
                         };
 
-                        match token_before_equal {
-                            Some(Token::SectionMetaInfoKey(_)) => {
+                        if token_before_equal.is_none() {
+                            return Err(ErrorInfoWithPosition {
+                                error: ErrorInfo {
+                                    code: ErrorCode::Tkn1,
+                                    additional_info: None,
+                                },
+                                position: pos.clone(),
+                            });
+                        }
+
+                        match token_before_equal.unwrap().token {
+                            Token::SectionMetaInfoKey(_) => {
                                 Ok(Some(ValueToken::SectionMetaInfoValue))
                             }
-                            Some(Token::MetaInfoKey(_)) => Ok(Some(ValueToken::MetaInfoValue)),
+                            Token::MetaInfoKey(_) => Ok(Some(ValueToken::MetaInfoValue)),
                             _ => {
-                                return Err(ErrorInfo {
-                                    code: ErrorCode::Tkn1,
-                                    additional_info: Some(token_before_equal.unwrap().to_string()),
+                                return Err(ErrorInfoWithPosition {
+                                    error: ErrorInfo {
+                                        code: ErrorCode::Tkn1,
+                                        additional_info: Some(
+                                            token_before_equal.unwrap().token.to_string(),
+                                        ),
+                                    },
+                                    position: pos.clone(),
                                 });
                             }
                         }
                     }
-                    Some(Token::Slash) => Ok(Some(ValueToken::Denominator)),
+                    Token::Slash => Ok(Some(ValueToken::Denominator)),
                     _ => {
                         // If the result of tracing back is "]" or "|", it is a code, and if it is "(", it is an Extension.
                         let mut is_code = false;
@@ -93,7 +172,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, ErrorInfo> {
                         while prev_token_index > 0 {
                             prev_token_index -= 1;
                             let prev_token = tokens.get(prev_token_index).unwrap();
-                            match prev_token {
+                            match prev_token.token {
                                 Token::MetaInfoEnd => {
                                     is_code = true;
                                     break;
@@ -119,9 +198,12 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, ErrorInfo> {
                         } else if is_extension {
                             Ok(Some(ValueToken::Extension))
                         } else {
-                            Err(ErrorInfo {
-                                code: ErrorCode::Tkn1,
-                                additional_info: None,
+                            Err(ErrorInfoWithPosition {
+                                error: ErrorInfo {
+                                    code: ErrorCode::Tkn1,
+                                    additional_info: None,
+                                },
+                                position: pos.clone(),
                             })
                         }
                     }
@@ -141,35 +223,62 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, ErrorInfo> {
                     }
 
                     token.push(next_ch);
-                    chars.next();
+                    next_char_with_position(
+                        &mut chars,
+                        &mut origin_line_number,
+                        &mut origin_column_number,
+                    );
                 }
 
                 // push token
                 match token_type {
-                    Some(ValueToken::SectionMetaInfoKey) => {
-                        tokens.push(Token::SectionMetaInfoKey(token))
-                    }
-                    Some(ValueToken::SectionMetaInfoValue) => {
-                        tokens.push(Token::SectionMetaInfoValue(token))
-                    }
-                    Some(ValueToken::Extension) => tokens.push(Token::Extension(token)),
-                    Some(ValueToken::MetaInfoKey) => tokens.push(Token::MetaInfoKey(token)),
-                    Some(ValueToken::MetaInfoValue) => tokens.push(Token::MetaInfoValue(token)),
+                    Some(ValueToken::SectionMetaInfoKey) => tokens.push(TokenWithPosition {
+                        token: Token::SectionMetaInfoKey(token),
+                        position: pos.clone(),
+                    }),
+                    Some(ValueToken::SectionMetaInfoValue) => tokens.push(TokenWithPosition {
+                        token: Token::SectionMetaInfoValue(token),
+                        position: pos.clone(),
+                    }),
+                    Some(ValueToken::Extension) => tokens.push(TokenWithPosition {
+                        token: Token::Extension(token),
+                        position: pos.clone(),
+                    }),
+                    Some(ValueToken::MetaInfoKey) => tokens.push(TokenWithPosition {
+                        token: Token::MetaInfoKey(token),
+                        position: pos.clone(),
+                    }),
+                    Some(ValueToken::MetaInfoValue) => tokens.push(TokenWithPosition {
+                        token: Token::MetaInfoValue(token),
+                        position: pos.clone(),
+                    }),
                     Some(ValueToken::Chord) => {
                         // If the chord is invalid (contains some number or o), an error occurs.
                         if token.chars().any(|c| c.is_numeric() || c == 'o') {
-                            return Err(ErrorInfo {
-                                code: ErrorCode::Cho1,
-                                additional_info: Some(token),
+                            return Err(ErrorInfoWithPosition {
+                                error: ErrorInfo {
+                                    code: ErrorCode::Cho1,
+                                    additional_info: Some(token),
+                                },
+                                position: pos.clone(),
                             });
                         }
-                        tokens.push(Token::Chord(token))
+                        tokens.push(TokenWithPosition {
+                            token: Token::Chord(token),
+                            position: pos.clone(),
+                        })
                     }
-                    Some(ValueToken::Denominator) => tokens.push(Token::Denominator(token)),
+                    Some(ValueToken::Denominator) => tokens.push(TokenWithPosition {
+                        token: Token::Denominator(token),
+                        position: pos.clone(),
+                    }),
                     None => {
-                        return Err(ErrorInfo {
-                            code: ErrorCode::Tkn1,
-                            additional_info: Some(token_type.unwrap().to_string()),
+                        return Err(ErrorInfoWithPosition {
+                            error: ErrorInfo {
+                                code: ErrorCode::Tkn1,
+                                additional_info: Some(token_type.unwrap().to_string()),
+                            },
+                            position: pos.clone(),
                         });
                     }
                 }
@@ -186,15 +295,35 @@ mod tests {
 
     #[cfg(test)]
     mod success {
+        use crate::util::position::Position;
+
         use super::*;
 
         #[test]
         fn without_any_line_break() {
             let input = "|C|";
             let expected = vec![
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -207,14 +336,62 @@ mod tests {
         fn chord_after_extension_and_comma() {
             let input = "|C(9),C|";
             let expected = vec![
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("9".to_string()),
-                Token::ExtensionEnd,
-                Token::Comma,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("9".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 4,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 5,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 7,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 8,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -224,13 +401,37 @@ mod tests {
         }
 
         #[test]
-        fn section_meta_info() {
+        fn section_meta_info3() {
             let input = "@section=A";
             let expected = vec![
-                Token::SectionMetaInfoStart,
-                Token::SectionMetaInfoKey("section".to_string()),
-                Token::Equal,
-                Token::SectionMetaInfoValue("A".to_string()),
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoKey("section".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoValue("A".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 10,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -242,21 +443,87 @@ mod tests {
         #[test]
         fn multiple_section_meta_info() {
             let input = "
-                @section=A
-                @sample=aaa
-                ";
+@section=A
+@sample=aaa
+";
             let expected = vec![
-                Token::LineBreak,
-                Token::SectionMetaInfoStart,
-                Token::SectionMetaInfoKey("section".to_string()),
-                Token::Equal,
-                Token::SectionMetaInfoValue("A".to_string()),
-                Token::LineBreak,
-                Token::SectionMetaInfoStart,
-                Token::SectionMetaInfoKey("sample".to_string()),
-                Token::Equal,
-                Token::SectionMetaInfoValue("aaa".to_string()),
-                Token::LineBreak,
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoStart,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoKey("section".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoValue("A".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoStart,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoKey("sample".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoValue("aaa".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 12,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -268,21 +535,87 @@ mod tests {
         #[test]
         fn chord_block() {
             let input = "
-                |C|F|Fm|C|
-                ";
+|C|F|Fm|C|
+";
 
             let expected = vec![
-                Token::LineBreak,
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("Fm".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 3,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 4,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 5,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Fm".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 11,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -294,52 +627,298 @@ mod tests {
         #[test]
         fn chord_block_with_fraction_chord() {
             let input = "
-                |C|G/Bb|Am|Em/G|
-                |F#m(7,b5)/F#m(7,b5)|Fbm(13)/G(7)|
-                ";
+|C|G/Bb|Am|Em/G|
+|F#m(7,b5)/F#m(7,b5)|Fbm(13)/G(7)|
+";
 
             let expected = vec![
-                Token::LineBreak,
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("G".to_string()),
-                Token::Slash,
-                Token::Denominator("Bb".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("Am".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("Em".to_string()),
-                Token::Slash,
-                Token::Denominator("G".to_string()),
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
-                Token::ChordBlockSeparator,
-                Token::Chord("F#m".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("7".to_string()),
-                Token::Comma,
-                Token::Extension("b5".to_string()),
-                Token::ExtensionEnd,
-                Token::Slash,
-                Token::Denominator("F#m".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("7".to_string()),
-                Token::Comma,
-                Token::Extension("b5".to_string()),
-                Token::ExtensionEnd,
-                Token::ChordBlockSeparator,
-                Token::Chord("Fbm".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("13".to_string()),
-                Token::ExtensionEnd,
-                Token::Slash,
-                Token::Denominator("G".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("7".to_string()),
-                Token::ExtensionEnd,
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 3,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("G".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 4,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Slash,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 5,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Denominator("Bb".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Am".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Em".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 12,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Slash,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 14,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Denominator("G".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 15,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 16,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 17,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F#m".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 5,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 7,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("b5".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Slash,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Denominator("F#m".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 12,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 15,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 16,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 17,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("b5".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 18,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 20,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 21,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Fbm".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 22,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 25,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("13".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 26,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 28,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Slash,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 29,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Denominator("G".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 30,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 31,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 32,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 33,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 34,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 35,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -350,44 +929,226 @@ mod tests {
 
         #[test]
         fn chord_block_with_multiple_meta_info() {
-            let input = "
-                |[key=C][sample=aaa]C|F|[key=Eb]Fm,[sample=bbb]Bb|C|
-                ";
+            let input = "|[key=C][sample=aaa]C|F|[key=Eb]Fm,[sample=bbb]Bb|C|";
 
             let expected = vec![
-                Token::LineBreak,
-                Token::ChordBlockSeparator,
-                Token::MetaInfoStart,
-                Token::MetaInfoKey("key".to_string()),
-                Token::Equal,
-                Token::MetaInfoValue("C".to_string()),
-                Token::MetaInfoEnd,
-                Token::MetaInfoStart,
-                Token::MetaInfoKey("sample".to_string()),
-                Token::Equal,
-                Token::MetaInfoValue("aaa".to_string()),
-                Token::MetaInfoEnd,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::MetaInfoStart,
-                Token::MetaInfoKey("key".to_string()),
-                Token::Equal,
-                Token::MetaInfoValue("Eb".to_string()),
-                Token::MetaInfoEnd,
-                Token::Chord("Fm".to_string()),
-                Token::Comma,
-                Token::MetaInfoStart,
-                Token::MetaInfoKey("sample".to_string()),
-                Token::Equal,
-                Token::MetaInfoValue("bbb".to_string()),
-                Token::MetaInfoEnd,
-                Token::Chord("Bb".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoKey("key".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoValue("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 7,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoKey("sample".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 16,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoValue("aaa".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 17,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 20,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 21,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 22,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 23,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 24,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 25,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoKey("key".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 26,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 29,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoValue("Eb".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 30,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 32,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Fm".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 33,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 35,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 36,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoKey("sample".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 37,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 43,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoValue("bbb".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 44,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 47,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Bb".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 48,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 50,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 51,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 52,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -399,98 +1160,535 @@ mod tests {
         #[test]
         fn complicated() {
             let input = "
-                @section=A
-                @sample=aaa
-                |C|C(7)|F|Fm(7)|
-                |C|C(7)|F|Fm(7)|
+@section=A
+@sample=aaa
+|C|C(7)|F|Fm(7)|
+|C|C(7)|F|Fm(7)|
 
-                @section=B
-                |[key=F]Gm|Gm|F|F|
-                |Gm|Gm|F|F|
-                ";
+@section=B
+|[key=F]Gm|Gm|F|F|
+|Gm|Gm|F|F|
+";
 
             let expected = vec![
-                Token::LineBreak,
-                // @section=A
-                Token::SectionMetaInfoStart,
-                Token::SectionMetaInfoKey("section".to_string()),
-                Token::Equal,
-                Token::SectionMetaInfoValue("A".to_string()),
-                Token::LineBreak,
-                // @sample=aaa
-                Token::SectionMetaInfoStart,
-                Token::SectionMetaInfoKey("sample".to_string()),
-                Token::Equal,
-                Token::SectionMetaInfoValue("aaa".to_string()),
-                Token::LineBreak,
-                // |C|C7|F|Fm7|
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("7".to_string()),
-                Token::ExtensionEnd,
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("Fm".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("7".to_string()),
-                Token::ExtensionEnd,
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
-                // |C|C7|F|Fm7|
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("C".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("7".to_string()),
-                Token::ExtensionEnd,
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("Fm".to_string()),
-                Token::ExtensionStart,
-                Token::Extension("7".to_string()),
-                Token::ExtensionEnd,
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
-                Token::LineBreak,
-                // @section=B
-                Token::SectionMetaInfoStart,
-                Token::SectionMetaInfoKey("section".to_string()),
-                Token::Equal,
-                Token::SectionMetaInfoValue("B".to_string()),
-                Token::LineBreak,
-                // |[key=F]Gm|Gm|F|F|
-                Token::ChordBlockSeparator,
-                Token::MetaInfoStart,
-                Token::MetaInfoKey("key".to_string()),
-                Token::Equal,
-                Token::MetaInfoValue("F".to_string()),
-                Token::MetaInfoEnd,
-                Token::Chord("Gm".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("Gm".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
-                // |Gm|Gm|F|F|
-                Token::ChordBlockSeparator,
-                Token::Chord("Gm".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("Gm".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::Chord("F".to_string()),
-                Token::ChordBlockSeparator,
-                Token::LineBreak,
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoStart,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoKey("section".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoValue("A".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoStart,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoKey("sample".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoValue("aaa".to_string()),
+                    position: Position {
+                        line_number: 3,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 12,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 4,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 3,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 4,
+                        column_number: 4,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 5,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 4,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 7,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 4,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Fm".to_string()),
+                    position: Position {
+                        line_number: 4,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 13,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 4,
+                        column_number: 14,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 15,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 16,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 4,
+                        column_number: 17,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 5,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 3,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 5,
+                        column_number: 4,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 5,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 5,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 7,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 5,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Fm".to_string()),
+                    position: Position {
+                        line_number: 5,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 13,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 5,
+                        column_number: 14,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 15,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 16,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 5,
+                        column_number: 17,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 6,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoStart,
+                    position: Position {
+                        line_number: 7,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoKey("section".to_string()),
+                    position: Position {
+                        line_number: 7,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 7,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::SectionMetaInfoValue("B".to_string()),
+                    position: Position {
+                        line_number: 7,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 7,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoStart,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoKey("key".to_string()),
+                    position: Position {
+                        line_number: 8,
+                        column_number: 3,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Equal,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 6,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoValue("F".to_string()),
+                    position: Position {
+                        line_number: 8,
+                        column_number: 7,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::MetaInfoEnd,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Gm".to_string()),
+                    position: Position {
+                        line_number: 8,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Gm".to_string()),
+                    position: Position {
+                        line_number: 8,
+                        column_number: 12,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 14,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 8,
+                        column_number: 15,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 16,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 8,
+                        column_number: 17,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 18,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 8,
+                        column_number: 19,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 9,
+                        column_number: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Gm".to_string()),
+                    position: Position {
+                        line_number: 9,
+                        column_number: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 9,
+                        column_number: 4,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Gm".to_string()),
+                    position: Position {
+                        line_number: 9,
+                        column_number: 5,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 9,
+                        column_number: 7,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 9,
+                        column_number: 8,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 9,
+                        column_number: 9,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 9,
+                        column_number: 10,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 9,
+                        column_number: 11,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 9,
+                        column_number: 12,
+                    },
+                },
             ];
 
             let lex_result = tokenize(input);
@@ -509,7 +1707,7 @@ mod tests {
             let input = "|o|";
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Cho1);
+            assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Cho1);
         }
 
         #[test]
@@ -521,7 +1719,7 @@ mod tests {
 
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Smik2);
+            assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Smik2);
         }
 
         #[test]
@@ -534,7 +1732,7 @@ mod tests {
 
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Cimk1);
+            assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Cimk1);
         }
 
         #[test]
@@ -546,7 +1744,7 @@ mod tests {
 
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
-            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Cimv1);
+            assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Cimv1);
         }
 
         #[test]
@@ -557,8 +1755,9 @@ mod tests {
                 ";
 
             let lex_result = tokenize(input);
+            println!("111111 {:?}", lex_result);
             assert!(lex_result.is_err());
-            assert_eq!(lex_result.unwrap_err().code, ErrorCode::Chb2,);
+            assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Chb2,);
         }
     }
 }
