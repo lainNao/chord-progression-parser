@@ -21,3 +21,8 @@ main {
   background: aliceblue;
   flex-grow: 1;
 }
+
+mark {
+  padding: 3px;
+  background: rgb(255 126 126);
+}
