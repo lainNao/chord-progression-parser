@@ -118,6 +118,17 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                 let mut token = String::new();
                 token.push(non_functional_char);
 
+                // if non functional char appears at first, it is an error
+                if tokens.is_empty() {
+                    return Err(ErrorInfoWithPosition {
+                        error: ErrorInfo {
+                            code: ErrorCode::Tkn1,
+                            additional_info: Some(non_functional_char.to_string()),
+                        },
+                        position: pos.clone(),
+                    });
+                }
+
                 // get token type by using previous token
                 let get_token_type_result = match tokens.last().unwrap().token {
                     Token::SectionMetaInfoStart => Ok(Some(ValueToken::SectionMetaInfoKey)),
@@ -1701,6 +1712,20 @@ mod tests {
     #[cfg(test)]
     mod failed {
         use super::*;
+
+        #[test]
+        fn only_non_functional_char() {
+            let non_functional_chars = vec![
+                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', '!', '$', ':', ';',
+            ];
+
+            for c in non_functional_chars {
+                let input = format!("{}", c);
+                let lex_result = tokenize(&input);
+                assert!(lex_result.is_err());
+                assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Tkn1);
+            }
+        }
 
         #[test]
         fn invalid_chord_o() {
