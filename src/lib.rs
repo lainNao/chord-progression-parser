@@ -1,10 +1,11 @@
 mod error_code;
 mod parser;
 mod tokenizer;
+mod util;
 
 use std::panic;
 
-use error_code::ErrorInfo;
+use error_code::ErrorInfoWithPosition;
 use parser::{parse, Ast};
 use serde_json::json;
 use tokenizer::tokenize;
@@ -15,7 +16,7 @@ use crate::error_code::ErrorCode;
 /// @param {string} input - The chord progression string to parse.
 /// @param {string} lang - The language to use for error messages.
 /// @returns {Ast} - The parsed chord progression.
-/// @throws {{code: string, additionalInfo: string} | string} - The error information.
+/// @throws {{code: string, additionalInfo: string} | string, position: {lineNumber: number, columnNumber: number}} - The error information.
 #[wasm_bindgen(js_name = "parseChordProgressionString", skip_jsdoc)]
 pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue> {
     let result_of_result = panic::catch_unwind(|| parse_chord_progression_string(input));
@@ -25,6 +26,10 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
             &json!({
                 "code": ErrorCode::Other1.to_string(),
                 "additionalInfo": "",
+                "position": {
+                    "lineNumber": 0,
+                    "columnNumber": 0,
+                },
             })
             .to_string(),
         ));
@@ -36,8 +41,12 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
         let error_info = result.err().unwrap();
         return Err(JsValue::from_str(
             &json!({
-                "code": error_info.code.to_string(),
-                "additionalInfo": error_info.additional_info,
+                "code": error_info.error.code.to_string(),
+                "additionalInfo": error_info.error.additional_info,
+                "position": {
+                    "lineNumber": error_info.position.line_number,
+                    "columnNumber": error_info.position.column_number,
+                },
             })
             .to_string(),
         ));
@@ -47,7 +56,7 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
         .map_err(|err| JsValue::from_str(&format!("{}", err)))
 }
 
-pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfo> {
+pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
     let tokenized_result = tokenize(input);
     if tokenized_result.is_err() {
         return Err(tokenized_result.err().unwrap());
