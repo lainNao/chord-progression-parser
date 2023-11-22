@@ -19,8 +19,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
-      - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-bundler
+      - name: generate-error-code-rs
+        run: bun i && make generate-error-code-rs
+      - name: build wasm
+        run: make build-wasm-bundler
       - run: npm publish
         working-directory: pkg/pkg-bundler
         env:
@@ -35,8 +37,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
-      - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-web
+      - name: generate-error-code-rs
+        run: bun i && make generate-error-code-rs
+      - name: build wasm
+        run: make build-wasm-web
       - run: npm publish
         working-directory: pkg/pkg-web
         env:
@@ -51,8 +55,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
-      - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-node
+      - name: generate-error-code-rs
+        run: bun i && make generate-error-code-rs
+      - name: build wasm
+        run: make build-wasm-node
       - run: npm publish
         working-directory: pkg/pkg-node
         env:
