@@ -28,3 +28,7 @@ jobs:
     needs: [release-if-version-changed]
     uses: ./.github/workflows/release-to-crates-io.yml
     secrets: inherit
+  release-to-npm:
+    needs: [release-if-version-changed]
+    uses: ./.github/workflows/release-to-npm.yml
+    secrets: inherit
