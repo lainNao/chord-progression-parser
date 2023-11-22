@@ -1,5 +1,5 @@
 import "./main.css";
-import { parseChordProgressionString } from "../../../pkg/pkg-bundler/chord_progression_ast_parser";
+import { parseChordProgressionString } from "../../../pkg/pkg-bundler/chord_progression_parser";
 import {
   ErrorCode,
   getErrorMessage,
