@@ -24,6 +24,5 @@ jobs:
           custom_tag: ${{ steps.detect_tag.outputs.current-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
         if: ${{ steps.detect_tag.outputs.previous-version != steps.detect_tag.outputs.current-version }}
-      # dispatch release-to-crates-io.yml workflow
       - name: Release to crates.io
         uses: ./.github/workflows/release-to-crates-io.yml
