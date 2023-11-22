@@ -11,6 +11,7 @@
     "CIMV",
     "clippy",
     "jsdoc",
+    "msedge",
     "peekable",
     "rustfmt",
     "rustup",
