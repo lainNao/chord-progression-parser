@@ -1,3 +1,5 @@
+name: release-to-crates-io
+
 on:
   workflow_dispatch:
   push:
