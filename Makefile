@@ -1,4 +1,5 @@
 check-not-broken:
+	bun i
 	make generate-error-code-rs
 	make lint-check
 	make build-check
@@ -77,7 +78,7 @@ generate-ts-declare-file-for-pkg-web:
 # copy resources/error_code_message_map.ts under pkg/pkg-web, overwriting
 	cp resources/error_code_message_map.ts pkg/pkg-web
 # compile it to .js and d.ts
-	cd pkg/pkg-web && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
+	cd pkg/pkg-web && bun i -D typescript && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
 # add error_code_message_map.js and d.ts to pkg/pkg-web/package.json files
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
@@ -93,7 +94,7 @@ generate-ts-declare-file-for-pkg-node:
 # copy resources/error_code_message_map.ts under pkg/pkg-node, overwriting
 	cp resources/error_code_message_map.ts pkg/pkg-node
 # compile it to .js and d.ts
-	cd pkg/pkg-node && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
+	cd pkg/pkg-node && bun i -D typescript && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
 # add error_code_message_map.js and d.ts to pkg/pkg-node/package.json files
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
@@ -109,7 +110,7 @@ generate-ts-declare-file-for-pkg-bundler:
 # copy resources/error_code_message_map.ts under pkg/pkg-bundler, overwriting
 	cp resources/error_code_message_map.ts pkg/pkg-bundler
 # compile it to .js and d.ts
-	cd pkg/pkg-bundler && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
+	cd pkg/pkg-bundler && bun i -D typescript && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
 # add error_code_message_map.j and d.tss to pkg/pkg-bundler/package.json files
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.ts","error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
@@ -154,8 +155,8 @@ test-rust:
 # e2e test
 test-e2e:
 	make build-wasm-bundler
-	cd e2e-test/node && bun i --frozen-lockfile && bun run test
-	cd e2e-test/bundler && bun i --frozen-lockfile && bun run test
+	cd e2e-test/node && bun i -D typescript && bun run test
+	cd e2e-test/bundler && bun i -D typescript && bun run test
 	make run-web-e2e
 
 run-web-e2e:
@@ -164,7 +165,7 @@ run-web-e2e:
 # copy e2e-test/web/originl.index.html to e2e-test/web/src/index.html
 	cp ./e2e-test/web/original.index.html ./e2e-test/web/generated-src/index.html
 # test
-	cd ./e2e-test/web && bun i --frozen-lockfile && bun run test
+	cd ./e2e-test/web && bun i -D typescript && bun run test
 
 test-resources:
 	cd resources && bun test

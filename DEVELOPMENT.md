@@ -25,4 +25,5 @@
 
 ## Pull Request rules
 
-currently no rules. every PR is welcome
+currently no rules. every PR is welcome.
+branch rule is not decided yet.
