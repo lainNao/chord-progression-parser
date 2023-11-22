@@ -1,4 +1,4 @@
-name: tag-if-version-changed
+name: release-if-version-changed
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - Cargo.toml
 
 jobs:
-  tag-if-version-changed:
+  release-if-version-changed:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -24,3 +24,6 @@ jobs:
           custom_tag: ${{ steps.detect_tag.outputs.current-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
         if: ${{ steps.detect_tag.outputs.previous-version != steps.detect_tag.outputs.current-version }}
+      # dispatch release-to-crates-io.yml workflow
+      - name: Release to crates.io
+        uses: ./.github/workflows/release-to-crates-io.yml
