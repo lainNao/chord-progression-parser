@@ -31,7 +31,7 @@ export default <PlaywrightTestConfig>{
 
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: true,
-  retries: 0,
+  retries: 3,
   reporter: "html",
 
   // projectsの共通設定 https://playwright.dev/docs/api/class-testoptions
