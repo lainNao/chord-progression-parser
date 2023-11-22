@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["lainNao"]
 edition = "2021"
 license = "MIT"
-description = "A parser for chord progression ASTs"
+description = "a converter from chord progression strings to AST"
 repository = "https://github.com/lainNao/chord-progression-parser"
 readme = "README.md"
-keywords = ["music", "chord", "progression", "parser", "ast"]
+keywords = ["music", "chord-progression", "parser", "AST"]
 
 [dependencies]
 regex = "1.9.5"
