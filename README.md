@@ -15,9 +15,9 @@ a converter from chord progression strings to AST built in Rust that outputs was
 English docs
 
 - [about chord progression syntax](./_docs/en/about-chord-progression-syntax.md)
-- [DEVELOPMENT.md](./DEVELOPMENT.md)
+- [how to develop](./_docs/en/how-to-develop.md)
 
 Japanese docs
 
-- [パースするコード進行の文法について](./_docs/ja/about-chord-progression-syntax.md)
-- [DEVELOPMENT.md](./DEVELOPMENT.md)
+- [コード進行ASTの文法の説明](./_docs/ja/about-chord-progression-syntax.md)
+- [開発についての説明](./_docs/ja/how-to-develop.md)
