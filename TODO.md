@@ -7,10 +7,8 @@
     - 本当はpanic時にスタックトレースを出したいので、出せるようにしてほしいなと思う
 
 - `自動テストやCI`
-  - `man githooks`で色々見れるな。これをlefthookであてがう
-    - 例えば`post-checkout`時に初期化処理しちゃうとか
-    - <https://rfs.jp/server/git/gite-lab/git-hook-post-receive.html>
   - wasm-bindgen-testの盛り込み <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
+    - 不要ならば無しでいいけども調べてほしい
   - TSでコード進行ジェネレータを作る
     - 機能テストに使うのと、パフォーマンステストにも使う（1万件のコード進行があった時の検索パフォーマンスとか）
     - というかASTジェネレータを作って、それにtoString()を生やせばいいと思う

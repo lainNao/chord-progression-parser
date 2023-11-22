@@ -55,6 +55,9 @@ export default <PlaywrightTestConfig>{
       use: {
         channel: "msedge",
       },
+      // NOTE: msedge is somewhat flaky on CI...
+      retries: 3,
+      timeout: 1000 * 10, //
     },
     {
       name: "chromium",
