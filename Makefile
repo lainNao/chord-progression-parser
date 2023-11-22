@@ -156,7 +156,7 @@ test-rust:
 test-e2e:
 	make build-wasm-bundler
 	cd e2e-test/node && bun i -D typescript && bun run test
-	cd e2e-test/bundler && bun i -D typescript && bun run test
+	cd e2e-test/bundler && bun i -D typescript && npx playwright install --with-deps && bun run test
 	make run-web-e2e
 
 run-web-e2e:
@@ -165,7 +165,7 @@ run-web-e2e:
 # copy e2e-test/web/originl.index.html to e2e-test/web/src/index.html
 	cp ./e2e-test/web/original.index.html ./e2e-test/web/generated-src/index.html
 # test
-	cd ./e2e-test/web && bun i -D typescript && bun run test
+	cd ./e2e-test/web && bun i -D typescript && npx playwright install --with-deps && bun run test
 
 test-resources:
 	cd resources && bun test

@@ -21,8 +21,6 @@ jobs:
           rustup target add wasm32-unknown-unknown
           rustup component add rustfmt clippy
           cargo install typeshare-cli
-          # other
-          npx playwright install
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           # Optional version of wasm-pack to install(eg. 'v0.9.1', 'latest')

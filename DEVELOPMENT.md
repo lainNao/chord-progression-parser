@@ -2,9 +2,9 @@
 
 > NOTE: currently, this development environment is for `MacOS` and `Linux` users. for `Windows` users, please use `WSL` or `Cygwin`
 
-## First Instructions
+## Create development environment
 
-please see `check-not-broken.yml`
+please refer to `.github/workflows/check-not-broken.yml`
 
 ## Pull Request rules
 
