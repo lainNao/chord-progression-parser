@@ -1,9 +1,8 @@
 check-not-broken:
 	bun i
 	make generate-error-code-rs
-	make lint-check
-	make build-check
-	make format-check
+	make check-lint
+	make check-build
 	make build-wasm-web
 	make build-wasm-node
 	make build-wasm-bundler
@@ -151,16 +150,13 @@ fix:
 ################################################################
 
 # lint check
-lint-check:
+check-lint:
 	cargo clippy
+	cargo fmt --all -- --check
 
 # build check
-build-check:
+check-build:
 	cargo check
-
-# format check
-format-check:
-	cargo fmt --all -- --check
 
 # unit & integration test
 test-rust:
