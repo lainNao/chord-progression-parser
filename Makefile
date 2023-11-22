@@ -6,6 +6,9 @@ check-not-broken:
 	make build-wasm-web
 	make build-wasm-node
 	make build-wasm-bundler
+	make modify-package-name-web
+	make modify-package-name-node
+	make modify-package-name-bundler
 	make test-rust
 	make test-resources
 	make test-e2e
@@ -47,7 +50,6 @@ build-wasm-web:
 		--out-dir ./pkg/pkg-web \
 		--target web
 	make generate-ts-declare-file-for-pkg-web
-	make modify-package-name-web
 
 # modify package-name
 # append "-web" to package json "name" field
@@ -62,7 +64,6 @@ build-wasm-node:
 		--out-dir ./pkg/pkg-node \
 		--target nodejs
 	make generate-ts-declare-file-for-pkg-node
-	make modify-package-name-node
 
 # modify package-name
 # append "-node" to package json "name" field
@@ -77,7 +78,6 @@ build-wasm-bundler:
 		--out-dir ./pkg/pkg-bundler \
 		--target bundler
 	make generate-ts-declare-file-for-pkg-bundler
-	make modify-package-name-node
 
 # modify package-name
 # append "-bundler" to package json "name" field
