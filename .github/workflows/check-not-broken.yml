@@ -13,6 +13,9 @@ jobs:
   check-not-broken:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
       - name: make environment
         uses: ./.github/actions/make-environment
       - run: make check-not-broken
