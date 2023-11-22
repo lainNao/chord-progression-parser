@@ -8,8 +8,7 @@
 2. next, execute the following commands
 
     ```bash
-    rustup component add rustfmt
-    rustup component add clippy
+    rustup component add rustfmt clippy
     bun lefthook install
     ```
 
