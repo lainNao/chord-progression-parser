@@ -15,6 +15,14 @@ check-not-broken:
 ################################################################ common 
 ################################################################
 
+# install
+install:
+	rustup target add wasm32-unknown-unknown
+	rustup component add rustfmt clippy
+	cargo install typeshare-cli
+	bun i
+	bun lefthook install
+
 # run
 run:
 	cargo run

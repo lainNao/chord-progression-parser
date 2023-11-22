@@ -3,3 +3,8 @@ pre-commit:
   commands:
     check-not-broken:
       run: make check-not-broken
+
+post-checkout:
+  commands:
+    install:
+      run: make install
