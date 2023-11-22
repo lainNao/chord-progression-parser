@@ -60,7 +60,7 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
 
 /// parse a chord progression string and return the AST
 ///
-/// @example
+/// ## example
 /// ```rust
 /// use chord_progression_parser::parse_chord_progression_string;
 ///
@@ -72,9 +72,10 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
 /// @section=Verse
 /// |E|C#m(7)|Bm(7)|C#(7)|
 /// |F#m(7)|Am(7)|F#(7)|B|
-/// "
-///
+/// ";
+///     
 /// let result = parse_chord_progression_string(input);
+/// println!("{:#?}", result);
 /// ```
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
     let tokenized_result = tokenize(input);
