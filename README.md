@@ -8,7 +8,7 @@ a converter from chord progression strings to AST built in Rust that outputs was
 
 ## how to use
 
-- `Rust version:` <https://crates.io/crates/chord-progression-parser>
+- `for Rust user:` <https://crates.io/crates/chord-progression-parser>
   - install
     - `cargo add chord-progression-parser`
   - use
@@ -32,11 +32,11 @@ a converter from chord progression strings to AST built in Rust that outputs was
     }
     ```
 
-- `JavaScript version (frontend using CDN)`
+- `for JavaScript user (frontend using CDN)`
   - TBD
-- `JavaScript version (frontend using some bundler)`
+- `for JavaScript/TypeScript user (frontend using some bundler)`
   - TBD
-- `JavaScript version (server)`
+- `for JavaScript/TypeScript user (server)`
   - TBD
 
 ## for more info
