@@ -17,6 +17,8 @@ jobs:
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
+      - name: make environment
+        uses: ./.github/actions/make-environment
       - run: cd pkg/pkg-bundler
       - run: npm publish
         env:
@@ -29,6 +31,8 @@ jobs:
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
+      - name: make environment
+        uses: ./.github/actions/make-environment
       - run: cd pkg/pkg-web
       - run: npm publish
         env:
@@ -41,6 +45,8 @@ jobs:
         with:
           node-version: "20.x"
           registry-url: "https://registry.npmjs.org"
+      - name: make environment
+        uses: ./.github/actions/make-environment
       - run: cd pkg/pkg-node
       - run: npm publish
         env:
