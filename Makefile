@@ -54,7 +54,7 @@ build-wasm-web:
 # modify package-name
 # append "-web" to package json "name" field
 modify-package-name-web:
-	cd pkg/pkg-web && sed -i '' 's/"name": "@lainNao\/chord-progression-parser"/"name": "@lainNao\/chord-progression-parser-web"/' ./package.json
+	cd pkg/pkg-web && npx change-package-name @lainNao\/chord-progression-parser-web && bun i
 
 # build wasm for node (use for server javascript without any bundler?)
 build-wasm-node:
@@ -68,7 +68,7 @@ build-wasm-node:
 # modify package-name
 # append "-node" to package json "name" field
 modify-package-name-node:
-	cd pkg/pkg-node && sed -i '' 's/"name": "@lainNao\/chord-progression-parser"/"name": "@lainNao\/chord-progression-parser-node"/' ./package.json
+	cd pkg/pkg-node && npx change-package-name @lainNao\/chord-progression-parser-node && bun i
 
 # build wasm for bundler (use for server/client javascript with bundler?)
 build-wasm-bundler:
@@ -82,7 +82,7 @@ build-wasm-bundler:
 # modify package-name
 # append "-bundler" to package json "name" field
 modify-package-name-bundler:
-	cd pkg/pkg-bundler && sed -i '' 's/"name": "@lainNao\/chord-progression-parser"/"name": "@lainNao\/chord-progression-parser-bundler"/' ./package.json
+	cd pkg/pkg-bundler && npx change-package-name @lainNao\/chord-progression-parser-bundler && bun i
 
 ################################################################
 ################################################################ generator 
@@ -176,7 +176,6 @@ test-rust:
 
 # e2e test
 test-e2e:
-	make build-wasm-bundler
 	cd e2e-test/node && bun i -D typescript && bun run test
 	cd e2e-test/bundler && bun i -D typescript && npx playwright install --with-deps && bun run test
 	make run-web-e2e
