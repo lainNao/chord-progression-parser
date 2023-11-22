@@ -1,5 +1,6 @@
 check-not-broken:
 	bun i
+	cargo install
 	make generate-error-code-rs
 	make lint-check
 	make build-check
