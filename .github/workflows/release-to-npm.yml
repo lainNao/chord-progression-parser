@@ -21,6 +21,7 @@ jobs:
         uses: ./.github/actions/make-environment
       - run: cd pkg/pkg-bundler
       - run: npm publish
+        working-directory: ./pkg/pkg-bundler
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   web:
@@ -33,8 +34,8 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
-      - run: cd pkg/pkg-web
       - run: npm publish
+        working-directory: ./pkg/pkg-web
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   node:
@@ -47,7 +48,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
-      - run: cd pkg/pkg-node
       - run: npm publish
+        working-directory: ./pkg/pkg-node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
