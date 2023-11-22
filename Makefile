@@ -47,7 +47,11 @@ build-wasm-web:
 		--out-dir ./pkg/pkg-web \
 		--target web
 	make generate-ts-declare-file-for-pkg-web
+	make modify-package-name-web
+
+# modify package-name
 # append "-web" to package json "name" field
+modify-package-name-web:
 	cd pkg/pkg-web && sed -i '' 's/"name": "@lainNao\/chord-progression-parser"/"name": "@lainNao\/chord-progression-parser-web"/' ./package.json
 
 # build wasm for node (use for server javascript without any bundler?)
@@ -58,7 +62,11 @@ build-wasm-node:
 		--out-dir ./pkg/pkg-node \
 		--target nodejs
 	make generate-ts-declare-file-for-pkg-node
+	make modify-package-name-node
+
+# modify package-name
 # append "-node" to package json "name" field
+modify-package-name-node:
 	cd pkg/pkg-node && sed -i '' 's/"name": "@lainNao\/chord-progression-parser"/"name": "@lainNao\/chord-progression-parser-node"/' ./package.json
 
 # build wasm for bundler (use for server/client javascript with bundler?)
@@ -69,7 +77,11 @@ build-wasm-bundler:
 		--out-dir ./pkg/pkg-bundler \
 		--target bundler
 	make generate-ts-declare-file-for-pkg-bundler
+	make modify-package-name-node
+
+# modify package-name
 # append "-bundler" to package json "name" field
+modify-package-name-bundler:
 	cd pkg/pkg-bundler && sed -i '' 's/"name": "@lainNao\/chord-progression-parser"/"name": "@lainNao\/chord-progression-parser-bundler"/' ./package.json
 
 ################################################################
