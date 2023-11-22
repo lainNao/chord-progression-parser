@@ -20,7 +20,7 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-bundler
+        run: bun i && make generate-error-code-rs && make build-wasm-bundler && make modify-package-name-bundler
       - run: npm publish --access public
         working-directory: pkg/pkg-bundler
         env:
@@ -36,7 +36,7 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-web
+        run: bun i && make generate-error-code-rs && make build-wasm-web && make modify-package-name-web
       - run: npm publish --access public
         working-directory: pkg/pkg-web
         env:
@@ -52,7 +52,7 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-node
+        run: bun i && make generate-error-code-rs && make build-wasm-node && make modify-package-name-node
       - run: npm publish --access public
         working-directory: pkg/pkg-node
         env:
