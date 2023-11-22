@@ -26,8 +26,6 @@
       - 参考 <https://docs.npmjs.com/creating-and-publishing-private-packages> <https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/packaging-and-publishing.html>
     - 4. github
       - ghコマンドで
-    - 5. crates.io
-      - crates.ioはrustのやつのみ。
     - 全体的な指針
       - リリースノートは自動生成（そんなに重要じゃないので、これまでのコミットを全部リストアップでいい）
         - リリースノート自動生成はgithub自体が機能として持っているっぽい　<https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes>
