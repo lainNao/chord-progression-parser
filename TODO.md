@@ -10,10 +10,6 @@
   - TSでコード進行ジェネレータを作る
     - 機能テストに使うのと、パフォーマンステストにも使う（1万件のコード進行があった時の検索パフォーマンスとか）
     - というかASTジェネレータを作って、それにtoString()を生やせばいいと思う
-  - dependabotや、そのrust版のようなもの
-    - githubにプライベートなセキュリティチェック機能もあったはず
-  - CI、OSSなら無料みたいなやつあるはず。色々探してみたい
-    - これとか <https://zenn.dev/binnmti/articles/7e3690ebe80951>
 
 - `リリース設計`（ここらへんは別リポジトリでテストしてから持ってくる形で…色々試すの汚いので）
   - 1コマンド打てば、以下が終わるようにしたい。それをgithub actionsでもローカルでもどちらでも行えるように
@@ -25,6 +21,7 @@
     - 2. npm
       - browser、node、bundlerいずれも
         - これやるために出力したpkgのpackage.jsonの内容にリネームかけないといけない
+        - <https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages>
       - npmコマンドとかで
       - 参考 <https://docs.npmjs.com/creating-and-publishing-private-packages> <https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/packaging-and-publishing.html>
     - 3. github
@@ -58,7 +55,7 @@
   - コメント追加
   - 関数に切り出し
   - prettifyされない。動かなくなってるかも
-  - lefthookの`commit-msg`フックでコミットメッセージに日本語入ってたら落としたい。なぜかうまくいかず一旦諦めた
+  - lefthookの`commit-msg`フックでコミットメッセージに日本語入ってたら落としたい。なぜかうまくいかず一旦諦めた。commitlintとか使えばいいのかも
   - wasm-bindgen-testの盛り込み <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
     - 不要ならば無しでいいけども調べてほしい
 
