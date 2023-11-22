@@ -4,23 +4,7 @@
 
 ## First Instructions
 
-1. first, please build the `Rust` and `Bun` environment
-2. next, execute the following commands
-
-    ```bash
-    rustup component add rustfmt clippy
-    bun lefthook install
-    ```
-
-3. finally, please execute the following commands
-
-    ```bash
-    make check-not-broken
-    ```
-
-4. if the commands are executed successfully, the development environment is ready
-    - if not, please check the error messages and fix them
-5. done
+please see `check-not-broken.yml`
 
 ## Pull Request rules
 

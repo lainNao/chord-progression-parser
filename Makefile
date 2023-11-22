@@ -1,7 +1,4 @@
 check-not-broken:
-# for CI environment
-	cargo install typeshare-cli
-# and then
 	bun i
 	make generate-error-code-rs
 	make lint-check
