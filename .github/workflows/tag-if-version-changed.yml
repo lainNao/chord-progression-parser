@@ -1,4 +1,4 @@
-name: tag if version changed
+name: tag-if-version-changed
 
 on:
   push:
