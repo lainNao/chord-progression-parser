@@ -7,13 +7,9 @@
     - 本当はpanic時にスタックトレースを出したいので、出せるようにしてほしいなと思う
 
 - `自動テストやCI`
-  - wasm-bindgen-testの盛り込み <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
-    - 不要ならば無しでいいけども調べてほしい
   - TSでコード進行ジェネレータを作る
     - 機能テストに使うのと、パフォーマンステストにも使う（1万件のコード進行があった時の検索パフォーマンスとか）
     - というかASTジェネレータを作って、それにtoString()を生やせばいいと思う
-  - コミットメッセージやソースコードに日本語を混ぜられないようにする。lefthookのcommit-msgでいけるはず
-    - 全角スペースはソースコードとしてありうるようにしてるので許したい
   - dependabotや、そのrust版のようなもの
     - githubにプライベートなセキュリティチェック機能もあったはず
   - CI、OSSなら無料みたいなやつあるはず。色々探してみたい
@@ -62,6 +58,9 @@
   - コメント追加
   - 関数に切り出し
   - prettifyされない。動かなくなってるかも
+  - lefthookの`commit-msg`フックでコミットメッセージに日本語入ってたら落としたい。なぜかうまくいかず一旦諦めた
+  - wasm-bindgen-testの盛り込み <https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html>
+    - 不要ならば無しでいいけども調べてほしい
 
 - `仕様面`
   - ChordDetailedってトークンレベルでは全部まとめてが現状なので、個別には取れてない。取りたいならChordDetailed::from_str周りをどうにかする必要がある。
