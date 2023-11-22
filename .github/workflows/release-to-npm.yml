@@ -19,9 +19,13 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
-      - run: cd pkg/pkg-bundler
+      - name: build
+        run: |
+          bun i
+          make generate-error-code-rs
+          make build-wasm-bundler
       - run: npm publish
-        working-directory: ./pkg/pkg-bundler
+        working-directory: pkg/pkg-bundler
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   web:
@@ -34,8 +38,13 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
+      - name: build
+        run: |
+          bun i
+          make generate-error-code-rs
+          make build-wasm-node
       - run: npm publish
-        working-directory: ./pkg/pkg-web
+        working-directory: pkg/pkg-web
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   node:
@@ -48,7 +57,12 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - name: make environment
         uses: ./.github/actions/make-environment
+      - name: build
+        run: |
+          bun i
+          make generate-error-code-rs
+          make build-wasm-node
       - run: npm publish
-        working-directory: ./pkg/pkg-node
+        working-directory: pkg/pkg-node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
