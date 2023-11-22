@@ -46,7 +46,7 @@ release:
 build-wasm-web:
 	wasm-pack build \
 		--release \
-		--scope lainNao \
+		--scope lainnao \
 		--out-dir ./pkg/pkg-web \
 		--target web
 	make generate-ts-declare-file-for-pkg-web
@@ -54,13 +54,13 @@ build-wasm-web:
 # modify package-name
 # append "-web" to package json "name" field
 modify-package-name-web:
-	cd pkg/pkg-web && npx change-package-name @lainNao\/chord-progression-parser-web && bun i
+	cd pkg/pkg-web && npx change-package-name @lainnao\/chord-progression-parser-web && bun i
 
 # build wasm for node (use for server javascript without any bundler?)
 build-wasm-node:
 	wasm-pack build \
 		--release \
-		--scope lainNao \
+		--scope lainnao \
 		--out-dir ./pkg/pkg-node \
 		--target nodejs
 	make generate-ts-declare-file-for-pkg-node
@@ -68,13 +68,13 @@ build-wasm-node:
 # modify package-name
 # append "-node" to package json "name" field
 modify-package-name-node:
-	cd pkg/pkg-node && npx change-package-name @lainNao\/chord-progression-parser-node && bun i
+	cd pkg/pkg-node && npx change-package-name @lainnao\/chord-progression-parser-node && bun i
 
 # build wasm for bundler (use for server/client javascript with bundler?)
 build-wasm-bundler:
 	wasm-pack build \
 		--release \
-		--scope lainNao \
+		--scope lainnao \
 		--out-dir ./pkg/pkg-bundler \
 		--target bundler
 	make generate-ts-declare-file-for-pkg-bundler
@@ -82,7 +82,7 @@ build-wasm-bundler:
 # modify package-name
 # append "-bundler" to package json "name" field
 modify-package-name-bundler:
-	cd pkg/pkg-bundler && npx change-package-name @lainNao\/chord-progression-parser-bundler && bun i
+	cd pkg/pkg-bundler && npx change-package-name @lainnao\/chord-progression-parser-bundler && bun i
 
 ################################################################
 ################################################################ generator 
