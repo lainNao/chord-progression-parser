@@ -16,9 +16,8 @@
     - というかASTジェネレータを作って、それにtoString()を生やせばいいと思う
   - コミットメッセージやソースコードに日本語を混ぜられないようにする。lefthookのcommit-msgでいけるはず
     - 全角スペースはソースコードとしてありうるようにしてるので許したい
-  - lefthookでやってるやつをgithub actionsにも入れる
   - dependabotや、そのrust版のようなもの
-  - githubにプライベートなセキュリティチェック機能もあったはず
+    - githubにプライベートなセキュリティチェック機能もあったはず
   - CI、OSSなら無料みたいなやつあるはず。色々探してみたい
     - これとか <https://zenn.dev/binnmti/articles/7e3690ebe80951>
 
