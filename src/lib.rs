@@ -58,6 +58,24 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
         .map_err(|err| JsValue::from_str(&format!("{}", err)))
 }
 
+/// parse a chord progression string and return the AST
+///
+/// @example
+/// ```rust
+/// use chord_progression_parser::parse_chord_progression_string;
+///
+/// let input: &str = "
+/// @section=Intro
+/// |[key=E]E|C#m(7)|Bm(7)|C#(7)|
+/// |F#m(7)|Am(7)|F#(7)|B|
+///
+/// @section=Verse
+/// |E|C#m(7)|Bm(7)|C#(7)|
+/// |F#m(7)|Am(7)|F#(7)|B|
+/// "
+///
+/// let result = parse_chord_progression_string(input);
+/// ```
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
     let tokenized_result = tokenize(input);
     if tokenized_result.is_err() {
