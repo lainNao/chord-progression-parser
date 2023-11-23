@@ -13,9 +13,9 @@ a converter from chord progression strings to AST built in Rust that outputs was
 
 - CodeSandbox
   - <https://codesandbox.io/p/devbox/vite-react-ts-forked-phmkrs?file=%2Fsrc%2FApp.tsx>
-  - <img src="https://i.imgur.com/0E3Y93g.gif" />
+  - ![example gif](https://i.imgur.com/0E3Y93g.gif)
 
-## how to use
+## usage
 
 - `Rust user:` <https://crates.io/crates/chord-progression-parser>
   - install
