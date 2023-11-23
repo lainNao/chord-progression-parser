@@ -10,28 +10,7 @@
 - `メタ実装`
   - set_panic_hook、イメージ通りに使えてないのでは？これを使えばcatchに行かないようにできるかも？
     - 本当はpanic時にスタックトレースを出したいので、出せるようにしてほしいなと思う
-
-- `リリース設計`（ここらへんは別リポジトリでテストしてから持ってくる形で…色々試すの汚いので）
-  - 1コマンド打てば、以下が終わるようにしたい。それをgithub actionsでもローカルでもどちらでも行えるように
-    - 1. cloudflare
-      - ASTをパースする静的ページ一つを作ってそれを使えるようにする
-    - 2. jsDeliver
-      - browser版のビルドのみ
-      - 参考 <https://zenn.dev/nino_cast/articles/98a0a87f58026f#cdn%E5%8B%95%E4%BD%9C%E3%81%AE%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%83%81%E3%82%A7%E3%83%83%E3%82%AF>
-    - 3. npm
-      - browser、node、bundlerいずれも
-        - これやるために出力したpkgのpackage.jsonの内容にリネームかけないといけない
-        - <https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages>
-      - npmコマンドとかで
-      - 参考 <https://docs.npmjs.com/creating-and-publishing-private-packages> <https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/packaging-and-publishing.html>
-    - 4. github
-      - ghコマンドで
-    - 全体的な指針
-      - リリースノートは自動生成（そんなに重要じゃないので、これまでのコミットを全部リストアップでいい）
-        - リリースノート自動生成はgithub自体が機能として持っているっぽい　<https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes>
-      - CHANGELOGも自動生成したい。メジャーバージョンごとにCHANGELOG.v{n}.mdを作る感じで
-      - 良いツールなければ自前。semantic-releaseは使いづらかった。
-      - タグつけたものをプッシュしたら、勝手にCIが「まだリリースされてないタグが見つかったらリリースしておく」というのをやってくれるような感じにしたら楽そう。あまり意識したくないので。
+    - というかpanicを出さないようにしてほしい。これはjs側でもtry-catchの必要性が出てきてしまうので。
 
 - `自動テストやCI`
   - TSでコード進行ジェネレータを作る。実装的にはASTジェネレータを作って、それにtoString()を生やせばいいと思う

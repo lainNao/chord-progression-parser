@@ -1,6 +1,18 @@
 # コード進行構文の定義
 
-## ASTの構造
+## 例
+
+```txt
+@section=SimpleVerse
+|C|Dm|Em|F|
+|G|Am|Bm(o)|C|
+
+@section=ComplexChorus
+|[key=Gm]F(9,13)|Fm(6)|Bb(add9,13)|Bbaug|
+|[key=E]F#m(-5,7)|Bm(7,9)|E(M13)|Edim|
+```
+
+## 構文
 
 - 基本
   - [generatedTypes.ts](../../generatedTypes.ts)を参照
