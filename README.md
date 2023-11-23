@@ -11,7 +11,9 @@ a converter from chord progression strings to AST built in Rust that outputs was
 
 ## example
 
-- `TBD: sandbox URL`
+- CodeSandbox
+  - <https://codesandbox.io/p/devbox/vite-react-ts-forked-phmkrs?file=%2Fsrc%2FApp.tsx>
+  - <img src="https://i.imgur.com/l8DZfvN.png" />
 
 ## how to use
 
