@@ -17,7 +17,11 @@ a converter from chord progression strings to AST built in Rust that outputs was
 
 - `Rust user:` <https://crates.io/crates/chord-progression-parser>
   - install
-    - `cargo add chord-progression-parser`
+
+    ```sh
+    cargo add chord-progression-parser
+    ```
+
   - and use
 
     ```rust
@@ -69,7 +73,11 @@ a converter from chord progression strings to AST built in Rust that outputs was
 
 - `JavaScript/TypeScript user (server)`
   - install
-    - `npm install @lainnao/chord-progression-parser-server`
+
+    ```sh
+    npm install @lainnao/chord-progression-parser-server
+    ```
+
   - and use
 
     ```typescript
@@ -80,41 +88,45 @@ a converter from chord progression strings to AST built in Rust that outputs was
     ```
 
 - `for JavaScript user (frontend using CDN)`
+  - `index.html`
 
     ```html
     <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Document</title>
-        </head>
-        <body>
-          <h1>load wasm directly example</h1>
-          <h2>parse |C|</h2>
-          <pre id="result"></pre>
-          <script type="module">
-            import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.1.12/chord_progression_parser.js";
-            (async () => {
-              await mod.default();
-              const result = mod.parseChordProgressionString("|C|");
-              console.log(result);
-              document.querySelector("#result").innerHTML = JSON.stringify(
-                result,
-                null,
-                2
-              );
-            })();
-          </script>
-        </body>
-      </html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+      </head>
+      <body>
+        <h1>load wasm directly example</h1>
+        <h2>parse |C|</h2>
+        <pre id="result"></pre>
+        <script type="module">
+          import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.1.12/chord_progression_parser.js";
+
+          (async () => {
+            // initialize wasm
+            await mod.default();
+            // use
+            const result = mod.parseChordProgressionString("|C|");
+            console.log(result);
+            document.querySelector("#result").innerHTML = JSON.stringify(
+              result,
+              null,
+              2
+            );
+          })();
+        </script>
+      </body>
+    </html>
     ```
 
 ## for more info
 
-- English docs
+- English doc
   - [about chord progression syntax](./_docs/en/about-chord-progression-syntax.md)
   - [how to develop](./_docs/en/how-to-develop.md)
-- Japanese docs
+- Japanese doc
   - [コード進行ASTの文法の説明](./_docs/ja/about-chord-progression-syntax.md)
   - [開発についての説明](./_docs/ja/how-to-develop.md)
