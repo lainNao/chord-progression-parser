@@ -210,20 +210,3 @@ see-coverage:
 # needs: "chmod +x _tools/find_files_include_multibyte_characters.sh"
 find-multibyte:
 	./_tools/find_files_include_multibyte_characters.sh
-
-# make git tag
-tag:
-	VERSION=$$(awk -F' = ' '/^version/ {print $$2}' Cargo.toml | tr -d '"'); \
-	echo "Creating tag v$$VERSION"; \
-	git tag -a v$$VERSION -m "tag v$$VERSION" && git tag -n1 | head -n1;
-	
-# push git tag
-push-tag:
-	git push origin --tags
-
-# release in github
-# TODO: 
-release-github:
-	gh release create v$$(awk -F' = ' '/^version/ {print $$2}' Cargo.toml | tr -d '"') \
-		--title "v$$(awk -F' = ' '/^version/ {print $$2}' Cargo.toml | tr -d '"')" \
-		--notes "v$$(awk -F' = ' '/^version/ {print $$2}' Cargo.toml | tr -d '"')"

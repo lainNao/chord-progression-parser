@@ -34,7 +34,7 @@ a converter from chord progression strings to AST built in Rust that outputs was
     @section=Intro
     |[key=E]E|C#m(7)|Bm(7)|C#(7)|
     |F#m(7)|Am(7)|F#(7)|B|
-    ///
+    
     @section=Verse
     |E|C#m(7)|Bm(7)|C#(7)|
     |F#m(7)|Am(7)|F#(7)|B|
