@@ -1,21 +1,21 @@
 # chord-progression-parser
 
-a converter from chord progression strings to AST built in Rust that outputs wasm, so it can be used from JavaScript too.
+A converter from chord progression strings to AST built in Rust that outputs wasm, so it can be used from JavaScript too.
 
-> NOTE: this library releases multiple packages. ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/lainNao/chord-progression-parser)
+> NOTE: This library releases multiple packages. ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/lainNao/chord-progression-parser)
 >
 > - Rust: <https://crates.io/crates/chord-progression-parser>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 > - JS/TS(bundler): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-bundler>
 > - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-server>
 
-## example
+## Example
 
-- CodeSandbox
-  - <https://codesandbox.io/p/devbox/vite-react-ts-forked-phmkrs?file=%2Fsrc%2FApp.tsx>
-  - ![example gif](https://i.imgur.com/0E3Y93g.gif)
+You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-forked-phmkrs?file=%2Fsrc%2FApp.tsx)
 
-## docs
+![example gif](https://i.imgur.com/0E3Y93g.gif)
+
+## Documents
 
 - English
   - [about chord progression syntax](./_docs/en/about-chord-progression-syntax.md)
@@ -24,111 +24,115 @@ a converter from chord progression strings to AST built in Rust that outputs was
   - [コード進行ASTの文法の説明](./_docs/ja/about-chord-progression-syntax.md)
   - [開発についての説明](./_docs/ja/how-to-develop.md)
 
-## usage
+## How to use
 
-- `Rust user:` <https://crates.io/crates/chord-progression-parser>
-  - install
+### `Rust`
 
-    ```sh
-    cargo add chord-progression-parser
-    ```
+- Install
 
-  - and use
+  ```sh
+  cargo add chord-progression-parser
+  ```
 
-    ```rust
-    use chord_progression_parser::parse_chord_progression_string;
+- And use
 
-    fn main() {
-        let input: &str = "
-    @section=Intro
-    |[key=E]E|C#m(7)|Bm(7)|C#(7)|
-    |F#m(7)|Am(7)|F#(7)|B|
-    
-    @section=Verse
-    |E|C#m(7)|Bm(7)|C#(7)|
-    |F#m(7)|Am(7)|F#(7)|B|
-    ";
-        
-        let result = parse_chord_progression_string(input);
-        println!("{:#?}", result);
-    }
-    ```
+  ```rust
+  use chord_progression_parser::parse_chord_progression_string;
 
-- `JavaScript/TypeScript user (frontend using some bundler)`
-  - install (example, use with `Vite`)
+  fn main() {
+    let input: &str = "
+  @section=Intro
+  |[key=E]E|C#m(7)|Bm(7)|C#(7)|
+  |F#m(7)|Am(7)|F#(7)|B|
+  
+  @section=Verse
+  |E|C#m(7)|Bm(7)|C#(7)|
+  |F#m(7)|Am(7)|F#(7)|B|
+  ";
 
-    ```sh
-    npm install @lainnao/chord-progression-parser-bundler
-    npm install -D vite-plugin-wasm
-    ```
+      let result = parse_chord_progression_string(input);
+      println!("{:#?}", result);
+  }
+  ```
 
-  - `vite.config.js`
+### `JavaScript/TypeScript (using bundler)`
 
-      ```js
-      import { defineConfig } from "vite";
-      import wasm from "vite-plugin-wasm";
+- Install (example, use with `Vite`)
 
-      export default defineConfig({
-        plugins: [wasm()],
-      });
-      ```
+  ```sh
+  npm install @lainnao/chord-progression-parser-bundler
+  npm install -D vite-plugin-wasm
+  ```
 
-  - and use
+- Edit `vite.config.js`
 
-    ```typescript
-    import { parseChordProgressionString } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
+  ```js
+  import { defineConfig } from "vite";
+  import wasm from "vite-plugin-wasm";
 
-    const result = parseChordProgressionString("|C|");
-    console.log(result);
-    ```
+  export default defineConfig({
+    plugins: [wasm()],
+  });
+  ```
 
-- `JavaScript/TypeScript user (server)`
-  - install
+- And use
 
-    ```sh
-    npm install @lainnao/chord-progression-parser-server
-    ```
+  ```typescript
+  import { parseChordProgressionString } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
 
-  - and use
+  const result = parseChordProgressionString("|C|");
+  console.log(result);
+  ```
 
-    ```typescript
-    import { parseChordProgressionString } from "@lainnao/chord-progression-parser-server/chord_progression_parser";
+### `JavaScript/TypeScript (server like Node.js, Bun)`
 
-    const result = parseChordProgressionString("|C|");
-    console.log(result);
-    ```
+- Install
 
-- `for JavaScript user (frontend using CDN)`
-  - `index.html`
+  ```sh
+  npm install @lainnao/chord-progression-parser-server
+  ```
 
-    ```html
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Document</title>
-      </head>
-      <body>
-        <h1>load wasm directly example</h1>
-        <h2>parse |C|</h2>
-        <pre id="result"></pre>
-        <script type="module">
-          import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.1.12/chord_progression_parser.js";
+- And use
 
-          (async () => {
-            // initialize wasm
-            await mod.default();
-            // use
-            const result = mod.parseChordProgressionString("|C|");
-            console.log(result);
-            document.querySelector("#result").innerHTML = JSON.stringify(
-              result,
-              null,
-              2
-            );
-          })();
-        </script>
-      </body>
-    </html>
-    ```
+  ```typescript
+  import { parseChordProgressionString } from "@lainnao/chord-progression-parser-server/chord_progression_parser";
+
+  const result = parseChordProgressionString("|C|");
+  console.log(result);
+  ```
+
+### `JavaScript(CDN)`
+
+- `index.html`
+
+  ```html
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Document</title>
+    </head>
+    <body>
+      <h1>load wasm directly example</h1>
+      <h2>parse |C|</h2>
+      <pre id="result"></pre>
+      <script type="module">
+        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.1.12/chord_progression_parser.js";
+
+        (async () => {
+          // initialize wasm
+          await mod.default();
+          // use
+          const result = mod.parseChordProgressionString("|C|");
+          console.log(result);
+          document.querySelector("#result").innerHTML = JSON.stringify(
+            result,
+            null,
+            2
+          );
+        })();
+      </script>
+    </body>
+  </html>
+  ```
