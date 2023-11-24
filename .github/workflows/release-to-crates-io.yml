@@ -1,14 +1,26 @@
 name: release-to-crates-io
 
 on:
-  workflow_call:
   workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        description: "Tag to release"
+        required: true
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        description: "Tag to release"
+        required: true
 
 jobs:
   release-to-crates-io:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:

@@ -10,8 +10,10 @@ on:
 jobs:
   release-if-version-changed:
     runs-on: ubuntu-latest
+    outputs:
+      new-tag: ${{ steps.detect_tag.outputs.current-version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - uses: salsify/action-detect-and-tag-new-version@v2
@@ -19,20 +21,26 @@ jobs:
         with:
           create-tag: false
           version-command: cargo read-manifest | jq -r .version
-      - uses: mathieudutour/github-tag-action@v5.6
+      - if: ${{ steps.detect_tag.outputs.previous-version != steps.detect_tag.outputs.current-version }}
+        uses: mathieudutour/github-tag-action@v5.6
         with:
           custom_tag: ${{ steps.detect_tag.outputs.current-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ steps.detect_tag.outputs.previous-version != steps.detect_tag.outputs.current-version }}
   release-to-crates-io:
     needs: [release-if-version-changed]
     uses: ./.github/workflows/release-to-crates-io.yml
     secrets: inherit
+    with:
+      tag: ${{ needs.release-if-version-changed.outputs.new-tag }}
   release-to-npm:
     needs: [release-if-version-changed]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
+    with:
+      tag: ${{ needs.release-if-version-changed.outputs.new-tag }}
   release-to-github:
     needs: [release-if-version-changed]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
+    with:
+      tag: ${{ needs.release-if-version-changed.outputs.new-tag }}

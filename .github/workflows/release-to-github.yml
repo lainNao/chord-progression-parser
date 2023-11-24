@@ -1,12 +1,26 @@
 name: release-to-github
 
 on:
-  workflow_call:
   workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        description: "Tag to release"
+        required: true
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        description: "Tag to release"
+        required: true
 
 jobs:
   release-to-github:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
       - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
