@@ -13,6 +13,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::error_code::ErrorCode;
 
+#[doc(hidden)]
 /// @param {string} input - The chord progression string to parse.
 /// @param {string} lang - The language to use for error messages.
 /// @returns {Ast} - The parsed chord progression.
@@ -58,9 +59,9 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
         .map_err(|err| JsValue::from_str(&format!("{}", err)))
 }
 
-/// parse a chord progression string and return the AST
+/// Parse a chord progression string and return the AST
 ///
-/// ## example
+/// # Example
 /// ```rust
 /// use chord_progression_parser::parse_chord_progression_string;
 ///
@@ -77,6 +78,10 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
 /// let result = parse_chord_progression_string(input);
 /// println!("{:#?}", result);
 /// ```
+///
+/// # Panics
+///
+/// Panics if unhandled error occurs.
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
     let tokenized_result = tokenize(input);
     if tokenized_result.is_err() {

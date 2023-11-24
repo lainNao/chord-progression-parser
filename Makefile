@@ -37,11 +37,6 @@ build:
 clean:
 	cargo clean
 
-# release
-# TODO: 
-release:
-	cargo build --release
-
 # build wasm for web (use for browser javascript without any bundler?)
 build-wasm-web:
 	wasm-pack build \
@@ -140,6 +135,7 @@ generate-ts-declare-file-for-pkg-bundler:
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.ts","error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
 
+# generate types
 generate-ts-types:
 	typeshare ./src \
 		--lang=typescript \
@@ -180,6 +176,7 @@ test-e2e:
 	cd e2e-test/bundler && bun i -D typescript && npx playwright install --with-deps && bun run test
 	make run-web-e2e
 
+# e2e test of web
 run-web-e2e:
 # copy pkg-web to e2e-test/web/generated-src, by overrite
 	rm -rf ./e2e-test/web/generated-src && cp -r ./pkg/pkg-web ./e2e-test/web/generated-src
@@ -188,6 +185,7 @@ run-web-e2e:
 # test
 	cd ./e2e-test/web && bun i -D typescript && npx playwright install --with-deps && bun run test
 
+# test resources
 test-resources:
 	cd resources && bun test
 
@@ -195,13 +193,9 @@ test-resources:
 ################################################################ util 
 ################################################################
 
-# doc by comments
+# see doc
 doc:
 	cargo doc --open
-
-# see doc
-see-doc:
-	rustup doc
 
 # see coverage
 see-coverage:
