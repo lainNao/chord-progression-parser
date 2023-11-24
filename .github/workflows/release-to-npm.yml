@@ -7,7 +7,6 @@ on:
     tags:
       - "v*.*.*"
 
-# TODO: skip specific job if already released
 jobs:
   bundler:
     runs-on: ubuntu-latest
