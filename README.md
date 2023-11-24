@@ -2,7 +2,7 @@
 
 a converter from chord progression strings to AST built in Rust that outputs wasm, so it can be used from JavaScript too.
 
-> NOTE: this library releases multiple packages.
+> NOTE: this library releases multiple packages. ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/lainNao/chord-progression-parser)
 >
 > - Rust: <https://crates.io/crates/chord-progression-parser>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
@@ -14,6 +14,15 @@ a converter from chord progression strings to AST built in Rust that outputs was
 - CodeSandbox
   - <https://codesandbox.io/p/devbox/vite-react-ts-forked-phmkrs?file=%2Fsrc%2FApp.tsx>
   - ![example gif](https://i.imgur.com/0E3Y93g.gif)
+
+## docs
+
+- English
+  - [about chord progression syntax](./_docs/en/about-chord-progression-syntax.md)
+  - [how to develop](./_docs/en/how-to-develop.md)
+- Japanese
+  - [コード進行ASTの文法の説明](./_docs/ja/about-chord-progression-syntax.md)
+  - [開発についての説明](./_docs/ja/how-to-develop.md)
 
 ## usage
 
@@ -123,12 +132,3 @@ a converter from chord progression strings to AST built in Rust that outputs was
       </body>
     </html>
     ```
-
-## for more info
-
-- English doc
-  - [about chord progression syntax](./_docs/en/about-chord-progression-syntax.md)
-  - [how to develop](./_docs/en/how-to-develop.md)
-- Japanese doc
-  - [コード進行ASTの文法の説明](./_docs/ja/about-chord-progression-syntax.md)
-  - [開発についての説明](./_docs/ja/how-to-develop.md)
