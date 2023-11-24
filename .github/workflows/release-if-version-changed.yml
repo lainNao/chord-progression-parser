@@ -32,3 +32,7 @@ jobs:
     needs: [release-if-version-changed]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
+  release-to-github:
+    needs: [release-if-version-changed]
+    uses: ./.github/workflows/release-to-github.yml
+    secrets: inherit
