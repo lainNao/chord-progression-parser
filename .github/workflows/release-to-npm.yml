@@ -3,9 +3,6 @@ name: release-to-npm
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*.*.*"
 
 jobs:
   bundler:
