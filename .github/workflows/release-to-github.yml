@@ -20,9 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag-to-release }}
+          ref: ${{ inputs.tag-to-release }}
       - uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.event.inputs.tag-to-release }}
+          tag: ${{ inputs.tag-to-release }}
           skipIfReleaseExists: true
