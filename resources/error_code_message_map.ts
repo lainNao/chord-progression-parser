@@ -104,8 +104,8 @@ export const ERROR_CODE_MESSAGE_MAP = {
       ja: "コードに改行を含めることはできません",
     },
     "CHO-3": {
-      en: "Chord should not be empty, if denominator exists",
-      ja: "分母が存在する場合、コードは空にできません",
+      en: "Chord should not be empty",
+      ja: "コードは空にできません",
     },
   },
   DEN: {

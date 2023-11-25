@@ -4,7 +4,7 @@ type TestData = {
 };
 
 export const testData: TestData = {
-  input: `|C|`,
+  input: `C`,
   expected: [
     {
       metaInfos: [],

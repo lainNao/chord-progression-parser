@@ -31,7 +31,26 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
     let mut token_with_position_list = token_with_position_list.iter().peekable();
     let mut tmp_chord_info_meta_infos: Vec<ChordInfoMeta> = Vec::new();
 
+    // return previous args
+    let mut get_previous_token_with_position = {
+        let mut previous_token_with_position: Option<TokenWithPosition> = None;
+
+        // クロージャは `token_with_position` を受け取り、前回の値を返します。
+        move |token_with_position: Option<TokenWithPosition>| -> Option<TokenWithPosition> {
+            // 現在の値を一時変数に保存します。
+            let current = previous_token_with_position.clone();
+
+            // 新しい値で更新します。
+            previous_token_with_position = token_with_position;
+
+            // 前回の値を返します。
+            current
+        }
+    };
+
     while let Some(token_with_position) = token_with_position_list.next() {
+        let previous = get_previous_token_with_position(Some(token_with_position.clone()));
+
         match token_with_position.token.clone() {
             // section meta info
             Token::SectionMetaInfoStart => {
@@ -153,6 +172,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         match token_with_position_list.peek().unwrap().token {
                             Token::LineBreak => {
                                 token_with_position_list.next();
+
                                 match token_with_position_list.peek().unwrap().token {
                                     Token::LineBreak => {
                                         // if line break appears three times in a row, return error
@@ -377,7 +397,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
 
                         // if next is ChordBlockSeparator, create new section
                         match token_with_position_list.peek().unwrap().token {
-                            Token::ChordBlockSeparator => {
+                            Token::MetaInfoStart | Token::Chord(_) => {
                                 // create new section
                                 sections.push(Section {
                                     meta_infos: Vec::new(),
@@ -578,6 +598,38 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
             }
             Token::Comma => { /* Nothing */ }
             Token::ChordBlockSeparator => {
+                // if previous is not Chord, error
+                match previous {
+                    None => {
+                        return Err(ErrorInfoWithPosition {
+                            error: ErrorInfo {
+                                code: ErrorCode::Cho3,
+                                additional_info: token_with_position.token.to_string().into(),
+                            },
+                            position: token_with_position.position.clone(),
+                        });
+                    }
+                    _ => {
+                        match previous.unwrap().token {
+                            Token::Chord(_) | Token::Denominator(_) | Token::Extension(_) => { /* Nothing */
+                            }
+                            _ => {
+                                return Err(ErrorInfoWithPosition {
+                                    error: ErrorInfo {
+                                        code: ErrorCode::Cho3,
+                                        additional_info: token_with_position
+                                            .token
+                                            .to_string()
+                                            .into(),
+                                    },
+                                    position: token_with_position.position.clone(),
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // ?
                 if token_with_position_list.peek().is_none() {
                     continue;
                 }
@@ -706,7 +758,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 3,
                         column_number: 1,
@@ -714,18 +766,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
-                    position: Position {
-                        line_number: 3,
-                        column_number: 2,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 3,
-                        column_number: 3,
+                        column_number: 2,
                         length: 1,
                     },
                 },
@@ -759,41 +803,6 @@ mod tests {
             let result = parse(&input);
 
             assert_eq!(result.unwrap(), []);
-        }
-
-        #[test]
-        fn no_chord() {
-            let input = [
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 2,
-                        length: 1,
-                    },
-                },
-            ];
-            let result = parse(&input);
-
-            assert_eq!(
-                result.unwrap(),
-                [Section {
-                    meta_infos: Vec::new(),
-                    chord_blocks: vec![vec![ChordInfo {
-                        chord_expression: ChordExpression::NoChord,
-                        denominator: None,
-                        meta_infos: Vec::new(),
-                    },],],
-                }]
-            );
         }
 
         #[test]
@@ -1012,7 +1021,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 2,
                         column_number: 1,
@@ -1020,7 +1029,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
+                    token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 2,
                         column_number: 2,
@@ -1028,7 +1037,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("G".to_string()),
                     position: Position {
                         line_number: 2,
                         column_number: 3,
@@ -1036,7 +1045,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("G".to_string()),
+                    token: Token::Slash,
                     position: Position {
                         line_number: 2,
                         column_number: 4,
@@ -1044,18 +1053,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Slash,
-                    position: Position {
-                        line_number: 2,
-                        column_number: 5,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::Denominator("Bb".to_string()),
                     position: Position {
                         line_number: 2,
-                        column_number: 6,
+                        column_number: 5,
                         length: 2,
                     },
                 },
@@ -1063,7 +1064,7 @@ mod tests {
                     token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 2,
-                        column_number: 7,
+                        column_number: 6,
                         length: 1,
                     },
                 },
@@ -1071,7 +1072,7 @@ mod tests {
                     token: Token::Chord("Am".to_string()),
                     position: Position {
                         line_number: 2,
-                        column_number: 8,
+                        column_number: 7,
                         length: 2,
                     },
                 },
@@ -1079,7 +1080,7 @@ mod tests {
                     token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 2,
-                        column_number: 9,
+                        column_number: 8,
                         length: 1,
                     },
                 },
@@ -1087,7 +1088,7 @@ mod tests {
                     token: Token::Chord("Em".to_string()),
                     position: Position {
                         line_number: 2,
-                        column_number: 10,
+                        column_number: 9,
                         length: 2,
                     },
                 },
@@ -1108,26 +1109,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 2,
-                        column_number: 13,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::LineBreak,
                     position: Position {
                         line_number: 2,
-                        column_number: 14,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 1,
+                        column_number: 13,
                         length: 1,
                     },
                 },
@@ -1135,7 +1120,7 @@ mod tests {
                     token: Token::Chord("F#m".to_string()),
                     position: Position {
                         line_number: 3,
-                        column_number: 2,
+                        column_number: 1,
                         length: 3,
                     },
                 },
@@ -1143,7 +1128,7 @@ mod tests {
                     token: Token::ExtensionStart,
                     position: Position {
                         line_number: 3,
-                        column_number: 5,
+                        column_number: 4,
                         length: 1,
                     },
                 },
@@ -1151,7 +1136,7 @@ mod tests {
                     token: Token::Extension("7".to_string()),
                     position: Position {
                         line_number: 3,
-                        column_number: 6,
+                        column_number: 5,
                         length: 1,
                     },
                 },
@@ -1159,7 +1144,7 @@ mod tests {
                     token: Token::Comma,
                     position: Position {
                         line_number: 3,
-                        column_number: 7,
+                        column_number: 6,
                         length: 1,
                     },
                 },
@@ -1167,12 +1152,20 @@ mod tests {
                     token: Token::Extension("b5".to_string()),
                     position: Position {
                         line_number: 3,
-                        column_number: 8,
+                        column_number: 7,
                         length: 2,
                     },
                 },
                 TokenWithPosition {
                     token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 3,
+                        column_number: 8,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Slash,
                     position: Position {
                         line_number: 3,
                         column_number: 9,
@@ -1180,18 +1173,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Slash,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 10,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::Denominator("F#m(7,b5)".to_string()),
                     position: Position {
                         line_number: 3,
-                        column_number: 11,
+                        column_number: 10,
                         length: 8,
                     },
                 },
@@ -1199,7 +1184,7 @@ mod tests {
                     token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 3,
-                        column_number: 12,
+                        column_number: 19,
                         length: 1,
                     },
                 },
@@ -1207,7 +1192,7 @@ mod tests {
                     token: Token::Chord("Fbm".to_string()),
                     position: Position {
                         line_number: 3,
-                        column_number: 13,
+                        column_number: 20,
                         length: 3,
                     },
                 },
@@ -1215,7 +1200,7 @@ mod tests {
                     token: Token::ExtensionStart,
                     position: Position {
                         line_number: 3,
-                        column_number: 16,
+                        column_number: 23,
                         length: 1,
                     },
                 },
@@ -1223,7 +1208,7 @@ mod tests {
                     token: Token::Extension("13".to_string()),
                     position: Position {
                         line_number: 3,
-                        column_number: 17,
+                        column_number: 24,
                         length: 2,
                     },
                 },
@@ -1231,7 +1216,7 @@ mod tests {
                     token: Token::ExtensionEnd,
                     position: Position {
                         line_number: 3,
-                        column_number: 18,
+                        column_number: 26,
                         length: 1,
                     },
                 },
@@ -1239,7 +1224,7 @@ mod tests {
                     token: Token::Slash,
                     position: Position {
                         line_number: 3,
-                        column_number: 19,
+                        column_number: 27,
                         length: 1,
                     },
                 },
@@ -1247,23 +1232,15 @@ mod tests {
                     token: Token::Denominator("G7".to_string()),
                     position: Position {
                         line_number: 3,
-                        column_number: 20,
+                        column_number: 28,
                         length: 2,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 21,
-                        length: 1,
                     },
                 },
                 TokenWithPosition {
                     token: Token::LineBreak,
                     position: Position {
                         line_number: 3,
-                        column_number: 22,
+                        column_number: 30,
                         length: 1,
                     },
                 },
@@ -1357,34 +1334,15 @@ mod tests {
         }
 
         #[test]
-        // SAME_CHORD_SYMBOL_SHOULD_NOT_BE_PLACED_FIRST_OF_CHORD_BLOCK
         fn same_chord_symbol_should_not_be_placed_first_of_chord_block() {
-            let input = [
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 1,
-                        length: 1,
-                    },
+            let input = [TokenWithPosition {
+                token: Token::Chord("%".to_string()),
+                position: Position {
+                    line_number: 2,
+                    column_number: 1,
+                    length: 1,
                 },
-                TokenWithPosition {
-                    token: Token::Chord("%".to_string()),
-                    position: Position {
-                        line_number: 2,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 2,
-                        column_number: 2,
-                        length: 1,
-                    },
-                },
-            ];
+            }];
 
             assert_eq!(
                 parse(&input),
@@ -1406,7 +1364,7 @@ mod tests {
         fn chord_blocks_with_expressions() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("?".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -1414,17 +1372,9 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("?".to_string()),
-                    position: Position {
-                        line_number: 2,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::ChordBlockSeparator,
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 2,
                         length: 1,
                     },
@@ -1432,16 +1382,8 @@ mod tests {
                 TokenWithPosition {
                     token: Token::Chord("%".to_string()),
                     position: Position {
-                        line_number: 3,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 2,
+                        line_number: 1,
+                        column_number: 3,
                         length: 1,
                     },
                 },
@@ -1472,7 +1414,7 @@ mod tests {
         fn multiple_section_without_section_meta() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -1480,17 +1422,9 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
+                    token: Token::LineBreak,
                     position: Position {
-                        line_number: 2,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 2,
                         length: 1,
                     },
@@ -1499,43 +1433,20 @@ mod tests {
                     token: Token::LineBreak,
                     position: Position {
                         line_number: 2,
-                        column_number: 3,
+                        column_number: 1,
                         length: 1,
                     },
                 },
                 TokenWithPosition {
-                    token: Token::LineBreak,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 3,
                         column_number: 1,
                         length: 1,
                     },
                 },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 4,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
-                    position: Position {
-                        line_number: 5,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 5,
-                        column_number: 2,
-                        length: 1,
-                    },
-                },
             ];
+
             assert_eq!(
                 parse(&input),
                 Ok([
@@ -1587,6 +1498,62 @@ mod tests {
         };
 
         #[test]
+        fn only_chord_block_separator() {
+            let input = [TokenWithPosition {
+                token: Token::ChordBlockSeparator,
+                position: Position {
+                    line_number: 1,
+                    column_number: 1,
+                    length: 1,
+                },
+            }];
+
+            let result = parse(&input).unwrap_err();
+
+            assert_eq!(result.error.code, ErrorCode::Cho3);
+            assert_eq!(result.position.line_number, 1);
+            assert_eq!(result.position.column_number, 1);
+            assert_eq!(result.position.length, 1);
+        }
+
+        #[test]
+        fn chord_block_separator_after_line_break() {
+            let input = [
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+            ];
+
+            let result = parse(&input).unwrap_err();
+
+            assert_eq!(result.error.code, ErrorCode::Cho3);
+            assert_eq!(result.position.line_number, 2);
+            assert_eq!(result.position.column_number, 1);
+            assert_eq!(result.position.length, 1);
+        }
+
+        #[test]
         // if line break appears three times in a row, return error
         fn no_line_breaks_three_times_in_a_row() {
             let input = [
@@ -1636,7 +1603,7 @@ mod tests {
         fn invalid_extension_after_comma() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -1644,17 +1611,9 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
-                    position: Position {
-                        line_number: 2,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::ExtensionStart,
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 2,
                         length: 1,
                     },
@@ -1662,7 +1621,7 @@ mod tests {
                 TokenWithPosition {
                     token: Token::Extension("9".to_string()),
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 3,
                         length: 1,
                     },
@@ -1670,7 +1629,7 @@ mod tests {
                 TokenWithPosition {
                     token: Token::Comma,
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 4,
                         length: 1,
                     },
@@ -1678,7 +1637,7 @@ mod tests {
                 TokenWithPosition {
                     token: Token::Extension("1".to_string()),
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 5,
                         length: 1,
                     },
@@ -1686,16 +1645,8 @@ mod tests {
                 TokenWithPosition {
                     token: Token::ExtensionEnd,
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 6,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 2,
-                        column_number: 7,
                         length: 1,
                     },
                 },
@@ -1710,7 +1661,7 @@ mod tests {
                         additional_info: Some("1".to_string()),
                     },
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 5,
                         length: 1,
                     },
@@ -1722,7 +1673,7 @@ mod tests {
         fn no_multiple_extension_parenthesis() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -1730,7 +1681,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
+                    token: Token::ExtensionStart,
                     position: Position {
                         line_number: 1,
                         column_number: 2,
@@ -1738,7 +1689,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ExtensionStart,
+                    token: Token::Extension("9".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 3,
@@ -1746,7 +1697,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Extension("9".to_string()),
+                    token: Token::ExtensionEnd,
                     position: Position {
                         line_number: 1,
                         column_number: 4,
@@ -1754,7 +1705,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ExtensionEnd,
+                    token: Token::ExtensionStart,
                     position: Position {
                         line_number: 1,
                         column_number: 5,
@@ -1762,18 +1713,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ExtensionStart,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 6,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::Extension("13".to_string()),
                     position: Position {
                         line_number: 1,
-                        column_number: 7,
+                        column_number: 6,
                         length: 2,
                     },
                 },
@@ -1781,15 +1724,7 @@ mod tests {
                     token: Token::ExtensionEnd,
                     position: Position {
                         line_number: 1,
-                        column_number: 9,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 10,
+                        column_number: 8,
                         length: 1,
                     },
                 },
@@ -1805,7 +1740,7 @@ mod tests {
                     },
                     position: Position {
                         line_number: 1,
-                        column_number: 4, // TODO: 6にしたいが、まだextensionは全部まとめて扱ってしまっているので一旦6
+                        column_number: 3, // TODO: I'd like to make it 6, but I've still handled all the extensions together, so once 6
                         length: 1,
                     },
                 })
@@ -1816,7 +1751,7 @@ mod tests {
         fn empty_line_continue() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -1824,17 +1759,9 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
+                    token: Token::LineBreak,
                     position: Position {
-                        line_number: 2,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 2,
                         length: 1,
                     },
@@ -1843,7 +1770,7 @@ mod tests {
                     token: Token::LineBreak,
                     position: Position {
                         line_number: 2,
-                        column_number: 3,
+                        column_number: 1,
                         length: 1,
                     },
                 },
@@ -1856,7 +1783,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::LineBreak,
+                    token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 4,
                         column_number: 1,
@@ -1864,26 +1791,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 5,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::Chord("C".to_string()),
                     position: Position {
-                        line_number: 5,
+                        line_number: 4,
                         column_number: 2,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 5,
-                        column_number: 3,
                         length: 1,
                     },
                 },
@@ -1898,8 +1809,8 @@ mod tests {
                         additional_info: None,
                     },
                     position: Position {
-                        line_number: 2,
-                        column_number: 3,
+                        line_number: 1,
+                        column_number: 2,
                         length: 1,
                     },
                 })
@@ -1910,7 +1821,7 @@ mod tests {
         fn invalid_extension() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -1918,17 +1829,9 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
-                    position: Position {
-                        line_number: 2,
-                        column_number: 1,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::ExtensionStart,
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 2,
                         length: 1,
                     },
@@ -1936,7 +1839,7 @@ mod tests {
                 TokenWithPosition {
                     token: Token::Extension("1".to_string()),
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 3,
                         length: 1,
                     },
@@ -1944,16 +1847,8 @@ mod tests {
                 TokenWithPosition {
                     token: Token::ExtensionEnd,
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 4,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 2,
-                        column_number: 5,
                         length: 1,
                     },
                 },
@@ -1968,7 +1863,7 @@ mod tests {
                         additional_info: Some("1".to_string()),
                     },
                     position: Position {
-                        line_number: 2,
+                        line_number: 1,
                         column_number: 3,
                         length: 1,
                     },
@@ -2171,7 +2066,7 @@ mod tests {
         fn chord_should_not_be_empty() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Slash,
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -2179,7 +2074,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Slash,
+                    token: Token::Denominator("D".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 2,
@@ -2187,18 +2082,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Denominator("D".to_string()),
-                    position: Position {
-                        line_number: 1,
-                        column_number: 3,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 1,
-                        column_number: 4,
+                        column_number: 3,
                         length: 1,
                     },
                 },
@@ -2213,7 +2100,7 @@ mod tests {
                     },
                     position: Position {
                         line_number: 1,
-                        column_number: 3,
+                        column_number: 2,
                         length: 1,
                     },
                 })
@@ -2224,7 +2111,7 @@ mod tests {
         fn denominator_is_limited_to_one_per_chord() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -2232,7 +2119,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
+                    token: Token::Slash,
                     position: Position {
                         line_number: 1,
                         column_number: 2,
@@ -2240,7 +2127,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Slash,
+                    token: Token::Denominator("D".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 3,
@@ -2248,7 +2135,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Denominator("D".to_string()),
+                    token: Token::Slash,
                     position: Position {
                         line_number: 1,
                         column_number: 4,
@@ -2256,26 +2143,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Slash,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 5,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::Denominator("E".to_string()),
                     position: Position {
                         line_number: 1,
-                        column_number: 6,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 7,
+                        column_number: 5,
                         length: 1,
                     },
                 },
@@ -2290,7 +2161,7 @@ mod tests {
                     },
                     position: Position {
                         line_number: 1,
-                        column_number: 6,
+                        column_number: 5,
                         length: 1,
                     },
                 })
@@ -2301,7 +2172,7 @@ mod tests {
         fn extension_must_not_be_empty() {
             let input = [
                 TokenWithPosition {
-                    token: Token::ChordBlockSeparator,
+                    token: Token::Chord("C".to_string()),
                     position: Position {
                         line_number: 1,
                         column_number: 1,
@@ -2309,7 +2180,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Chord("C".to_string()),
+                    token: Token::ExtensionStart,
                     position: Position {
                         line_number: 1,
                         column_number: 2,
@@ -2317,7 +2188,7 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ExtensionStart,
+                    token: Token::ExtensionEnd,
                     position: Position {
                         line_number: 1,
                         column_number: 3,
@@ -2325,18 +2196,10 @@ mod tests {
                     },
                 },
                 TokenWithPosition {
-                    token: Token::ExtensionEnd,
-                    position: Position {
-                        line_number: 1,
-                        column_number: 4,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
                     token: Token::ChordBlockSeparator,
                     position: Position {
                         line_number: 1,
-                        column_number: 5,
+                        column_number: 4,
                         length: 1,
                     },
                 },
@@ -2351,7 +2214,7 @@ mod tests {
                     },
                     position: Position {
                         line_number: 1,
-                        column_number: 3,
+                        column_number: 2,
                         length: 1,
                     },
                 })

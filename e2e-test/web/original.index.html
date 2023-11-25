@@ -13,7 +13,7 @@
       import * as mod from "./chord_progression_parser.js";
       (async () => {
         await mod.default();
-        const result = mod.parseChordProgressionString("|C|");
+        const result = mod.parseChordProgressionString("C");
         console.log(result);
         document.querySelector("#result").innerHTML = JSON.stringify(
           result,

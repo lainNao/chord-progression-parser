@@ -19,7 +19,7 @@ pub enum Token {
     SectionMetaInfoValue(String),
 
     // ChordBlockElement
-    #[strum(serialize = "|")]
+    #[strum(serialize = "-")]
     ChordBlockSeparator,
     Chord(String), // numerator
     Denominator(String),

@@ -9,7 +9,7 @@
 
 @section=ComplexChorus
 |[key=Gm]F(9,13)|Fm(6)|Bb(add9,13)|Bbaug|
-|[key=E]F#m(-5,7),Gm(M9)|Bm(7,9)|E(M13)|Edim|
+|[key=E]F#m(b5,7),Gm(M9)|Bm(7,9)|E(M13)|Edim|
 ```
 
 ## 構文
