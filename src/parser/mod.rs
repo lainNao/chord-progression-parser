@@ -161,6 +161,10 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                     }
                 }
 
+                if token_with_position_list.peek().is_none() {
+                    continue;
+                }
+
                 match token_with_position_list.peek().unwrap().token {
                     Token::LineBreak => {
                         token_with_position_list.next();
