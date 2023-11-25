@@ -119,8 +119,8 @@ pub enum ErrorCode {
 
     #[strum(serialize = "CHO-3")]
     /**
-     * en: Chord should not be empty, if denominator exists
-     * ja: 分母が存在する場合、コードは空にできません
+     * en: Chord should not be empty
+     * ja: コードは空にできません
      */
     Cho3,
 

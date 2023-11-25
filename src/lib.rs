@@ -106,26 +106,27 @@ mod tests {
         #[test]
         fn complex_input_can_be_parsed() {
             let input: &str = "
-            @section=Intro
-            |[key=E]E|C#m(7)|Bm(7)|C#(7)|
-            |F#m(7)|Am(7)|F#(7)|B|
-            
-            @section=Verse
-            |E|C#m(7)|Bm(7)|C#(7)|
-            |F#m(7)|Am(7)|F#(7)|B|
-            
-            @section=Chorus
-            |[key=C]C|C(7)|FM(7)|Fm(7)|
-            |C|C(7)|FM(7)|Dm(7)|
-            |Em(7)|E(7)|
-        
-            @section=Interlude
-            |C|A,B|
+@section=Intro
+[key=E]E-C#m(7)-Bm(7)-C#(7)
+F#m(7)-Am(7)-F#(7)-B
 
-            |[key=C]C(M9)|CM(9)|
-            ";
+@section=Verse
+E-C#m(7)-Bm(7)-C#(7)
+F#m(7)-Am(7)-F#(7)-B
+
+@section=Chorus
+[key=C]C-C(7)-FM(7)-Fm(7)
+C-C(7)-FM(7)-Dm(7)
+Em(7)-E(7)
+        
+@section=Interlude
+C-A,B
+
+[key=C]C(M9)-CM(9)
+";
 
             let result = parse_chord_progression_string(input);
+            println!("111 {:#?}", result);
             assert!(result.is_ok());
         }
 
@@ -133,7 +134,7 @@ mod tests {
         fn differ_major_9_vs_9_of_major() {
             let input: &str = "
             @section=Intro
-            |[key=C]C(M9)|CM(9)|
+            [key=C]C(M9)-CM(9)
             ";
 
             let result_json = json!(parse_chord_progression_string(input).unwrap());
@@ -202,16 +203,14 @@ mod tests {
 
         #[test]
         fn tension_position_when_error() {
-            let input: &str = "|C(9,111)|";
+            let input: &str = "C(9,111)";
 
-            println!("111111 {:?}", parse_chord_progression_string(input));
             let result = parse_chord_progression_string(input);
-            assert!(result.is_err());
             assert_eq!(
                 result.unwrap_err().position,
                 Position {
                     line_number: 1,
-                    column_number: 6,
+                    column_number: 5,
                     length: 3,
                 },
             )
