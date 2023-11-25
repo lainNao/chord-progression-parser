@@ -165,7 +165,6 @@ C-A,B
 ";
 
             let result = parse_chord_progression_string(input);
-            println!("111 {:#?}", result);
             assert!(result.is_ok());
         }
 
