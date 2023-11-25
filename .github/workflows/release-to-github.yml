@@ -3,13 +3,13 @@ name: release-to-github
 on:
   workflow_dispatch:
     inputs:
-      tag:
+      tag-to-release:
         type: string
         description: "Tag to release"
         required: true
   workflow_call:
     inputs:
-      tag:
+      tag-to-release:
         type: string
         description: "Tag to release"
         required: true
@@ -20,9 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag }}
+          ref: ${{ github.event.inputs.tag-to-release }}
       - uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.event.inputs.tag }}
-          allowUpdates: true
+          tag: ${{ github.event.inputs.tag-to-release }}
+          skipIfReleaseExists: true

@@ -3,13 +3,13 @@ name: release-to-crates-io
 on:
   workflow_dispatch:
     inputs:
-      tag:
+      tag-to-release:
         type: string
         description: "Tag to release"
         required: true
   workflow_call:
     inputs:
-      tag:
+      tag-to-release:
         type: string
         description: "Tag to release"
         required: true
@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag }}
+          ref: ${{ github.event.inputs.tag-to-release}}
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
