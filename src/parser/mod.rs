@@ -452,17 +452,40 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                     ChordExpression::NoChord => {}
                     ChordExpression::Chord(c) => {
                         let mut parsed_extensions = vec![Extension::from_str(&ext_str).unwrap()];
+
+                        // REFACTOR: please remove this flag variable for refactoring
+                        let mut is_previous_token_is_comma = false;
+
                         for t in token_with_position_list.by_ref() {
+                            // validation
+                            match &t.token {
+                                Token::Comma => {
+                                    if is_previous_token_is_comma {
+                                        return Err(ErrorInfoWithPosition {
+                                            error: ErrorInfo {
+                                                code: ErrorCode::Ext2,
+                                                additional_info: None,
+                                            },
+                                            position: t.position.clone(),
+                                        });
+                                    }
+                                    is_previous_token_is_comma = true
+                                }
+                                _ => is_previous_token_is_comma = false,
+                            }
+
                             match &t.token {
                                 Token::ExtensionEnd => {
-                                    // if last token, break
-                                    if token_with_position_list.peek().is_none() {
+                                    let peeked_token_with_position_list =
+                                        token_with_position_list.peek();
+
+                                    if peeked_token_with_position_list.is_none() {
                                         break;
                                     }
 
                                     // if next token is ExtensionStart, error
                                     if let Token::ExtensionStart =
-                                        token_with_position_list.peek().unwrap().token
+                                        peeked_token_with_position_list.unwrap().token
                                     {
                                         return Err(ErrorInfoWithPosition {
                                             error: ErrorInfo {
@@ -1500,6 +1523,84 @@ mod tests {
             tokenizer::types::{token::Token, token_with_position::TokenWithPosition},
             util::position::Position,
         };
+
+        // C(9,,11) is error
+        #[test]
+        fn empty_extension() {
+            let input = [
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("9".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 4,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 5,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("11".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 6,
+                        length: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 8,
+                        length: 1,
+                    },
+                },
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Err(ErrorInfoWithPosition {
+                    error: ErrorInfo {
+                        code: ErrorCode::Ext2,
+                        additional_info: None,
+                    },
+                    position: Position {
+                        line_number: 1,
+                        column_number: 5,
+                        length: 1,
+                    },
+                })
+            );
+        }
 
         #[test]
         fn only_chord_block_separator() {
