@@ -22,6 +22,7 @@ install:
 	rustup target add wasm32-unknown-unknown
 	rustup component add rustfmt clippy
 	cargo install typeshare-cli
+	cargo install cargo-insta
 	bun i
 	bun lefthook install
 
