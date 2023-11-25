@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag-to-release}}
+          ref: ${{ inputs.tag-to-release}}
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
