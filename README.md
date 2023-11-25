@@ -5,9 +5,9 @@ A converter from chord progression strings to AST built in Rust that outputs was
 > NOTE: This library releases multiple packages. ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/lainNao/chord-progression-parser)
 >
 > - Rust: <https://crates.io/crates/chord-progression-parser>
-> - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 > - JS/TS(bundler): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-bundler>
 > - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-server>
+> - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 
 ## Example
 
