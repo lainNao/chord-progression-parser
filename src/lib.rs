@@ -104,6 +104,45 @@ mod tests {
         use serde_json::json;
 
         #[test]
+        fn only_tension() {
+            let input: &str = "C(9,11,13,o)";
+
+            let result_json = json!(parse_chord_progression_string(input).unwrap());
+            let expected = json!([
+                {
+                    "chordBlocks": [
+                        [
+                            {
+                                "chordExpression": {
+                                    "type": "chord",
+                                    "value": {
+                                        "detailed": {
+                                            "accidental": null,
+                                            "base": "C",
+                                            "chordType": "M",
+                                            "extensions": [
+                                                "9",
+                                                "11",
+                                                "13",
+                                                "o"
+                                            ]
+                                        },
+                                        "plain": "C(9,11,13,o)"
+                                    }
+                                },
+                                "denominator": null,
+                                "metaInfos": []
+                            }
+                        ]
+                    ],
+                    "metaInfos": []
+                }
+            ]);
+
+            assert_eq!(result_json, expected);
+        }
+
+        #[test]
         fn complex_input_can_be_parsed() {
             let input: &str = "
 @section=Intro

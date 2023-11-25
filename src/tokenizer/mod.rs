@@ -1830,19 +1830,6 @@ Gm-Gm
     mod failed {
         use super::*;
 
-        // #[test]
-        // fn only_non_meaning_char() {
-        //     let non_meaning_chars = vec![
-        //         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', '!', '$', ':', ';',
-        //     ];
-
-        //     for c in non_meaning_chars {
-        //         let input = format!("{}", c);
-        //         let lex_result = tokenize(&input);
-        //         assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Tkn1);
-        //     }
-        // }
-
         #[test]
         fn invalid_chord_o() {
             let input = "o";

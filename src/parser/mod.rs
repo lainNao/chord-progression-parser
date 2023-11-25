@@ -455,6 +455,11 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         for t in token_with_position_list.by_ref() {
                             match &t.token {
                                 Token::ExtensionEnd => {
+                                    // if last token, break
+                                    if token_with_position_list.peek().is_none() {
+                                        break;
+                                    }
+
                                     // if next token is ExtensionStart, error
                                     if let Token::ExtensionStart =
                                         token_with_position_list.peek().unwrap().token
