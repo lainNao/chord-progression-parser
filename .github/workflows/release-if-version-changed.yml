@@ -31,16 +31,16 @@ jobs:
     uses: ./.github/workflows/release-to-crates-io.yml
     secrets: inherit
     with:
-      tag: ${{ needs.release-if-version-changed.outputs.new-tag }}
+      tag-to-release: v${{ needs.release-if-version-changed.outputs.new-tag }}
   release-to-npm:
     needs: [release-if-version-changed]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
     with:
-      tag: ${{ needs.release-if-version-changed.outputs.new-tag }}
+      tag-to-release: v${{ needs.release-if-version-changed.outputs.new-tag }}
   release-to-github:
     needs: [release-if-version-changed]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
     with:
-      tag: ${{ needs.release-if-version-changed.outputs.new-tag }}
+      tag-to-release: v${{ needs.release-if-version-changed.outputs.new-tag }}
