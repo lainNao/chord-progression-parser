@@ -281,7 +281,6 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                             } else if is_extension {
                                 Ok(Some(ValueToken::Extension))
                             } else {
-                                println!("111 prev_token: {:?}", tokens.get(prev_token_index));
                                 Err(ErrorInfoWithPosition {
                                     error: ErrorInfo {
                                         code: ErrorCode::Tkn1,
@@ -1879,7 +1878,6 @@ Gm-Gm
                 ";
 
             let lex_result = tokenize(input);
-            println!("111111 {:?}", lex_result);
             assert!(lex_result.is_err());
             assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Chb2,);
         }

@@ -482,7 +482,6 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                                     if Extension::from_str(ext_str).is_err() {
                                         let cloned_token_with_position =
                                             token_with_position.clone();
-                                        println!("5555 {:?}", cloned_token_with_position);
 
                                         let extensions_before_current_length = parsed_extensions
                                             .iter()
