@@ -1845,7 +1845,7 @@ Gm-Gm
 
         #[test]
         fn invalid_chord_o() {
-            let input = "|o|";
+            let input = "o";
             let lex_result = tokenize(input);
             assert!(lex_result.is_err());
             assert_eq!(lex_result.unwrap_err().error.code, ErrorCode::Cho1);
