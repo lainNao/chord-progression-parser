@@ -104,6 +104,26 @@ mod tests {
         use serde_json::json;
 
         #[test]
+        fn only_section_meta() {
+            let input: &str = "@section=A";
+
+            let result_json = json!(parse_chord_progression_string(input).unwrap());
+            let expected = json!([
+                {
+                    "chordBlocks": [],
+                    "metaInfos": [
+                        {
+                            "type": "section",
+                            "value": "A"
+                        }
+                    ]
+                }
+            ]);
+
+            assert_eq!(result_json, expected);
+        }
+
+        #[test]
         fn only_tension() {
             let input: &str = "C(9,11,13,o)";
 
