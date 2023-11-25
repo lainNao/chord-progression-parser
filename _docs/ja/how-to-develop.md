@@ -5,10 +5,10 @@
 ## 環境構築
 
 `.github/workflows/check-not-broken.yml`と`Makefile`を参照してください。
-そして以下のコマンドを実行してください。
+あと以下のコマンドを実行してください。
 
 ```bash
-bun lefthook install
+make install
 ```
 
 ## プルリクエスト
