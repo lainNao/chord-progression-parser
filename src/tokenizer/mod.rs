@@ -432,6 +432,48 @@ mod tests {
         use super::*;
 
         #[test]
+        fn extension_can_surrounded_by_white_space() {
+            let input = "C(  7  )";
+            let expected = vec![
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 5,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 8,
+                        length: 1,
+                    },
+                },
+            ];
+
+            let lex_result = tokenize(input);
+            assert_eq!(lex_result.unwrap(), expected);
+        }
+
+        #[test]
         fn chord_can_surrounded_by_white_space() {
             let input = "C -   C -C(7) -C";
             let expected = vec![
