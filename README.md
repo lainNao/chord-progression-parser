@@ -13,7 +13,7 @@ A converter from chord progression strings to AST built in Rust that outputs was
 
 You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-forked-phmkrs?file=%2Fsrc%2FApp.tsx)
 
-![example gif](https://i.imgur.com/0E3Y93g.gif)
+![example gif](https://i.imgur.com/kGwySIJ.gif)
 
 ## Documents
 
@@ -42,12 +42,12 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   fn main() {
     let input: &str = "
   @section=Intro
-  |[key=E]E|C#m(7)|Bm(7)|C#(7)|
-  |F#m(7)|Am(7)|F#(7)|B|
+  [key=E]E - C#m(7) - Bm(7) - C#(7)
+  F#m(7) - Am(7) - F#(7) - B
   
   @section=Verse
-  |E|C#m(7)|Bm(7)|C#(7)|
-  |F#m(7)|Am(7)|F#(7)|B|
+  E - C#m(7) - Bm(7) - C#(7)
+  F#m(7) - Am(7) - F#(7) - B
   ";
 
       let result = parse_chord_progression_string(input);
@@ -80,7 +80,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   ```typescript
   import { parseChordProgressionString } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
 
-  const result = parseChordProgressionString("|C|");
+  const result = parseChordProgressionString("C");
   console.log(result);
   ```
 
@@ -97,7 +97,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   ```typescript
   import { parseChordProgressionString } from "@lainnao/chord-progression-parser-server/chord_progression_parser";
 
-  const result = parseChordProgressionString("|C|");
+  const result = parseChordProgressionString("C");
   console.log(result);
   ```
 
@@ -115,7 +115,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
     </head>
     <body>
       <h1>load wasm directly example</h1>
-      <h2>parse |C|</h2>
+      <h2>parse C</h2>
       <pre id="result"></pre>
       <script type="module">
         import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.1.12/chord_progression_parser.js";
@@ -124,7 +124,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
           // initialize wasm
           await mod.default();
           // use
-          const result = mod.parseChordProgressionString("|C|");
+          const result = mod.parseChordProgressionString("C");
           console.log(result);
           document.querySelector("#result").innerHTML = JSON.stringify(
             result,

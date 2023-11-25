@@ -4,12 +4,12 @@
 
 ```txt
 @section=SimpleVerse
-|C|Dm|Em|F|
-|G|Am|Bm(o)|C|
+C - Dm - Em - F
+G - Am - Bm(o) - C
 
 @section=ComplexChorus
-|[key=Gm]F(9,13)|Fm(6)|Bb(add9,13)|Bbaug|
-|[key=E]F#m(b5,7),Gm(M9)|Bm(7,9)|E(M13)|Edim|
+[key=Gm]F(9,13) - Fm(6) - Bb(add9,13) - Bbaug
+[key=E]F#m(b5,7),Gm(M9) - Bm(7,9) - E(M13) - Edim
 ```
 
 ## syntax
@@ -20,8 +20,8 @@
   - `SectionMeta`
     - format: `@key=value`
   - `ChordInfo`
-    - format: `(key=value)Chord(Extension)`
+    - format: `[key=value]Chord(Extension)`
     - capture:
-      - `(key=value)` ...Optional
+      - `[key=value]` ...Optional
       - `(extension)` ..Optional. Multiple extensions can be specified, separated by commas
       - `Chord` ・・・Fractional codes like `C/B`, `?` and `%` are also possible

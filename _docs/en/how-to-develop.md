@@ -8,7 +8,7 @@ please refer to `.github/workflows/check-not-broken.yml` and `Makefile`.
 and please run these commands for local CI
 
 ```bash
-bun lefthook install
+make install
 ```
 
 ## Pull Request

@@ -6,6 +6,7 @@
   - set_panic_hook、イメージ通りに使えてないのでは？これを使えばcatchに行かないようにできるかも？
     - 本当はpanic時にスタックトレースを出したいので、出せるようにしてほしいなと思う
     - というかpanicを出さないようにしてほしい。これはjs側でもtry-catchの必要性が出てきてしまうので。
+    - これ？ <https://stackoverflow.com/questions/59426545/rust-paniccatch-unwind-no-use-in-webassembly>
 
 - `自動テストやCI`
   - TSでコード進行ジェネレータを作る。実装的にはASTジェネレータを作って、それにtoString()を生やせばいいと思う
