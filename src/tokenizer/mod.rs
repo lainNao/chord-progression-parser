@@ -1887,8 +1887,8 @@ Gm-Gm
         #[test]
         fn chord_block_should_not_contains_line_break() {
             let input = "
-                |C,
-                C7|F|Fm(7)|
+                C,
+                C7-F-Fm(7)
                 ";
 
             let lex_result = tokenize(input);
