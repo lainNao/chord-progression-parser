@@ -100,6 +100,7 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
             }),
             ' ' | '　' | '\t' => {}
             '\n' | '\r' => {
+                // first line line-break
                 if tokens.is_empty() {
                     tokens.push(TokenWithPosition {
                         token: Token::LineBreak,
@@ -179,21 +180,6 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
             non_functional_char => {
                 let mut token = String::new();
                 token.push(non_functional_char);
-
-                // // if non functional char appears at first, it is an error
-                // if tokens.is_empty() {
-                //     return Err(ErrorInfoWithPosition {
-                //         error: ErrorInfo {
-                //             code: ErrorCode::Tkn1,
-                //             additional_info: Some(non_functional_char.to_string()),
-                //         },
-                //         position: Position {
-                //             line_number: pos.line_number,
-                //             column_number: pos.column_number,
-                //             length: 1,
-                //         },
-                //     });
-                // }
 
                 let get_token_type_result = match tokens.last() {
                     None => Ok(Some(ValueToken::Chord)),
@@ -326,6 +312,11 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                         break;
                     }
 
+                    // if white space, break
+                    if next_ch == ' ' || next_ch == '　' || next_ch == '\t' {
+                        break;
+                    }
+
                     token.push(next_ch);
                     next_char_with_position(
                         &mut chars,
@@ -439,6 +430,96 @@ mod tests {
         use crate::util::position::Position;
 
         use super::*;
+
+        #[test]
+        fn chord_can_surrounded_by_white_space() {
+            let input = "C -   C -C(7) -C";
+            let expected = vec![
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 7,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 9,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 10,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionStart,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 11,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Extension("7".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 12,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ExtensionEnd,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 13,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 15,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 16,
+                        length: 1,
+                    },
+                },
+            ];
+
+            let lex_result = tokenize(input);
+            assert_eq!(lex_result.unwrap(), expected);
+        }
 
         #[test]
         fn without_any_line_break() {
