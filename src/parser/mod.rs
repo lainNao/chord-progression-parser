@@ -338,8 +338,6 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         // reset tmp_chord_info_meta_infos
                         tmp_chord_info_meta_infos = Vec::new();
                     } else {
-                        println!("2322222{:?}", previous);
-
                         // add ChordInfo to last chord block
                         sections
                             .last_mut()
@@ -771,6 +769,72 @@ mod tests {
     mod success {
         use super::*;
         use crate::util::position::Position;
+
+        #[test]
+        fn comma_separated_chords() {
+            let input = [
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("G".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                        length: 1,
+                    },
+                },
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Ok([Section {
+                    meta_infos: Vec::new(),
+                    chord_blocks: vec![vec![
+                        ChordInfo {
+                            chord_expression: ChordExpression::Chord(Chord {
+                                plain: "C".to_string(),
+                                detailed: ChordDetailed {
+                                    base: Base::C,
+                                    accidental: None,
+                                    chord_type: ChordType::Major,
+                                    extensions: Vec::new(),
+                                },
+                            }),
+                            denominator: None,
+                            meta_infos: Vec::new(),
+                        },
+                        ChordInfo {
+                            chord_expression: ChordExpression::Chord(Chord {
+                                plain: "G".to_string(),
+                                detailed: ChordDetailed {
+                                    base: Base::G,
+                                    accidental: None,
+                                    chord_type: ChordType::Major,
+                                    extensions: Vec::new(),
+                                },
+                            }),
+                            denominator: None,
+                            meta_infos: Vec::new(),
+                        },
+                    ],],
+                },]
+                .to_vec())
+            );
+        }
 
         #[test]
         fn multiple_break_line_under_section_meta_line() {
@@ -1400,33 +1464,6 @@ mod tests {
         }
 
         #[test]
-        fn same_chord_symbol_should_not_be_placed_first_of_chord_block() {
-            let input = [TokenWithPosition {
-                token: Token::Chord("%".to_string()),
-                position: Position {
-                    line_number: 2,
-                    column_number: 1,
-                    length: 1,
-                },
-            }];
-
-            assert_eq!(
-                parse(&input),
-                Err(ErrorInfoWithPosition {
-                    error: ErrorInfo {
-                        code: ErrorCode::Chb1,
-                        additional_info: None,
-                    },
-                    position: Position {
-                        line_number: 2,
-                        column_number: 1,
-                        length: 1,
-                    },
-                })
-            );
-        }
-
-        #[test]
         fn chord_blocks_with_expressions() {
             let input = [
                 TokenWithPosition {
@@ -1562,6 +1599,34 @@ mod tests {
             tokenizer::types::{token::Token, token_with_position::TokenWithPosition},
             util::position::Position,
         };
+
+        // only % is error
+        #[test]
+        fn same_chord_symbol_should_not_be_placed_first_of_chord_block() {
+            let input = [TokenWithPosition {
+                token: Token::Chord("%".to_string()),
+                position: Position {
+                    line_number: 2,
+                    column_number: 1,
+                    length: 1,
+                },
+            }];
+
+            assert_eq!(
+                parse(&input),
+                Err(ErrorInfoWithPosition {
+                    error: ErrorInfo {
+                        code: ErrorCode::Chb1,
+                        additional_info: None,
+                    },
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                        length: 1,
+                    },
+                })
+            );
+        }
 
         // C(9,,11) is error
         #[test]
