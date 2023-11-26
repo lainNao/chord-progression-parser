@@ -1,0 +1,17 @@
+type ParsedResult =
+  | {
+      success: true;
+      ast: Ast;
+    }
+  | {
+      success: false;
+      error: {
+        code: ErrorCode;
+        additionalInfo: string;
+        position: {
+          lineNumber: number;
+          columnNumber: number;
+          length: number;
+        };
+      };
+    };

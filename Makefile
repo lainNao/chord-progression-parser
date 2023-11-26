@@ -94,8 +94,10 @@ generate-ts-declare-file-for-pkg-web:
 	make generate-ts-types
 # append contents of generatedTypes.ts to pkg-web/chord_progression_parser.d.ts
 	cat generatedTypes.ts >> pkg/pkg-web/chord_progression_parser.d.ts
+# prepend contents of additionalType.ts.txt to pkg/pkg-web/chord_progression_parser.d.ts
+	cat resources/additionalType.ts.txt pkg/pkg-web/chord_progression_parser.d.ts > pkg/pkg-web/chord_progression_parser.d.ts.tmp && mv pkg/pkg-web/chord_progression_parser.d.ts.tmp pkg/pkg-web/chord_progression_parser.d.ts
 # Rewrite definition of return value of run function in pkg-web/chord_progression_parser.d.ts to "Ast"
-	sed -i.bak 's/any/Ast/g' pkg/pkg-web/chord_progression_parser.d.ts && rm pkg/pkg-web/chord_progression_parser.d.ts.bak
+	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-web/chord_progression_parser.d.ts && rm pkg/pkg-web/chord_progression_parser.d.ts.bak
 # copy resources/error_code_message_map.ts under pkg/pkg-web, overwriting
 	cp resources/error_code_message_map.ts pkg/pkg-web
 # compile it to .js and d.ts
@@ -110,8 +112,10 @@ generate-ts-declare-file-for-pkg-node:
 	make generate-ts-types
 # append contents of generatedTypes.ts to pkg-node/chord_progression_parser.d.ts
 	cat generatedTypes.ts >> pkg/pkg-node/chord_progression_parser.d.ts
+# prepend contents of additionalType.ts.txt to pkg/pkg-node/chord_progression_parser.d.ts
+	cat resources/additionalType.ts.txt pkg/pkg-node/chord_progression_parser.d.ts > pkg/pkg-node/chord_progression_parser.d.ts.tmp && mv pkg/pkg-node/chord_progression_parser.d.ts.tmp pkg/pkg-node/chord_progression_parser.d.ts
 # Rewrite definition of return value of run function in pkg-node/chord_progression_parser.d.ts to "Ast"
-	sed -i.bak 's/any/Ast/g' pkg/pkg-node/chord_progression_parser.d.ts && rm pkg/pkg-node/chord_progression_parser.d.ts.bak
+	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-node/chord_progression_parser.d.ts && rm pkg/pkg-node/chord_progression_parser.d.ts.bak
 # copy resources/error_code_message_map.ts under pkg/pkg-node, overwriting
 	cp resources/error_code_message_map.ts pkg/pkg-node
 # compile it to .js and d.ts
@@ -126,8 +130,10 @@ generate-ts-declare-file-for-pkg-bundler:
 	make generate-ts-types
 # append contents of generatedTypes.ts to pkg-bundler/chord_progression_parser.d.ts
 	cat generatedTypes.ts >> pkg/pkg-bundler/chord_progression_parser.d.ts
+# prepend contents of additionalType.ts.txt to pkg/pkg-bundler/chord_progression_parser.d.ts
+	cat resources/additionalType.ts.txt pkg/pkg-bundler/chord_progression_parser.d.ts > pkg/pkg-bundler/chord_progression_parser.d.ts.tmp && mv pkg/pkg-bundler/chord_progression_parser.d.ts.tmp pkg/pkg-bundler/chord_progression_parser.d.ts
 # Rewrite definition of return value of run function in pkg-bundler/chord_progression_parser.d.ts to "Ast"
-	sed -i.bak 's/any/Ast/g' pkg/pkg-bundler/chord_progression_parser.d.ts && rm pkg/pkg-bundler/chord_progression_parser.d.ts.bak
+	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-bundler/chord_progression_parser.d.ts && rm pkg/pkg-bundler/chord_progression_parser.d.ts.bak
 # copy resources/error_code_message_map.ts under pkg/pkg-bundler, overwriting
 	cp resources/error_code_message_map.ts pkg/pkg-bundler
 # compile it to .js and d.ts
