@@ -31,6 +31,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -50,6 +52,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -67,6 +71,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -86,6 +92,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -105,6 +113,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -122,6 +132,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -141,6 +153,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -182,6 +196,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -201,6 +217,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -218,6 +236,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -237,6 +257,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -256,6 +278,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -273,6 +297,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -292,6 +318,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -337,6 +365,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -354,6 +384,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -371,6 +403,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -388,6 +422,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -403,6 +439,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -420,6 +458,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -437,6 +477,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -454,6 +496,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -471,6 +515,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -514,6 +560,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(
@@ -572,6 +620,8 @@ Ok(
                         ),
                         denominator: None,
                     },
+                ],
+                [
                     ChordInfo {
                         meta_infos: [],
                         chord_expression: Chord(

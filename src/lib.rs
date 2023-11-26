@@ -248,6 +248,8 @@ C-A,B
                                     }
                                 ]
                             },
+                        ],
+                        [
                             {
                                 "chordExpression": {
                                     "type": "chord",
