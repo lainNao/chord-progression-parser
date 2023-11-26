@@ -3,6 +3,8 @@
 ## 必須
 
 - 例外を扱う必要がある件、せめてドキュメントに残しておこうかな…
+- s/any/Ast/g のところのAstを{success: true, ast: Ast} | {success: false, error: ...} にする
+  - あとgetErrorMessageみたいな関数もイジる必要あるかも
 
 - `自動テストやCI`
   - TSでコード進行ジェネレータを作る。実装的にはASTジェネレータを作って、それにtoString()を生やせばいいと思う
