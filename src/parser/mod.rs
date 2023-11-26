@@ -297,8 +297,8 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
             }
             // chord
             Token::Chord(chord_string) => {
-                // chord expression of "-" or "?" or "%"
-                if chord_string.eq("-") || chord_string.eq("?") || chord_string.eq("%") {
+                // chord expression of "_" or "?" or "%"
+                if chord_string.eq("_") || chord_string.eq("?") || chord_string.eq("%") {
                     if sections.last_mut().unwrap().chord_blocks.is_empty() && chord_string == "%" {
                         return Err(ErrorInfoWithPosition {
                             error: ErrorInfo {
@@ -321,6 +321,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                                 chord_expression: match chord_string.as_str() {
                                     "?" => ChordExpression::Unidentified,
                                     "%" => ChordExpression::Same,
+                                    "_" => ChordExpression::NoChord,
                                     _ => {
                                         return Err(ErrorInfoWithPosition {
                                             error: ErrorInfo {
@@ -347,6 +348,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                                 chord_expression: match chord_string.as_str() {
                                     "?" => ChordExpression::Unidentified,
                                     "%" => ChordExpression::Same,
+                                    "_" => ChordExpression::NoChord,
                                     _ => {
                                         return Err(ErrorInfoWithPosition {
                                             error: ErrorInfo {
@@ -1490,6 +1492,22 @@ mod tests {
                         length: 1,
                     },
                 },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 4,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("_".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 5,
+                        length: 1,
+                    },
+                },
             ];
 
             assert_eq!(
@@ -1504,6 +1522,11 @@ mod tests {
                         },],
                         vec![ChordInfo {
                             chord_expression: ChordExpression::Same,
+                            denominator: None,
+                            meta_infos: Vec::new(),
+                        },],
+                        vec![ChordInfo {
+                            chord_expression: ChordExpression::NoChord,
                             denominator: None,
                             meta_infos: Vec::new(),
                         },]
