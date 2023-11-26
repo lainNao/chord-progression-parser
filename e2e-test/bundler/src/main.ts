@@ -4,7 +4,6 @@ import {
   ErrorCode,
   getErrorMessage,
 } from "../../../pkg/pkg-bundler/error_code_message_map";
-// import sampleChords from "./sample-chord-progression.txt?raw";
 
 const getHighlightedTextLines = ({
   text,
@@ -35,6 +34,37 @@ const getHighlightedTextLines = ({
   return lines;
 };
 
+function createErrorMessage({
+  currentValue,
+  errorCode,
+  lineNumber,
+  columnNumber,
+  length,
+}: {
+  currentValue: string;
+  errorCode: ErrorCode;
+  lineNumber: number;
+  columnNumber: number;
+  length: number;
+}) {
+  return (
+    "" +
+    `${lineNumber}行目: ` +
+    getErrorMessage({
+      errorCode,
+      lang: "ja",
+    }) +
+    `(${errorCode})\n` +
+    "\n" +
+    getHighlightedTextLines({
+      text: currentValue,
+      row: lineNumber - 1,
+      col: columnNumber - 1,
+      length: length,
+    })[lineNumber - 1]
+  );
+}
+
 function main() {
   const elms = {
     textarea: document.querySelector<HTMLTextAreaElement>("#textarea")!,
@@ -46,50 +76,26 @@ function main() {
     try {
       const start = performance.now();
       elms.result.innerHTML = "";
-      const ast = parseChordProgressionString(value);
+      const result = parseChordProgressionString(value);
       const end = performance.now();
+      console.info(result);
+
+      // time
       elms.time.innerHTML = `${((end - start) * 0.001).toFixed(5)}sec`;
-      elms.result.innerHTML = JSON.stringify(ast, null, 2);
-      console.info(ast);
+
+      // result
+      elms.result.innerHTML = result.success
+        ? JSON.stringify(result, null, 2)
+        : createErrorMessage({
+            currentValue: value,
+            errorCode: result.error.code as ErrorCode,
+            lineNumber: result.error.position.lineNumber,
+            columnNumber: result.error.position.columnNumber,
+            length: result.error.position.length,
+          });
     } catch (e: unknown) {
       console.log(e);
-      if (typeof e === "string") {
-        const parsedError = JSON.parse(e);
-
-        // NOTE: This is a workaround for the case where the error is not a JSON string.
-        if (typeof parsedError === "string") {
-          elms.result.innerHTML = String(parsedError);
-          return;
-        }
-
-        // NOTE: This is a controlled error case
-        if (
-          typeof parsedError == "object" &&
-          parsedError !== null &&
-          "code" in parsedError
-        ) {
-          // FIXME: generate and use appropriate guard
-          if (parsedError.position) {
-            elms.result.innerHTML =
-              "" +
-              `${parsedError.position.lineNumber}行目: ` +
-              getErrorMessage({
-                errorCode: parsedError.code as ErrorCode,
-                lang: "ja",
-              }) +
-              `(${parsedError.code})\n` +
-              "\n" +
-              getHighlightedTextLines({
-                text: elms.textarea.value,
-                row: parsedError.position.lineNumber - 1,
-                col: parsedError.position.columnNumber - 1,
-                length: parsedError.position.length,
-              })[parsedError.position.lineNumber - 1];
-          }
-        }
-      } else {
-        elms.result.innerHTML = "Unknown error";
-      }
+      elms.result.innerHTML = JSON.stringify(e, null, 2);
     }
   };
 

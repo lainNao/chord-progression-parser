@@ -5,27 +5,32 @@ type TestData = {
 
 export const testData: TestData = {
   input: `C`,
-  expected: [
-    {
-      metaInfos: [],
-      chordBlocks: [
-        [
-          {
-            metaInfos: [],
-            chordExpression: {
-              type: "chord",
-              value: {
-                plain: "C",
-                detailed: {
-                  base: "C",
-                  chordType: "M",
-                  extensions: [],
+  expected: {
+    success: true,
+    ast: [
+      {
+        metaInfos: [],
+        chordBlocks: [
+          [
+            {
+              metaInfos: [],
+              denominator: null,
+              chordExpression: {
+                type: "chord",
+                value: {
+                  plain: "C",
+                  detailed: {
+                    base: "C",
+                    accidental: null,
+                    chordType: "M",
+                    extensions: [],
+                  },
                 },
               },
             },
-          },
+          ],
         ],
-      ],
-    },
-  ],
+      },
+    ],
+  },
 };

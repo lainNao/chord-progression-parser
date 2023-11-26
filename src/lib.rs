@@ -2,47 +2,28 @@ mod error_code;
 mod parser;
 mod tokenizer;
 mod util;
-
-use std::panic;
-
 use error_code::ErrorInfoWithPosition;
 use parser::{parse, Ast};
 use serde_json::json;
 use tokenizer::tokenize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::error_code::ErrorCode;
-
+// FIXME:
+//  "serde_wasm_bindgen::to_value(&json_result).unwrap()" makes Map.
+//  But I want to generate JSON.
+//  So currently use deprecated from_serde() instead.
 #[doc(hidden)]
 /// @param {string} input - The chord progression string to parse.
-/// @param {string} lang - The language to use for error messages.
-/// @returns {Ast} - The parsed chord progression.
-/// @throws {{code: string, additionalInfo: string} | string, position: {lineNumber: number, columnNumber: number}} - The error information.
+/// @returns {ParsedResult} - The parsed result.
+/// @throws {string} - The error information.
 #[wasm_bindgen(js_name = "parseChordProgressionString", skip_jsdoc)]
-pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue> {
-    let result_of_result = panic::catch_unwind(|| parse_chord_progression_string(input));
+pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
+    let result = parse_chord_progression_string(input);
 
-    if result_of_result.is_err() {
-        return Err(JsValue::from_str(
-            &json!({
-                "code": ErrorCode::Other1.to_string(),
-                "additionalInfo": "",
-                "position": {
-                    "lineNumber": 0,
-                    "columnNumber": 0,
-                    "length": 0,
-                },
-            })
-            .to_string(),
-        ));
-    }
-
-    let result = result_of_result.unwrap();
-
-    if result.is_err() {
-        let error_info = result.err().unwrap();
-        return Err(JsValue::from_str(
-            &json!({
+    let json_result = if let Err(error_info) = result {
+        json!({
+            "success": false,
+            "error": {
                 "code": error_info.error.code.to_string(),
                 "additionalInfo": error_info.error.additional_info,
                 "position": {
@@ -50,13 +31,16 @@ pub fn parse_chord_progression_string_js(input: &str) -> Result<JsValue, JsValue
                     "columnNumber": error_info.position.column_number,
                     "length": error_info.position.length,
                 },
-            })
-            .to_string(),
-        ));
-    }
+            }
+        })
+    } else {
+        json!({
+            "success": true,
+            "ast": result.unwrap(),
+        })
+    };
 
-    serde_wasm_bindgen::to_value(&result.unwrap())
-        .map_err(|err| JsValue::from_str(&format!("{}", err)))
+    JsValue::from_serde(&json_result).unwrap()
 }
 
 /// Parse a chord progression string and return the AST

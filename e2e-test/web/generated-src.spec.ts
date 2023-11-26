@@ -7,27 +7,32 @@ test("success simple usage", async ({ page }) => {
   const resultText = await page.locator("#result").innerText();
 
   // check
-  expect(JSON.parse(resultText)).toStrictEqual([
-    {
-      metaInfos: [],
-      chordBlocks: [
-        [
-          {
-            metaInfos: [],
-            chordExpression: {
-              type: "chord",
-              value: {
-                plain: "C",
-                detailed: {
-                  base: "C",
-                  chordType: "M",
-                  extensions: [],
+  expect(JSON.parse(resultText)).toStrictEqual({
+    success: true,
+    ast: [
+      {
+        metaInfos: [],
+        chordBlocks: [
+          [
+            {
+              metaInfos: [],
+              denominator: null,
+              chordExpression: {
+                type: "chord",
+                value: {
+                  plain: "C",
+                  detailed: {
+                    base: "C",
+                    accidental: null,
+                    chordType: "M",
+                    extensions: [],
+                  },
                 },
               },
             },
-          },
+          ],
         ],
-      ],
-    },
-  ]);
+      },
+    ],
+  });
 });

@@ -20,37 +20,25 @@ export function parseChordProgression(
   chordProgressionString: string
 ): ParseChordProgressionResult {
   try {
-    const astJson = parser.parseChordProgressionString(chordProgressionString);
+    const result = parser.parseChordProgressionString(chordProgressionString);
+
+    if (!result.success) {
+      const errorMessage = getErrorMessage({
+        errorCode: result.error.code as ErrorCode,
+        lang: "ja",
+      });
+      return {
+        isOk: false,
+        error: errorMessage ?? "Unknown error",
+      };
+    }
+
     return {
       isOk: true,
-      value: astJson,
+      value: result.ast,
     };
   } catch (e: unknown) {
     console.log(e);
-    if (typeof e === "string") {
-      const parsedError = JSON.parse(e);
-      if (typeof parsedError === "string") {
-        return {
-          isOk: false,
-          error: parsedError,
-        };
-      }
-
-      if (
-        typeof parsedError == "object" &&
-        parsedError !== null &&
-        "code" in parsedError
-      ) {
-        const errorMessage = getErrorMessage({
-          errorCode: parsedError.code as ErrorCode,
-          lang: "ja",
-        });
-        return {
-          isOk: false,
-          error: errorMessage ?? "Unknown error",
-        };
-      }
-    }
     return {
       isOk: false,
       error: e,
