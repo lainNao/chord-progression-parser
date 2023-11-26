@@ -240,8 +240,9 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                         Token::Slash => Ok(Some(ValueToken::Denominator)),
                         _ => {
                             // NOTE:
-                            //   If the result of tracing back is "]" or "-", it is a code,
-                            //   and if it is "(", it is an Extension.
+                            //   If the result of tracing back is "]" or "-", it is a chord,
+                            //   and if it is "(", it is an extension.
+                            //   and if it is ",", chord or extension. ( and more prev is chord then chord, extension then extension)
                             let mut is_code = false;
                             let mut is_extension = false;
                             let mut prev_token_index = tokens.len();
@@ -260,16 +261,28 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                                         is_code = true;
                                         break;
                                     }
-                                    Token::ExtensionStart => {
-                                        is_extension = true;
-                                        break;
-                                    }
                                     Token::ExtensionEnd => {
                                         is_code = true;
                                         break;
                                     }
                                     Token::LineBreak => {
                                         is_code = true;
+                                        break;
+                                    }
+                                    Token::ExtensionStart => {
+                                        is_extension = true;
+                                        break;
+                                    }
+                                    Token::Comma => {
+                                        // look back more
+                                        continue;
+                                    }
+                                    Token::Chord(_) => {
+                                        is_code = true;
+                                        break;
+                                    }
+                                    Token::Extension(_) => {
+                                        is_extension = true;
                                         break;
                                     }
                                     _ => {}
@@ -429,6 +442,104 @@ mod tests {
         use crate::util::position::Position;
 
         use super::*;
+
+        #[test]
+        fn comma_separated_chords_can_tokenize() {
+            let input = "C,Dm,Em,F,G,Am";
+            let expected = vec![
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Dm".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                        length: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 5,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Em".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 6,
+                        length: 2,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 8,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("F".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 9,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 10,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("G".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 11,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Comma,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 12,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("Am".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 13,
+                        length: 2,
+                    },
+                },
+            ];
+
+            let lex_result = tokenize(input);
+            assert_eq!(lex_result.unwrap(), expected);
+        }
 
         #[test]
         fn extension_can_surrounded_by_white_space() {
