@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new-tag: ${{ steps.get-tag-and-version.outputs.current-version }}
+      make-release: ${{ steps.get-tag-and-version.outputs.current-version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,24 +31,26 @@ jobs:
         with:
           custom_tag: ${{ steps.get-tag-and-version.outputs.current-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make release
+        run: echo "make-release=true" >> "$GITHUB_OUTPUT"
   release-to-crates-io:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-crates-io.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.new-tag != '' }}
+    if: ${{ needs.test-and-release.outputs.make-release == 'true' }}
     with:
       tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
   release-to-npm:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.new-tag != '' }}
+    if: ${{ needs.test-and-release.outputs.make-release == 'true' }}
     with:
       tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
   release-to-github:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.new-tag != '' }}
+    if: ${{ needs.test-and-release.outputs.make-release == 'true' }}
     with:
       tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
