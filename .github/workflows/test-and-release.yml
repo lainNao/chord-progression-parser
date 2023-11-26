@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new-tag: ${{ steps.get-tag-and-version.outputs.current-version }}
-      make-release: ${{ steps.get-tag-and-version.outputs.current-version }}
+      make-release: ${{ steps.get-tag-and-version.outputs.set-make-release-output }}
     steps:
       - uses: actions/checkout@v4
       - name: Make testing environment
@@ -31,8 +31,9 @@ jobs:
         with:
           custom_tag: ${{ steps.get-tag-and-version.outputs.current-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set output
+      - name: Set make-release output
         if: ${{ steps.get-tag-and-version.outputs.previous-version != steps.get-tag-and-version.outputs.current-version }}
+        id: set-make-release-output
         run: echo "make-release=true" >> "$GITHUB_OUTPUT"
   release-to-crates-io:
     needs: [test-and-release]
