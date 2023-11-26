@@ -40,18 +40,18 @@ jobs:
     secrets: inherit
     if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
     with:
-      tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
+      tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
   release-to-npm:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
     if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
     with:
-      tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
+      tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
   release-to-github:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
     if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
     with:
-      tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
+      tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
