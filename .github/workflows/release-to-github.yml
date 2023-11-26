@@ -7,12 +7,20 @@ on:
         type: string
         description: "Tag to release"
         required: true
+      changelog:
+        type: string
+        description: "Changelog"
+        required: false
   workflow_call:
     inputs:
       tag-to-release:
         type: string
         description: "Tag to release"
         required: true
+      changelog:
+        type: string
+        description: "Changelog"
+        required: false
 
 jobs:
   release-to-github:
@@ -26,3 +34,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ inputs.tag-to-release }}
           skipIfReleaseExists: true
+          body: ${{ inputs.changelog }}
