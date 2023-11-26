@@ -24,4 +24,7 @@ G - Am - Bm(o) - C
     - capture:
       - `[key=value]` ...Optional
       - `(extension)` ..Optional. Multiple extensions can be specified, separated by commas
-      - `Chord` ・・・Fractional codes like `C/B`, `?` and `%` are also possible
+      - `Chord` ...Fractional codes like `C/B`, `?`,`%`, and `_` are also possible.
+        - `?` ...Unknown chord
+        - `%` ...Same as previous chord
+        - `_` ...No chord
