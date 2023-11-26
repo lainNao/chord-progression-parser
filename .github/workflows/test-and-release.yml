@@ -16,23 +16,20 @@ jobs:
       - name: Make testing environment
         uses: ./.github/actions/make-environment
       - run: make check-not-broken
-      - name:
-          Get tag and version
-          # get latest tag and output as latest-tag
-          # get version from Cargo.toml and output as current-version
+      - name: Get latest-tag and current-version
         id: get-tag-and-version
         run: |
           git fetch --tags
           echo "latest-tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
           echo "current-version=$(grep -m1 "version" Cargo.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
       - name: Make new tag
-        if: ${{ steps.get-tag-and-version.outputs.previous-version != steps.get-tag-and-version.outputs.current-version }}
+        if: ${{ steps.get-tag-and-version.outputs.latest-tag && steps.get-tag-and-version.outputs.current-version && steps.get-tag-and-version.outputs.latest-tag != steps.get-tag-and-version.outputs.current-version }}
         uses: mathieudutour/github-tag-action@v5.6
         with:
           custom_tag: ${{ steps.get-tag-and-version.outputs.current-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set make-release output
-        if: ${{ steps.get-tag-and-version.outputs.previous-version != steps.get-tag-and-version.outputs.current-version }}
+        if: ${{ steps.get-tag-and-version.outputs.latest-tag && steps.get-tag-and-version.outputs.current-version && steps.get-tag-and-version.outputs.latest-tag != steps.get-tag-and-version.outputs.current-version }}
         id: set-make-release-output
         run: echo "make-release=true" >> "$GITHUB_OUTPUT"
   release-to-crates-io:
