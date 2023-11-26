@@ -11,20 +11,23 @@ jobs:
   release-if-version-changed:
     runs-on: ubuntu-latest
     outputs:
-      new-tag: ${{ steps.detect_tag.outputs.current-version }}
+      new-tag: ${{ steps.get-tag-and-version.outputs.current-version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - uses: salsify/action-detect-and-tag-new-version@v2
-        id: detect_tag
-        with:
-          create-tag: false
-          version-command: cargo read-manifest | jq -r .version
-      - if: ${{ steps.detect_tag.outputs.previous-version != steps.detect_tag.outputs.current-version }}
+      - name:
+          Get tag and version
+          # get latest tag and output as latest-tag
+          # get version from Cargo.toml and output as current-version
+        id: get-tag-and-version
+        run: |
+          echo "latest-tag::$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+          echo "current-version::$(grep -m1 "version" Cargo.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
+      - if: ${{ steps.get-tag-and-version.outputs.previous-version != steps.get-tag-and-version.outputs.current-version }}
         uses: mathieudutour/github-tag-action@v5.6
         with:
-          custom_tag: ${{ steps.detect_tag.outputs.current-version }}
+          custom_tag: ${{ steps.get-tag-and-version.outputs.current-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
   release-to-crates-io:
     needs: [release-if-version-changed]
