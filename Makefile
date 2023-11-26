@@ -158,6 +158,11 @@ fix:
 ################################################################ tester 
 ################################################################
 
+# review snapshot
+# use it when you want to update snapshot and pass snapshot test
+review-snapshot:
+	cargo insta review
+
 # lint check
 check-lint:
 	cargo clippy

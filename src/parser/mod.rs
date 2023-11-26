@@ -297,48 +297,75 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
             }
             // chord
             Token::Chord(chord_string) => {
+                // chord expression of "-" or "?" or "%"
                 if chord_string.eq("-") || chord_string.eq("?") || chord_string.eq("%") {
-                    // if chord_blocks is empty, make new chord_block
-                    if sections.last_mut().unwrap().chord_blocks.is_empty() {
-                        if chord_string == "%" {
-                            return Err(ErrorInfoWithPosition {
-                                error: ErrorInfo {
-                                    code: ErrorCode::Chb1,
-                                    additional_info: None,
-                                },
-                                position: token_with_position.position.clone(),
-                            });
-                        }
-                        sections.last_mut().unwrap().chord_blocks.push(Vec::new());
+                    if sections.last_mut().unwrap().chord_blocks.is_empty() && chord_string == "%" {
+                        return Err(ErrorInfoWithPosition {
+                            error: ErrorInfo {
+                                code: ErrorCode::Chb1,
+                                additional_info: None,
+                            },
+                            position: token_with_position.position.clone(),
+                        });
                     }
 
-                    // add ChordInfo to last chord block
-                    sections
-                        .last_mut()
-                        .unwrap()
-                        .chord_blocks
-                        .last_mut()
-                        .unwrap()
-                        .push(ChordInfo {
-                            chord_expression: match chord_string.as_str() {
-                                "?" => ChordExpression::Unidentified,
-                                "%" => ChordExpression::Same,
-                                _ => {
-                                    return Err(ErrorInfoWithPosition {
-                                        error: ErrorInfo {
-                                            code: ErrorCode::Cho1,
-                                            additional_info: None,
-                                        },
-                                        position: token_with_position.position.clone(),
-                                    });
-                                }
-                            },
-                            denominator: None,
-                            meta_infos: tmp_chord_info_meta_infos.clone(),
-                        });
+                    if previous.is_some() && previous.clone().unwrap().token == Token::Comma {
+                        // add ChordInfo to last chord block
+                        sections
+                            .last_mut()
+                            .unwrap()
+                            .chord_blocks
+                            .last_mut()
+                            .unwrap()
+                            .push(ChordInfo {
+                                chord_expression: match chord_string.as_str() {
+                                    "?" => ChordExpression::Unidentified,
+                                    "%" => ChordExpression::Same,
+                                    _ => {
+                                        return Err(ErrorInfoWithPosition {
+                                            error: ErrorInfo {
+                                                code: ErrorCode::Cho1,
+                                                additional_info: None,
+                                            },
+                                            position: token_with_position.position.clone(),
+                                        });
+                                    }
+                                },
+                                denominator: None,
+                                meta_infos: tmp_chord_info_meta_infos.clone(),
+                            });
 
-                    // reset tmp_chord_info_meta_infos
-                    tmp_chord_info_meta_infos = Vec::new();
+                        // reset tmp_chord_info_meta_infos
+                        tmp_chord_info_meta_infos = Vec::new();
+                    } else {
+                        println!("2322222{:?}", previous);
+
+                        // add ChordInfo to last chord block
+                        sections
+                            .last_mut()
+                            .unwrap()
+                            .chord_blocks
+                            .push(vec![ChordInfo {
+                                chord_expression: match chord_string.as_str() {
+                                    "?" => ChordExpression::Unidentified,
+                                    "%" => ChordExpression::Same,
+                                    _ => {
+                                        return Err(ErrorInfoWithPosition {
+                                            error: ErrorInfo {
+                                                code: ErrorCode::Cho1,
+                                                additional_info: None,
+                                            },
+                                            position: token_with_position.position.clone(),
+                                        });
+                                    }
+                                },
+                                denominator: None,
+                                meta_infos: tmp_chord_info_meta_infos.clone(),
+                            }]);
+
+                        // reset tmp_chord_info_meta_infos
+                        tmp_chord_info_meta_infos = Vec::new();
+                    }
 
                     continue;
                 }
@@ -352,23 +379,30 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         detailed,
                     };
 
-                    // if chord_blocks is empty, make new chord_block
-                    if sections.last_mut().unwrap().chord_blocks.is_empty() {
-                        sections.last_mut().unwrap().chord_blocks.push(Vec::new());
+                    if previous.is_some() && previous.clone().unwrap().token == Token::Comma {
+                        sections
+                            .last_mut()
+                            .unwrap()
+                            .chord_blocks
+                            .last_mut()
+                            .unwrap()
+                            .push(ChordInfo {
+                                chord_expression: ChordExpression::Chord(chord),
+                                denominator: None,
+                                meta_infos: tmp_chord_info_meta_infos.clone(),
+                            });
+                    } else {
+                        //  make new chord_block
+                        sections
+                            .last_mut()
+                            .unwrap()
+                            .chord_blocks
+                            .push(vec![ChordInfo {
+                                chord_expression: ChordExpression::Chord(chord),
+                                denominator: None,
+                                meta_infos: tmp_chord_info_meta_infos.clone(),
+                            }]);
                     }
-
-                    // make chord info and add to last chord block
-                    sections
-                        .last_mut()
-                        .unwrap()
-                        .chord_blocks
-                        .last_mut()
-                        .unwrap()
-                        .push(ChordInfo {
-                            chord_expression: ChordExpression::Chord(chord),
-                            denominator: None,
-                            meta_infos: tmp_chord_info_meta_infos.clone(),
-                        });
 
                     // reset tmp_chord_info_meta_infos
                     tmp_chord_info_meta_infos = Vec::new();
@@ -565,12 +599,12 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         );
 
                         sections
-                            .last_mut()
+                            .last_mut() //last section
                             .unwrap()
                             .chord_blocks
-                            .last_mut()
+                            .last_mut() // last chord block
                             .unwrap()
-                            .last_mut()
+                            .last_mut() // last chord in comma separated chords
                             .unwrap()
                             .chord_expression = ChordExpression::Chord(Chord {
                             plain: [c.plain.clone(), extension_str_with_parenthesis.to_string()]
@@ -668,6 +702,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                 // if last and second last token is BreakLine, create new Section
                 match token_with_position_list.peek().unwrap().token {
                     Token::ChordBlockSeparator => {
+                        // TODO: ここにも例の（コードブロックなのかCSVなインフォの方か）のif分岐を作成？
                         // if chord_blocks is empty, make new chord_block
                         if sections.last_mut().unwrap().chord_blocks.is_empty() {
                             sections.last_mut().unwrap().chord_blocks.push(Vec::new());
@@ -1279,8 +1314,8 @@ mod tests {
 
             let expected = [Section {
                 meta_infos: Vec::new(),
-                chord_blocks: vec![vec![
-                    ChordInfo {
+                chord_blocks: vec![
+                    vec![ChordInfo {
                         meta_infos: Vec::new(),
                         denominator: None,
                         chord_expression: ChordExpression::Chord(Chord {
@@ -1292,8 +1327,8 @@ mod tests {
                                 extensions: Vec::new(),
                             },
                         }),
-                    },
-                    ChordInfo {
+                    }],
+                    vec![ChordInfo {
                         chord_expression: ChordExpression::Chord(Chord {
                             plain: "G".to_string(),
                             detailed: ChordDetailed {
@@ -1305,8 +1340,8 @@ mod tests {
                         }),
                         denominator: Some("Bb".to_string()),
                         meta_infos: Vec::new(),
-                    },
-                    ChordInfo {
+                    }],
+                    vec![ChordInfo {
                         chord_expression: ChordExpression::Chord(Chord {
                             plain: "Am".to_string(),
                             detailed: ChordDetailed {
@@ -1318,8 +1353,8 @@ mod tests {
                         }),
                         denominator: None,
                         meta_infos: Vec::new(),
-                    },
-                    ChordInfo {
+                    }],
+                    vec![ChordInfo {
                         chord_expression: ChordExpression::Chord(Chord {
                             plain: "Em".to_string(),
                             detailed: ChordDetailed {
@@ -1331,8 +1366,8 @@ mod tests {
                         }),
                         denominator: Some("G".to_string()),
                         meta_infos: Vec::new(),
-                    },
-                    ChordInfo {
+                    }],
+                    vec![ChordInfo {
                         chord_expression: ChordExpression::Chord(Chord {
                             plain: "F#m(7,b5)".to_string(),
                             detailed: ChordDetailed {
@@ -1344,8 +1379,8 @@ mod tests {
                         }),
                         denominator: Some("F#m(7,b5)".to_string()),
                         meta_infos: Vec::new(),
-                    },
-                    ChordInfo {
+                    }],
+                    vec![ChordInfo {
                         chord_expression: ChordExpression::Chord(Chord {
                             plain: "Fbm(13)".to_string(),
                             detailed: ChordDetailed {
@@ -1357,8 +1392,8 @@ mod tests {
                         }),
                         denominator: Some("G7".to_string()),
                         meta_infos: Vec::new(),
-                    },
-                ]],
+                    }],
+                ],
             }];
             let parsed_result = parse(&input);
             assert_eq!(parsed_result, Ok(expected.to_vec()));
@@ -1424,18 +1459,18 @@ mod tests {
                 parse(&input),
                 Ok([Section {
                     meta_infos: Vec::new(),
-                    chord_blocks: vec![vec![
-                        ChordInfo {
+                    chord_blocks: vec![
+                        vec![ChordInfo {
                             chord_expression: ChordExpression::Unidentified,
                             denominator: None,
                             meta_infos: Vec::new(),
-                        },
-                        ChordInfo {
+                        },],
+                        vec![ChordInfo {
                             chord_expression: ChordExpression::Same,
                             denominator: None,
                             meta_infos: Vec::new(),
-                        },
-                    ],],
+                        },]
+                    ],
                 },]
                 .to_vec())
             );
