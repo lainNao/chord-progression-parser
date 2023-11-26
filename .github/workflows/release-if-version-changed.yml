@@ -20,8 +20,8 @@ jobs:
           # get version from Cargo.toml and output as current-version
         id: get-tag-and-version
         run: |
-          echo "latest-tag::$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
-          echo "current-version::$(grep -m1 "version" Cargo.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
+          echo "latest-tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+          echo "current-version=$(grep -m1 "version" Cargo.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
       - if: ${{ steps.get-tag-and-version.outputs.previous-version != steps.get-tag-and-version.outputs.current-version }}
         uses: mathieudutour/github-tag-action@v5.6
         with:
