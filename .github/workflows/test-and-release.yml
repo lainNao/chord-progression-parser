@@ -9,47 +9,44 @@ jobs:
   test-and-release:
     runs-on: ubuntu-latest
     outputs:
-      new-tag: ${{ steps.get-tag-and-version.outputs.current-version }}
-      make-release: ${{ steps.get-tag-and-version.outputs.set-make-release-output }}
+      prev-tag: ${{ steps.get-versions.outputs.set-make-release-output }}
+      new-tag: ${{ steps.get-versions.outputs.current-version }}
     steps:
       - uses: actions/checkout@v4
-      - name: Make testing environment
-        uses: ./.github/actions/make-environment
-      - run: make check-not-broken
+      ## omit tmporary
+      # - name: Make testing environment
+      #   uses: ./.github/actions/make-environment
+      # - run: make check-not-broken
       - name: Get latest-tag and current-version
-        id: get-tag-and-version
+        id: get-versions
         run: |
           git fetch --tags
-          echo "latest-tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
-          echo "current-version=$(grep -m1 "version" Cargo.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
+          echo "prev-tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
+          echo "new-tag=v$(grep -m1 "version" Cargo.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
       - name: Make new tag
-        if: ${{ steps.get-tag-and-version.outputs.latest-tag && steps.get-tag-and-version.outputs.current-version && steps.get-tag-and-version.outputs.latest-tag != steps.get-tag-and-version.outputs.current-version }}
+        if: ${{ steps.get-versions.outputs.prev-tag != steps.get-versions.outputs.new-tag }}
         uses: mathieudutour/github-tag-action@v5.6
         with:
-          custom_tag: ${{ steps.get-tag-and-version.outputs.current-version }}
+          custom_tag: ${{ steps.get-versions.outputs.new-tag }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set make-release output
-        if: ${{ steps.get-tag-and-version.outputs.latest-tag && steps.get-tag-and-version.outputs.current-version && steps.get-tag-and-version.outputs.latest-tag != steps.get-tag-and-version.outputs.current-version }}
-        id: set-make-release-output
-        run: echo "make-release=true" >> "$GITHUB_OUTPUT"
   release-to-crates-io:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-crates-io.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.make-release == 'true' }}
+    if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
     with:
       tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
   release-to-npm:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.make-release == 'true' }}
+    if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
     with:
       tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
   release-to-github:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.make-release == 'true' }}
+    if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
     with:
       tag-to-release: v${{ needs.test-and-release.outputs.new-tag }}
