@@ -228,7 +228,7 @@ C-A,B
                                 "metaInfos": [
                                     {
                                         "type": "key",
-                                        "value": "C_M",
+                                        "value": "C",
                                     }
                                 ]
                             },
