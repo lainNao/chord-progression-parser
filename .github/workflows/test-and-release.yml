@@ -14,10 +14,9 @@ jobs:
       changelog: ${{ steps.make-new-tag.outputs.changelog }}
     steps:
       - uses: actions/checkout@v4
-      ## omit tmporary
-      # - name: Make testing environment
-      #   uses: ./.github/actions/make-environment
-      # - run: make check-not-broken
+      - name: Make testing environment
+        uses: ./.github/actions/make-environment
+      - run: make check-not-broken
       - name: Get latest-tag and current-version
         id: get-versions
         run: |
