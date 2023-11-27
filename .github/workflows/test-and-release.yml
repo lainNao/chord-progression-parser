@@ -28,7 +28,7 @@ jobs:
           echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
           echo "new-version=${{ steps.get-versions.outputs.new-version }}"
       - name: Make new tag
-        if: steps.get-versions.outputs.prev-tag != 'v${{ steps.get-versions.outputs.new-version }}'
+        if: steps.get-versions.outputs.prev-tag != format('v{0}', steps.get-versions.outputs.new-version)
         uses: mathieudutour/github-tag-action@v5.6
         id: makenewtag
         with:
@@ -36,28 +36,28 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Echo output
         run: |
-          echo "prev-tag=[${{ steps.get-versions.outputs.prev-tag }}]"
-          echo "new-tag=[${{ steps.makenewtag.outputs.new_tag }}]"
+          echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
+          echo "new-tag=${{ steps.makenewtag.outputs.new_tag }}"
           echo "changelog=${{ steps.makenewtag.outputs.changelog }}"
   release-to-crates-io:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-crates-io.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
+    if: needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
   release-to-npm:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
+    if: needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
   release-to-github:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
-    if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
+    if: needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
       changelog: ${{ needs.test-and-release.outputs.changelog }}
