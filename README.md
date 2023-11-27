@@ -20,9 +20,11 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
 - English
   - [about chord progression syntax](./_docs/en/about-chord-progression-syntax.md)
   - [how to develop](./_docs/en/how-to-develop.md)
+  - [memo](./_docs/en/memo.md)
 - Japanese
   - [コード進行ASTの文法の説明](./_docs/ja/about-chord-progression-syntax.md)
   - [開発についての説明](./_docs/ja/how-to-develop.md)
+  - [メモ](./_docs/ja/memo.md)
 
 ## How to use
 
