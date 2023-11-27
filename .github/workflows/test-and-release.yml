@@ -36,8 +36,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Echo output
         run: |
-          echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
-          echo "new-tag=${{ steps.makenewtag.outputs.new_tag }}"
+          echo "prev-tag=[${{ steps.get-versions.outputs.prev-tag }}]"
+          echo "new-tag=[${{ steps.makenewtag.outputs.new_tag }}]"
           echo "changelog=${{ steps.makenewtag.outputs.changelog }}"
   release-to-crates-io:
     needs: [test-and-release]
@@ -60,3 +60,4 @@ jobs:
     if: ${{ needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag }}
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
+      changelog: ${{ needs.test-and-release.outputs.changelog }}
