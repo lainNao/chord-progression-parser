@@ -12,6 +12,7 @@ check-not-broken:
 	make test-rust
 	make test-resources
 	make test-e2e
+	make test-generator
 
 ################################################################
 ################################################################ common 
@@ -187,6 +188,10 @@ test-e2e:
 	cd e2e-test/node && bun i -D typescript && bun run test
 	cd e2e-test/bundler && bun i -D typescript && npx playwright install --with-deps && bun run test
 	make run-web-e2e
+
+# generator test
+test-generator:
+	cd _tools/chord-progression-generator && bun i && bun run test
 
 # e2e test of web
 run-web-e2e:

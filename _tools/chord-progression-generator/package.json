@@ -1,9 +1,11 @@
 {
-  "name": "chord-progression-generator",
-  "module": "index.ts",
+  "name": "@lainnao/random-chord-progression-generator",
+  "version": "1.0.0",
+  "description": "A random chord progression generator for testing purposes",
+  "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "start": "bun src/index.ts"
+    "test": "bun test"
   },
   "devDependencies": {
     "bun-types": "latest"
