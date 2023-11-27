@@ -11,6 +11,7 @@ use util::is_token_char;
 use util::next_char_with_position;
 
 use self::types::token_with_position::TokenWithPosition;
+use self::util::is_chord_info_end_char;
 
 pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosition> {
     let mut tokens = Vec::new();
@@ -318,23 +319,47 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                 };
 
                 // get token
-                while let Some(&next_ch) = chars.peek() {
-                    // loop while next char is token char
-                    if is_token_char(next_ch) {
-                        break;
-                    }
+                match token_type {
+                    Some(ValueToken::Denominator) => {
+                        while let Some(&next_ch) = chars.peek() {
+                            // loop while next char is token char
+                            if is_chord_info_end_char(next_ch) {
+                                break;
+                            }
 
-                    // if white space, break
-                    if next_ch == ' ' || next_ch == '　' || next_ch == '\t' {
-                        break;
-                    }
+                            // if white space, break
+                            if next_ch == ' ' || next_ch == '　' || next_ch == '\t' {
+                                break;
+                            }
 
-                    token.push(next_ch);
-                    next_char_with_position(
-                        &mut chars,
-                        &mut origin_line_number,
-                        &mut origin_column_number,
-                    );
+                            token.push(next_ch);
+                            next_char_with_position(
+                                &mut chars,
+                                &mut origin_line_number,
+                                &mut origin_column_number,
+                            );
+                        }
+                    }
+                    _ => {
+                        while let Some(&next_ch) = chars.peek() {
+                            // loop while next char is token char
+                            if is_token_char(next_ch) {
+                                break;
+                            }
+
+                            // if white space, break
+                            if next_ch == ' ' || next_ch == '　' || next_ch == '\t' {
+                                break;
+                            }
+
+                            token.push(next_ch);
+                            next_char_with_position(
+                                &mut chars,
+                                &mut origin_line_number,
+                                &mut origin_column_number,
+                            );
+                        }
+                    }
                 }
 
                 // push token
@@ -404,14 +429,17 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                             },
                         })
                     }
-                    Some(ValueToken::Denominator) => tokens.push(TokenWithPosition {
-                        token: Token::Denominator(token),
-                        position: Position {
-                            line_number: pos.line_number,
-                            column_number: pos.column_number,
-                            length: borrowed_token.len(),
-                        },
-                    }),
+                    Some(ValueToken::Denominator) => {
+                        println!("222222222222: {}", token);
+                        tokens.push(TokenWithPosition {
+                            token: Token::Denominator(token),
+                            position: Position {
+                                line_number: pos.line_number,
+                                column_number: pos.column_number,
+                                length: borrowed_token.len(),
+                            },
+                        })
+                    }
                     None => {
                         return Err(ErrorInfoWithPosition {
                             error: ErrorInfo {
@@ -442,6 +470,56 @@ mod tests {
         use crate::util::position::Position;
 
         use super::*;
+
+        #[test]
+        fn complex_chord_expression() {
+            let input = "?/C(5) - C";
+            let expected = vec![
+                TokenWithPosition {
+                    token: Token::Chord("?".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Slash,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Denominator("C(5)".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                        length: 4,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 8,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 10,
+                        length: 1,
+                    },
+                },
+            ];
+
+            let lex_result = tokenize(input);
+            assert_eq!(lex_result.unwrap(), expected);
+        }
 
         #[test]
         fn comma_separated_chords_can_tokenize() {
@@ -1130,51 +1208,11 @@ F#m(7,b5)/F#m(7,b5)-Fbm(13)/G(7)
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Denominator("F#m".to_string()),
+                    token: Token::Denominator("F#m(7,b5)".to_string()),
                     position: Position {
                         line_number: 3,
                         column_number: 11,
-                        length: 3,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ExtensionStart,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 14,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::Extension("7".to_string()),
-                    position: Position {
-                        line_number: 3,
-                        column_number: 15,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::Comma,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 16,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::Extension("b5".to_string()),
-                    position: Position {
-                        line_number: 3,
-                        column_number: 17,
-                        length: 2,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ExtensionEnd,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 19,
-                        length: 1,
+                        length: 9,
                     },
                 },
                 TokenWithPosition {
@@ -1226,35 +1264,11 @@ F#m(7,b5)/F#m(7,b5)-Fbm(13)/G(7)
                     },
                 },
                 TokenWithPosition {
-                    token: Token::Denominator("G".to_string()),
+                    token: Token::Denominator("G(7)".to_string()),
                     position: Position {
                         line_number: 3,
                         column_number: 29,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ExtensionStart,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 30,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::Extension("7".to_string()),
-                    position: Position {
-                        line_number: 3,
-                        column_number: 31,
-                        length: 1,
-                    },
-                },
-                TokenWithPosition {
-                    token: Token::ExtensionEnd,
-                    position: Position {
-                        line_number: 3,
-                        column_number: 32,
-                        length: 1,
+                        length: 4,
                     },
                 },
                 TokenWithPosition {

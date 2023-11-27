@@ -630,7 +630,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                     });
                 }
 
-                // if denominator is already set, DENOMINATOR_IS_LIMITED_TO_ONE_PER_CHORD
+                // if denominator is already set, error
                 if sections
                     .last_mut()
                     .unwrap()
@@ -675,9 +675,12 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         });
                     }
                     _ => {
-                        match previous.unwrap().token {
-                            Token::Chord(_) | Token::Denominator(_) | Token::Extension(_) => { /* Nothing */
-                            }
+                        let previous_token = previous.unwrap().token;
+                        match previous_token {
+                            Token::Chord(_)
+                            | Token::Denominator(_)
+                            | Token::Extension(_)
+                            | Token::ExtensionEnd => { /* Nothing */ }
                             _ => {
                                 return Err(ErrorInfoWithPosition {
                                     error: ErrorInfo {
@@ -935,6 +938,81 @@ mod tests {
             let result = parse(&input);
 
             assert_eq!(result.unwrap(), []);
+        }
+
+        // ?/C(5) - C
+        #[test]
+        fn complex_chord_expression() {
+            let input = [
+                TokenWithPosition {
+                    token: Token::Chord("?".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Slash,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 2,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Denominator("C(5)".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 3,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::ChordBlockSeparator,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 8,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::Chord("C".to_string()),
+                    position: Position {
+                        line_number: 1,
+                        column_number: 10,
+                        length: 1,
+                    },
+                },
+            ];
+
+            assert_eq!(
+                parse(&input),
+                Ok([Section {
+                    meta_infos: Vec::new(),
+                    chord_blocks: vec![
+                        vec![ChordInfo {
+                            chord_expression: ChordExpression::Unidentified,
+                            denominator: Some("C(5)".to_string()),
+                            meta_infos: Vec::new(),
+                        },],
+                        vec![ChordInfo {
+                            chord_expression: ChordExpression::Chord(Chord {
+                                plain: "C".to_string(),
+                                detailed: ChordDetailed {
+                                    base: Base::C,
+                                    accidental: None,
+                                    chord_type: ChordType::Major,
+                                    extensions: Vec::new(),
+                                },
+                            }),
+                            denominator: None,
+                            meta_infos: Vec::new(),
+                        },]
+                    ]
+                },]
+                .to_vec())
+            );
         }
 
         #[test]
