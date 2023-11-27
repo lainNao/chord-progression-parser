@@ -1,3 +1,3 @@
 # chord-progression-generator
 
-TODO: this package is under construction
+Ready-made chord progression generator for internal testing use, like stress test, performance test, etc.
