@@ -319,7 +319,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                             .unwrap()
                             .push(ChordInfo {
                                 chord_expression: match chord_string.as_str() {
-                                    "?" => ChordExpression::Unidentified,
+                                    "?" => ChordExpression::UnIdentified,
                                     "%" => ChordExpression::Same,
                                     "_" => ChordExpression::NoChord,
                                     _ => {
@@ -346,7 +346,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                             .chord_blocks
                             .push(vec![ChordInfo {
                                 chord_expression: match chord_string.as_str() {
-                                    "?" => ChordExpression::Unidentified,
+                                    "?" => ChordExpression::UnIdentified,
                                     "%" => ChordExpression::Same,
                                     "_" => ChordExpression::NoChord,
                                     _ => {
@@ -485,7 +485,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                     .unwrap()
                     .chord_expression
                 {
-                    ChordExpression::Unidentified => {}
+                    ChordExpression::UnIdentified => {}
                     ChordExpression::Same => {}
                     ChordExpression::NoChord => {}
                     ChordExpression::Chord(c) => {
@@ -992,7 +992,7 @@ mod tests {
                     meta_infos: Vec::new(),
                     chord_blocks: vec![
                         vec![ChordInfo {
-                            chord_expression: ChordExpression::Unidentified,
+                            chord_expression: ChordExpression::UnIdentified,
                             denominator: Some("C(5)".to_string()),
                             meta_infos: Vec::new(),
                         },],
@@ -1594,7 +1594,7 @@ mod tests {
                     meta_infos: Vec::new(),
                     chord_blocks: vec![
                         vec![ChordInfo {
-                            chord_expression: ChordExpression::Unidentified,
+                            chord_expression: ChordExpression::UnIdentified,
                             denominator: None,
                             meta_infos: Vec::new(),
                         },],
