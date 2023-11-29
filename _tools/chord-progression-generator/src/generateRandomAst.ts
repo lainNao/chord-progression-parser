@@ -53,7 +53,7 @@ function generateRandomChordExpression(
       };
     case 2:
       return {
-        type: "unidentified",
+        type: "unIdentified",
       };
     case 3: {
       if (!option?.noSame) {

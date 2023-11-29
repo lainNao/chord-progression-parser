@@ -26,7 +26,7 @@ export function convertAstToChordProgressionString(ast: types.Ast): string {
                   ? "_"
                   : chordInfo.chordExpression.type === "same"
                   ? "%"
-                  : chordInfo.chordExpression.type === "unidentified"
+                  : chordInfo.chordExpression.type === "unIdentified"
                   ? "?"
                   : chordInfo.chordExpression.type === "chord"
                   ? chordInfo.chordExpression.value.plain

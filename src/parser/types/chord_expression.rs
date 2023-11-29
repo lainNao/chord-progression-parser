@@ -7,7 +7,7 @@ use typeshare::typeshare;
 #[serde(tag = "type", content = "value", rename_all = "camelCase")]
 pub enum ChordExpression {
     Chord(Chord),
-    Unidentified, // ?
+    UnIdentified, // ?
     NoChord,      // -
     Same,         // %
 }
