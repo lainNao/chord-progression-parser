@@ -138,3 +138,8 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
     </body>
   </html>
   ```
+
+## Article
+
+- Japanese
+  - <https://zenn.dev/kyln/articles/13637e86e3ff07>

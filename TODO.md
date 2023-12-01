@@ -52,6 +52,7 @@
   - 別リポジトリに移動し、githubリリースする。内部利用でしかないのでnpmに公開するまでは不要
 
 - `保守面`
+  - rrというデバッガがよいらしい <https://qiita.com/k0kubun/items/766dc15773ec73925163#rr-debugger>
   - tokenizerのexpectedをfixtureファイルに変数として置いておいて、それをparserのinputに使いまわしたい。でないとそもそもparserの中間状態としてのinputが正しいのかの時点で知識が要求されてしまって面倒
     - いや逆に変かな？
   - 新バージョンをリリースしたら勝手にREADME内に書かれてるバージョンも上げたい。github actions使ってsedでいじってREADMEをコミットしちゃっていい気がする
