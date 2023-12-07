@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { generateRandomChordProgressionString } from ".";
-import parser from "../../../pkg/pkg-node/chord_progression_parser";
+import * as parser from "@lainnao/chord-progression-parser-node";
 
 describe("generateRandomChordProgressionString", () => {
   test("should generate a random chord progression string", () => {

@@ -1,6 +1,4 @@
-// @ts-ignore
-import * as types from "../../../generatedTypes";
-import { Accidental, ChordType } from "../../../generatedTypes";
+import * as types from "@lainnao/chord-progression-parser-node/generatedTypes";
 import { Range } from "./util/Range";
 import { arrayBy } from "./util/arrayBy";
 import { getRandomElement } from "./util/getRandomElement";
@@ -67,18 +65,18 @@ function generateRandomChordExpression(
         () => generateRandomExtension()
       );
 
-      const chordType: ChordType = getRandomElement([
-        ...new Array(10).map(() => ChordType.Major),
-        ...new Array(10).map(() => ChordType.Minor),
-        ChordType.Augmented,
-        ChordType.Diminished,
+      const chordType: types.ChordType = getRandomElement([
+        ...new Array(10).map(() => types.ChordType.Major),
+        ...new Array(10).map(() => types.ChordType.Minor),
+        types.ChordType.Augmented,
+        types.ChordType.Diminished,
       ]);
-      const chordTypeString = chordType === ChordType.Major ? "" : chordType;
+      const chordTypeString = chordType === types.ChordType.Major ? "" : chordType;
 
       const accidental = getRandomElement([
         ...new Array(10).fill(undefined).map(() => undefined),
-        Accidental.Sharp,
-        Accidental.Flat,
+        types.Accidental.Sharp,
+        types.Accidental.Flat,
       ]);
 
       const base = getRandomEnum(types.Base);
