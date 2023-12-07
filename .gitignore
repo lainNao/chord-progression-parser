@@ -3,6 +3,8 @@
 
 # build artifacts
 /pkg
+/generatedTypes.d.ts
+/generatedTypes.js
 
 # js
 node_modules
