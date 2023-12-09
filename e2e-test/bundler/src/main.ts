@@ -1,9 +1,9 @@
 import "./main.css";
-import { parseChordProgressionString } from "../../../pkg/pkg-bundler/chord_progression_parser";
+import { parseChordProgressionString } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
 import {
   ErrorCode,
   getErrorMessage,
-} from "../../../pkg/pkg-bundler/error_code_message_map";
+} from "@lainnao/chord-progression-parser-bundler/error_code_message_map";
 
 const getHighlightedTextLines = ({
   text,
