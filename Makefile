@@ -170,9 +170,9 @@ fix:
 prepare-test:
 # HACK: remove dependencies from package.json
 #       → error: Package "@lainnao/chord-progression-parser-node@0.4.2" has a dependency loop
-	cd e2e-test/node && sed -i '' '/chord-progression-parser/d' package.json
-	cd e2e-test/bundler && sed -i '' '/chord-progression-parser/d' package.json
-	cd e2e-test/web && sed -i '' '/chord-progression-parser/d' package.json
+	cd e2e-test/node && sed -i.bak '/chord-progression-parser/d' package.json && rm package.json.bak
+	cd e2e-test/bundler && sed -i.bak '/chord-progression-parser/d' package.json && rm package.json.bak
+	cd e2e-test/web && sed -i.bak '/chord-progression-parser/d' package.json && rm package.json.bak
 # install
 	cd e2e-test/node && bun add ../../pkg/pkg-node 
 	cd e2e-test/bundler &&  bun add ../../pkg/pkg-bundler
