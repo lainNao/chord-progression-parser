@@ -9,6 +9,7 @@ check-not-broken:
 	make modify-package-name-web
 	make modify-package-name-node
 	make modify-package-name-bundler
+	make prepare-test
 	make test-rust
 	make test-resources
 	make test-e2e
@@ -96,18 +97,12 @@ generate-ts-declare-file-for-pkg-web:
 	make generate-ts-types
 # Rewrite definition of return value of run function in pkg-web/chord_progression_parser.d.ts to "Ast"
 	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-web/chord_progression_parser.d.ts && rm pkg/pkg-web/chord_progression_parser.d.ts.bak
-# copy resources/error_code_message_map.ts under pkg/pkg-web, overwriting
-	cp resources/error_code_message_map.ts pkg/pkg-web
-# compile it to .js and d.ts
-	cd pkg/pkg-web && bun i -D typescript && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
-# add error_code_message_map.js and d.ts to pkg/pkg-web/package.json files
+# compile additinal files
+	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
+	npx tsc resources/generatedTypes.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
+# add to package.json "files"
 	sed -i.bak 's/"files": \[/"files": \[\
-		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
-# compile generatedTypes.js to generatedTypes.js/d.ts and place to pkg/pkg-web
-	npx tsc generatedTypes.ts --declaration --allowJs --module ES6
-	cp generatedTypes.js pkg/pkg-web
-	cp generatedTypes.d.ts pkg/pkg-web
-# add generatedTypes.js and d.ts to pkg/pkg-web/package.json files
+		"error_code_message_map.js", "error_code_message_map.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
 	sed -i.bak 's/"files": \[/"files": \[\
 		"generatedTypes.js", "generatedTypes.ts", "generatedTypes.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
 # prepend contents of additionalType.ts.txt to pkg/pkg-web/chord_progression_parser.d.ts
@@ -120,22 +115,16 @@ generate-ts-declare-file-for-pkg-node:
 	make generate-ts-types
 # Rewrite definition of return value of run function in pkg-node/chord_progression_parser.d.ts to "Ast"
 	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-node/chord_progression_parser.d.ts && rm pkg/pkg-node/chord_progression_parser.d.ts.bak
-# copy resources/error_code_message_map.ts under pkg/pkg-node, overwriting
-	cp resources/error_code_message_map.ts pkg/pkg-node
-# compile it to .js and d.ts
-	cd pkg/pkg-node && bun i -D typescript && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
-# add error_code_message_map.js and d.ts to pkg/pkg-node/package.json files
+# compile additinal files
+	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
+	npx tsc resources/generatedTypes.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
+# add to package.json "files"
 	sed -i.bak 's/"files": \[/"files": \[\
-		"error_code_message_map.js", "error_code_message_map.ts", "error_code_message_map.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
-# compile generatedTypes.js to generatedTypes.js/d.ts and place to pkg/pkg-node
-	npx tsc generatedTypes.ts --declaration --allowJs --module ES6
-	cp generatedTypes.js pkg/pkg-node
-	cp generatedTypes.d.ts pkg/pkg-node
-# add generatedTypes.js and d.ts to pkg/pkg-node/package.json files
+		"error_code_message_map.js", "error_code_message_map.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
 	sed -i.bak 's/"files": \[/"files": \[\
 		"generatedTypes.js", "generatedTypes.ts", "generatedTypes.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
-# append contents of generatedTypes.ts to pkg-node/chord_progression_parser.d.ts
-	cat generatedTypes.ts >> pkg/pkg-node/chord_progression_parser.d.ts
+# prepend contents of additionalType.ts.txt to pkg/pkg-node/chord_progression_parser.d.ts
+	cat resources/additionalType.ts.txt pkg/pkg-node/chord_progression_parser.d.ts > pkg/pkg-node/chord_progression_parser.d.ts.tmp && mv pkg/pkg-node/chord_progression_parser.d.ts.tmp pkg/pkg-node/chord_progression_parser.d.ts
 
 # generate and modify d.ts
 # HACK: this is not good way. do it by wasm_bindgen directly
@@ -144,18 +133,12 @@ generate-ts-declare-file-for-pkg-bundler:
 	make generate-ts-types
 # Rewrite definition of return value of run function in pkg-bundler/chord_progression_parser.d.ts to "Ast"
 	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-bundler/chord_progression_parser.d.ts && rm pkg/pkg-bundler/chord_progression_parser.d.ts.bak
-# copy resources/error_code_message_map.ts under pkg/pkg-bundler, overwriting
-	cp resources/error_code_message_map.ts pkg/pkg-bundler
-# compile it to .js and d.ts
-	cd pkg/pkg-bundler && bun i -D typescript && npx tsc error_code_message_map.ts --declaration --allowJs --module ES6
-# add error_code_message_map.j and d.tss to pkg/pkg-bundler/package.json files
+# compile additinal files
+	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module ES6 --outDir pkg/pkg-bundler
+	npx tsc resources/generatedTypes.ts --declaration --allowJs --module ES6 --outDir pkg/pkg-bundler
+# add to package.json "files"
 	sed -i.bak 's/"files": \[/"files": \[\
-		"error_code_message_map.js", "error_code_message_map.ts","error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
-# compile generatedTypes.js to generatedTypes.js/d.ts and place to pkg/pkg-bundler
-	npx tsc generatedTypes.ts --declaration --allowJs --module ES6
-	cp generatedTypes.js pkg/pkg-bundler
-	cp generatedTypes.d.ts pkg/pkg-bundler
-# add generatedTypes.js and d.ts to pkg/pkg-bundler/package.json files
+		"error_code_message_map.js", "error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
 	sed -i.bak 's/"files": \[/"files": \[\
 		"generatedTypes.js", "generatedTypes.ts", "generatedTypes.d.ts",/g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
 # prepend contents of additionalType.ts.txt to pkg/pkg-bundler/chord_progression_parser.d.ts
@@ -165,7 +148,7 @@ generate-ts-declare-file-for-pkg-bundler:
 generate-ts-types:
 	typeshare ./src \
 		--lang=typescript \
-		--output-file=generatedTypes.ts
+		--output-file=resources/generatedTypes.ts
 
 ################################################################
 ################################################################ fixer 
@@ -182,6 +165,18 @@ fix:
 ################################################################
 ################################################################ tester 
 ################################################################
+
+# preparet est
+prepare-test:
+# HACK: remove dependencies from package.json
+#       → error: Package "@lainnao/chord-progression-parser-node@0.4.2" has a dependency loop
+	cd e2e-test/node && sed -i '' '/chord-progression-parser/d' package.json
+	cd e2e-test/bundler && sed -i '' '/chord-progression-parser/d' package.json
+	cd e2e-test/web && sed -i '' '/chord-progression-parser/d' package.json
+# install
+	cd e2e-test/node && bun add ../../pkg/pkg-node 
+	cd e2e-test/bundler &&  bun add ../../pkg/pkg-bundler
+	cd e2e-test/web && bun add ../../pkg/pkg-web
 
 # review snapshot
 # use it when you want to update snapshot and pass snapshot test

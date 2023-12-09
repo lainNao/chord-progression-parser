@@ -1,6 +1,6 @@
 [package]
 name = "chord-progression-parser"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["lainNao"]
 edition = "2021"
 license = "MIT"
