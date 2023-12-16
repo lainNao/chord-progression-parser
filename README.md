@@ -120,7 +120,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
       <h2>parse C</h2>
       <pre id="result"></pre>
       <script type="module">
-        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.4.0/chord_progression_parser.js";
+        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.4.4/chord_progression_parser.js";
 
         (async () => {
           // initialize wasm
