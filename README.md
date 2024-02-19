@@ -57,7 +57,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   }
   ```
 
-### `JavaScript/TypeScript (using bundler)`
+### `JavaScript/TypeScript (using bundler, like Vite, or If you are using Next.js)`
 
 - Install (example, use with `Vite`)
 
