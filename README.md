@@ -6,7 +6,7 @@ A converter from chord progression strings to AST built in Rust that outputs was
 >
 > - Rust: <https://crates.io/crates/chord-progression-parser>
 > - JS/TS(bundler): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-bundler>
-> - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-server>
+> - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-node>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 
 ## Example
@@ -91,13 +91,13 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
 - Install
 
   ```sh
-  npm install @lainnao/chord-progression-parser-server
+  npm install @lainnao/chord-progression-parser-node
   ```
 
 - And use
 
   ```typescript
-  import { parseChordProgressionString } from "@lainnao/chord-progression-parser-server/chord_progression_parser";
+  import { parseChordProgressionString } from "@lainnao/chord-progression-parser-node/chord_progression_parser";
 
   const result = parseChordProgressionString("C");
   console.log(result);
