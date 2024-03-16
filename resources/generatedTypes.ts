@@ -21,11 +21,11 @@ export interface ChordInfo {
 	denominator?: string;
 }
 
-export type ChordBlock = ChordInfo[];
+export type Bar = ChordInfo[];
 
 export interface Section {
 	metaInfos: SectionMeta[];
-	chordBlocks: ChordBlock[];
+	chordBlocks: Bar[];
 }
 
 export type Ast = Section[];

@@ -973,7 +973,7 @@ mod tests {
         }
 
         #[test]
-        fn chord_block() {
+        fn bar() {
             let input = "C-F-Fm-C";
 
             let expected = vec![
