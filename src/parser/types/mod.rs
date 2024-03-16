@@ -1,8 +1,8 @@
 pub mod accidental;
 pub mod ast;
+pub mod bar;
 pub mod base;
 pub mod chord;
-pub mod chord_block;
 pub mod chord_detailed;
 pub mod chord_expression;
 pub mod chord_info;

@@ -15,7 +15,7 @@
     "@playwright/test": "^1.39.0",
     "http-server": "^14.1.1",
     "playwright": "^1.39.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "dependencies": {
     "@lainnao/chord-progression-parser-web": "../../pkg/pkg-web"

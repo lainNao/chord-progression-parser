@@ -392,7 +392,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                                 meta_infos: tmp_chord_info_meta_infos.clone(),
                             });
                     } else {
-                        //  make new chord_block
+                        //  make new bar
                         sections
                             .last_mut()
                             .unwrap()
@@ -706,7 +706,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                 match token_with_position_list.peek().unwrap().token {
                     Token::ChordBlockSeparator => {
                         // TODO: ここにも例の（コードブロックなのかCSVなインフォの方か）のif分岐を作成？
-                        // if chord_blocks is empty, make new chord_block
+                        // if chord_blocks is empty, make new bar
                         if sections.last_mut().unwrap().chord_blocks.is_empty() {
                             sections.last_mut().unwrap().chord_blocks.push(Vec::new());
                         }

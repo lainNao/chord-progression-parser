@@ -71,7 +71,8 @@ function generateRandomChordExpression(
         types.ChordType.Augmented,
         types.ChordType.Diminished,
       ]);
-      const chordTypeString = chordType === types.ChordType.Major ? "" : chordType;
+      const chordTypeString =
+        chordType === types.ChordType.Major ? "" : chordType;
 
       const accidental = getRandomElement([
         ...new Array(10).fill(undefined).map(() => undefined),
@@ -121,7 +122,7 @@ function generateRandomChordBlock(
   option?: {
     noSame?: boolean;
   }
-): types.ChordBlock {
+): types.Bar {
   return arrayBy(randomBetween(args.chordInfoCountRange)).map(() => ({
     metaInfos: generateRandomChordMetaInfos(args),
     chordExpression: generateRandomChordExpression(args, {
