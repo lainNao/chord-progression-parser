@@ -115,8 +115,9 @@ mod tests {
             let expected = json!([
                 {
                     "chordBlocks": [
-                        [
-                            {
+                        {
+                            "type": "bar",
+                            "value": [{
                                 "chordExpression": {
                                     "type": "chord",
                                     "value": {
@@ -136,8 +137,8 @@ mod tests {
                                 },
                                 "denominator": null,
                                 "metaInfos": []
-                            }
-                        ]
+                            }]
+                        }
                     ],
                     "metaInfos": []
                 }
@@ -208,51 +209,57 @@ C-A,B
             let expected = json!([
                 {
                     "chordBlocks": [
-                        [
-                            {
-                                "chordExpression": {
-                                    "type": "chord",
-                                    "value": {
-                                        "detailed": {
-                                            "accidental": null,
-                                            "base":"C",
-                                            "chordType":"M",
-                                            "extensions": [
-                                                "M9"
-                                            ]
-                                        },
-                                        "plain":"C(M9)"
-                                    }
+                        {
+                            "type": "bar",
+                            "value": [
+                                {
+                                    "chordExpression": {
+                                        "type": "chord",
+                                        "value": {
+                                            "detailed": {
+                                                "accidental": null,
+                                                "base":"C",
+                                                "chordType":"M",
+                                                "extensions": [
+                                                    "M9"
+                                                ]
+                                            },
+                                            "plain":"C(M9)"
+                                        }
+                                    },
+                                    "denominator":null,
+                                    "metaInfos": [
+                                        {
+                                            "type": "key",
+                                            "value": "C",
+                                        }
+                                    ]
                                 },
-                                "denominator":null,
-                                "metaInfos": [
-                                    {
-                                        "type": "key",
-                                        "value": "C",
-                                    }
-                                ]
-                            },
-                        ],
-                        [
-                            {
-                                "chordExpression": {
-                                    "type": "chord",
-                                    "value": {
-                                        "detailed": {
-                                            "accidental": null,
-                                            "base":"C",
-                                            "chordType":"M",
-                                            "extensions": [
-                                                "9"
-                                            ]
-                                        },
-                                        "plain":"CM(9)"
-                                    }
-                                },
-                                "denominator":null,
-                                "metaInfos": []
-                            }
-                        ]
+                            ]
+                        },
+                        {
+                            "type": "bar",
+                            "value": [
+                                {
+                                    "chordExpression": {
+                                        "type": "chord",
+                                        "value": {
+                                            "detailed": {
+                                                "accidental": null,
+                                                "base":"C",
+                                                "chordType":"M",
+                                                "extensions": [
+                                                    "9"
+                                                ]
+                                            },
+                                            "plain":"CM(9)"
+                                        }
+                                    },
+                                    "denominator":null,
+                                    "metaInfos": []
+                                }
+                            ]
+                        },
                     ],
                     "metaInfos": [
                         {
