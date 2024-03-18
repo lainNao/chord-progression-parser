@@ -6,6 +6,17 @@ export type SectionMeta =
 	| { type: "section", value: string }
 	| { type: "repeat", value: number };
 
+export type ChordBlock = 
+	| { type: "bar", value: Bar }
+	| { type: "br", value?: undefined };
+
+export interface Section {
+	metaInfos: SectionMeta[];
+	chordBlocks: ChordBlock[];
+}
+
+export type Ast = Section[];
+
 export type ChordInfoMeta = 
 	| { type: "key", value: Key };
 
@@ -22,13 +33,6 @@ export interface ChordInfo {
 }
 
 export type Bar = ChordInfo[];
-
-export interface Section {
-	metaInfos: SectionMeta[];
-	chordBlocks: Bar[];
-}
-
-export type Ast = Section[];
 
 export enum Base {
 	A = "A",

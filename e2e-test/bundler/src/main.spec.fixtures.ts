@@ -11,24 +11,27 @@ export const testData: TestData = {
       {
         metaInfos: [],
         chordBlocks: [
-          [
-            {
-              metaInfos: [],
-              denominator: null,
-              chordExpression: {
-                type: "chord",
-                value: {
-                  plain: "C",
-                  detailed: {
-                    base: "C",
-                    accidental: null,
-                    chordType: "M",
-                    extensions: [],
+          {
+            type: "bar",
+            value: [
+              {
+                metaInfos: [],
+                denominator: null,
+                chordExpression: {
+                  type: "chord",
+                  value: {
+                    plain: "C",
+                    detailed: {
+                      base: "C",
+                      accidental: null,
+                      chordType: "M",
+                      extensions: [],
+                    },
                   },
                 },
               },
-            },
-          ],
+            ],
+          },
         ],
       },
     ],

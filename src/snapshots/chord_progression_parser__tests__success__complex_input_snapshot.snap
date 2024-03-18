@@ -11,166 +11,182 @@ Ok(
                 ),
             ],
             chord_blocks: [
-                [
-                    ChordInfo {
-                        meta_infos: [
-                            Key(
-                                E_M,
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [
+                                Key(
+                                    E_M,
+                                ),
+                            ],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "E",
+                                    detailed: ChordDetailed {
+                                        base: E,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
+                                },
                             ),
-                        ],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "E",
-                                detailed: ChordDetailed {
-                                    base: E,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C#m(7)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C#m(7)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "Bm(7)",
+                                    detailed: ChordDetailed {
+                                        base: B,
+                                        accidental: None,
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "Bm(7)",
-                                detailed: ChordDetailed {
-                                    base: B,
-                                    accidental: None,
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C#(7)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C#(7)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "F#m(7)",
+                                    detailed: ChordDetailed {
+                                        base: F,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "F#m(7)",
-                                detailed: ChordDetailed {
-                                    base: F,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "Am(7)",
+                                    detailed: ChordDetailed {
+                                        base: A,
+                                        accidental: None,
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "Am(7)",
-                                detailed: ChordDetailed {
-                                    base: A,
-                                    accidental: None,
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "F#(7)",
+                                    detailed: ChordDetailed {
+                                        base: F,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "F#(7)",
-                                detailed: ChordDetailed {
-                                    base: F,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "B",
+                                    detailed: ChordDetailed {
+                                        base: B,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "B",
-                                detailed: ChordDetailed {
-                                    base: B,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
-                                },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
             ],
         },
         Section {
@@ -180,162 +196,178 @@ Ok(
                 ),
             ],
             chord_blocks: [
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "E",
-                                detailed: ChordDetailed {
-                                    base: E,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "E",
+                                    detailed: ChordDetailed {
+                                        base: E,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C#m(7)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C#m(7)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "Bm(7)",
-                                detailed: ChordDetailed {
-                                    base: B,
-                                    accidental: None,
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "Bm(7)",
+                                    detailed: ChordDetailed {
+                                        base: B,
+                                        accidental: None,
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C#(7)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C#(7)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "F#m(7)",
-                                detailed: ChordDetailed {
-                                    base: F,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "F#m(7)",
+                                    detailed: ChordDetailed {
+                                        base: F,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "Am(7)",
-                                detailed: ChordDetailed {
-                                    base: A,
-                                    accidental: None,
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "Am(7)",
+                                    detailed: ChordDetailed {
+                                        base: A,
+                                        accidental: None,
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "F#(7)",
-                                detailed: ChordDetailed {
-                                    base: F,
-                                    accidental: Some(
-                                        Sharp,
-                                    ),
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "F#(7)",
+                                    detailed: ChordDetailed {
+                                        base: F,
+                                        accidental: Some(
+                                            Sharp,
+                                        ),
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "B",
-                                detailed: ChordDetailed {
-                                    base: B,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "B",
+                                    detailed: ChordDetailed {
+                                        base: B,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
             ],
         },
         Section {
@@ -345,196 +377,216 @@ Ok(
                 ),
             ],
             chord_blocks: [
-                [
-                    ChordInfo {
-                        meta_infos: [
-                            Key(
-                                C_M,
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [
+                                Key(
+                                    C_M,
+                                ),
+                            ],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
+                                },
                             ),
-                        ],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C(7)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C(7)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "FM(7)",
+                                    detailed: ChordDetailed {
+                                        base: F,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "FM(7)",
-                                detailed: ChordDetailed {
-                                    base: F,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "Fm(7)",
+                                    detailed: ChordDetailed {
+                                        base: F,
+                                        accidental: None,
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "Fm(7)",
-                                detailed: ChordDetailed {
-                                    base: F,
-                                    accidental: None,
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C(7)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C(7)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "FM(7)",
+                                    detailed: ChordDetailed {
+                                        base: F,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "FM(7)",
-                                detailed: ChordDetailed {
-                                    base: F,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "Dm(7)",
+                                    detailed: ChordDetailed {
+                                        base: D,
+                                        accidental: None,
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "Dm(7)",
-                                detailed: ChordDetailed {
-                                    base: D,
-                                    accidental: None,
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "Em(7)",
+                                    detailed: ChordDetailed {
+                                        base: E,
+                                        accidental: None,
+                                        chord_type: Minor,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "Em(7)",
-                                detailed: ChordDetailed {
-                                    base: E,
-                                    accidental: None,
-                                    chord_type: Minor,
-                                    extensions: [
-                                        Seven,
-                                    ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "E(7)",
+                                    detailed: ChordDetailed {
+                                        base: E,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [
+                                            Seven,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "E(7)",
-                                detailed: ChordDetailed {
-                                    base: E,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [
-                                        Seven,
-                                    ],
-                                },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
             ],
         },
         Section {
@@ -544,102 +596,110 @@ Ok(
                 ),
             ],
             chord_blocks: [
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "A",
-                                detailed: ChordDetailed {
-                                    base: A,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "A",
+                                    detailed: ChordDetailed {
+                                        base: A,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "B",
-                                detailed: ChordDetailed {
-                                    base: B,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [],
+                            ),
+                            denominator: None,
+                        },
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "B",
+                                    detailed: ChordDetailed {
+                                        base: B,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
             ],
         },
         Section {
             meta_infos: [],
             chord_blocks: [
-                [
-                    ChordInfo {
-                        meta_infos: [
-                            Key(
-                                C_M,
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [
+                                Key(
+                                    C_M,
+                                ),
+                            ],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "C(M9)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [
+                                            MajorNine,
+                                        ],
+                                    },
+                                },
                             ),
-                        ],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "C(M9)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [
-                                        MajorNine,
-                                    ],
+                            denominator: None,
+                        },
+                    ],
+                ),
+                Bar(
+                    [
+                        ChordInfo {
+                            meta_infos: [],
+                            chord_expression: Chord(
+                                Chord {
+                                    plain: "CM(9)",
+                                    detailed: ChordDetailed {
+                                        base: C,
+                                        accidental: None,
+                                        chord_type: Major,
+                                        extensions: [
+                                            Nine,
+                                        ],
+                                    },
                                 },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
-                [
-                    ChordInfo {
-                        meta_infos: [],
-                        chord_expression: Chord(
-                            Chord {
-                                plain: "CM(9)",
-                                detailed: ChordDetailed {
-                                    base: C,
-                                    accidental: None,
-                                    chord_type: Major,
-                                    extensions: [
-                                        Nine,
-                                    ],
-                                },
-                            },
-                        ),
-                        denominator: None,
-                    },
-                ],
+                            ),
+                            denominator: None,
+                        },
+                    ],
+                ),
             ],
         },
     ],
