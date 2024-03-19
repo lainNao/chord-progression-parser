@@ -445,15 +445,34 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                 }
             }
             Token::LineBreak => {
-                let peeked_token_with_position_list = token_with_position_list.peek();
-                if peeked_token_with_position_list.is_none() {
+                // if next token is not exist, continue to finish loop
+                let peeked_next_token_with_position_list = token_with_position_list.peek();
+                if peeked_next_token_with_position_list.is_none() {
                     continue;
                 }
+                // if some ChordInfo in current Bar
+                if !sections.last().unwrap().chord_blocks.is_empty() {
+                    // and next token is not LineBreak
+                    if peeked_next_token_with_position_list.unwrap().token != Token::LineBreak {
+                        // create Br
+                        sections
+                            .last_mut()
+                            .unwrap()
+                            .chord_blocks
+                            .push(ChordBlock::Br);
+                    }
+                }
 
-                // if Token::LineBreak appears two or more times in a row, create new section
-                match peeked_token_with_position_list.unwrap().token {
+                // if "current" token is LineBreak
+                match peeked_next_token_with_position_list.unwrap().token {
+                    // if Token::LineBreak appears two or more times in a row, create new section
                     Token::LineBreak => {
                         token_with_position_list.next();
+
+                        // if next is none, break
+                        if token_with_position_list.peek().is_none() {
+                            break;
+                        }
 
                         // if next is ChordBlockSeparator, create new section
                         match token_with_position_list.peek().unwrap().token {
@@ -822,6 +841,39 @@ mod tests {
     mod success {
         use super::*;
         use crate::util::position::Position;
+
+        // if line break appears two times in a row, OK
+        #[test]
+        fn no_line_breaks_three_times_in_a_row() {
+            let input = [
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 1,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+                TokenWithPosition {
+                    token: Token::LineBreak,
+                    position: Position {
+                        line_number: 2,
+                        column_number: 1,
+                        length: 1,
+                    },
+                },
+            ];
+
+            let result = parse(&input);
+
+            assert_eq!(
+                result.unwrap(),
+                [Section {
+                    meta_infos: Vec::new(),
+                    chord_blocks: Vec::new(),
+                },]
+            );
+        }
 
         #[test]
         fn comma_separated_chords() {
@@ -1269,6 +1321,8 @@ mod tests {
 
         #[test]
         fn chord_blocks_with_fraction_chord() {
+            // C - G/Bb - Am - Em/G
+            // F#m(7,b5)/F#m(7,b5) - Fbm13/G7
             let input = [
                 TokenWithPosition {
                     token: Token::LineBreak,
@@ -1559,6 +1613,7 @@ mod tests {
                         denominator: Some("G".to_string()),
                         meta_infos: Vec::new(),
                     }]),
+                    ChordBlock::Br,
                     ChordBlock::Bar(vec![ChordInfo {
                         chord_expression: ChordExpression::Chord(Chord {
                             plain: "F#m(7,b5)".to_string(),
@@ -1664,6 +1719,9 @@ mod tests {
 
         #[test]
         fn multiple_section_without_section_meta() {
+            // C
+            //
+            // C
             let input = [
                 TokenWithPosition {
                     token: Token::Chord("C".to_string()),
