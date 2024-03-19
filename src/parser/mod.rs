@@ -696,7 +696,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         // if previous chord block is br, error
                         return Err(ErrorInfoWithPosition {
                             error: ErrorInfo {
-                                code: ErrorCode::Cho3, //TODO: エラー作る？
+                                code: ErrorCode::Cho3,
                                 additional_info: None,
                             },
                             position: token_with_position.position.clone(),
