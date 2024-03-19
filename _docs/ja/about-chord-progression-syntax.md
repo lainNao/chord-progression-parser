@@ -15,7 +15,7 @@ G - Am - Bm(o) - C
 ## 構文
 
 - 基本
-  - [generatedTypes.ts](../../generatedTypes.ts)を参照
+  - [generatedTypes.ts](../../resources/generatedTypes.ts)を参照
 - 詳細
   - `SectionMeta`
     - 形式：`@key=value`

@@ -15,7 +15,7 @@ G - Am - Bm(o) - C
 ## syntax
 
 - Basic
-  - please refer to [generatedTypes.ts](../../generatedTypes.ts)
+  - please refer to [generatedTypes.ts](../../resources/generatedTypes.ts)
 - Details
   - `SectionMeta`
     - format: `@key=value`
