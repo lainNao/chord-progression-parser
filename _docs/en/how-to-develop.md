@@ -16,3 +16,7 @@ make install
 currently no rules.
 every PR is welcome.
 branch rule is not decided yet.
+
+## Release
+
+When the `Cargo.toml` `version` is raised and pushed to the `main` branch, it will be automatically tagged and released.
