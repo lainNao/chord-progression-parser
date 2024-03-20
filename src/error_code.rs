@@ -91,7 +91,7 @@ pub enum ErrorCode {
 
     #[strum(serialize = "CHB-1")]
     /**
-     * en: % should not be placed first of Bar
+     * en: % should not be placed first of ChordBlock
      * ja: コードブロックの先頭に%を置くことはできません
      */
     Chb1,

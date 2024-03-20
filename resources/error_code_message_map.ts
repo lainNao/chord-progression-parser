@@ -86,7 +86,7 @@ export const ERROR_CODE_MESSAGE_MAP = {
   },
   CHB: {
     "CHB-1": {
-      en: "% should not be placed first of Bar",
+      en: "% should not be placed first of ChordBlock",
       ja: "コードブロックの先頭に%を置くことはできません",
     },
     "CHB-2": {
