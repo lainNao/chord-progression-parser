@@ -360,7 +360,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         tmp_chord_info_meta_infos = Vec::new();
                     } else {
                         // add ChordInfo to last chord block
-                        let chord_block = sections
+                        sections
                             .last_mut()
                             .unwrap()
                             .chord_blocks
@@ -844,7 +844,7 @@ mod tests {
 
         // if line break appears two times in a row, OK
         #[test]
-        fn no_line_breaks_three_times_in_a_row() {
+        fn line_breaks_two_times_in_a_row_is_ok() {
             let input = [
                 TokenWithPosition {
                     token: Token::LineBreak,
