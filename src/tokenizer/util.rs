@@ -6,7 +6,7 @@ pub fn is_token_char(ch: char) -> bool {
 }
 
 pub fn is_chord_info_end_char(ch: char) -> bool {
-    matches!(ch, '\n' | '\r' | '@' | '[' | ']' | '-' | '=' | '/')
+    matches!(ch, '\n' | '\r' | '@' | '[' | ']' | '-' | '=' | '/' | ',')
 }
 
 #[derive(Debug, PartialEq, Clone)]

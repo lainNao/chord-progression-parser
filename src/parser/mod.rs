@@ -382,6 +382,7 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                         detailed,
                     };
 
+                    // if previous token is comma,
                     if previous.is_some() && previous.clone().unwrap().token == Token::Comma {
                         let new_chord_info = ChordInfo {
                             chord_expression: ChordExpression::Chord(chord),
@@ -414,6 +415,8 @@ pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, Erro
                             }
                         };
                     } else {
+                        // if previous token is not comma
+
                         //  make new bar
                         sections
                             .last_mut()

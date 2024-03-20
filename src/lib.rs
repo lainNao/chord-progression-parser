@@ -87,6 +87,96 @@ mod tests {
         use crate::parse_chord_progression_string;
         use serde_json::json;
 
+        // if C/D, is input, comma is ignored
+        #[test]
+        fn comma_is_ignored_in_dominator_last_char() {
+            let input: &str = "C/D,";
+            let result_json = json!(parse_chord_progression_string(input).unwrap());
+            let expected = json!([
+                {
+                    "chordBlocks": [
+                        {
+                            "type": "bar",
+                            "value": [
+                                {
+                                    "chordExpression": {
+                                        "type": "chord",
+                                        "value": {
+                                            "detailed": {
+                                                "accidental": null,
+                                                "base": "C",
+                                                "chordType": "M",
+                                                "extensions": []
+                                            },
+                                            "plain": "C"
+                                        }
+                                    },
+                                    "denominator": Some("D".to_string()),
+                                    "metaInfos": []
+                                }
+                            ]
+                        }
+                    ],
+                    "metaInfos": []
+                }
+            ]);
+
+            assert_eq!(result_json, expected);
+        }
+
+        // if C/D,E is input, C/D and E are separated
+        #[test]
+        fn comma_separated_chords_with_denominator() {
+            let input: &str = "C/D,E";
+            let result_json = json!(parse_chord_progression_string(input).unwrap());
+            let expected = json!([
+                {
+                    "chordBlocks": [
+                        {
+                            "type": "bar",
+                            "value": [
+                                {
+                                    "chordExpression": {
+                                        "type": "chord",
+                                        "value": {
+                                            "detailed": {
+                                                "accidental": null,
+                                                "base": "C",
+                                                "chordType": "M",
+                                                "extensions": []
+                                            },
+                                            "plain": "C"
+                                        }
+                                    },
+                                    "denominator": "D",
+                                    "metaInfos": []
+                                },
+                                {
+                                    "chordExpression": {
+                                        "type": "chord",
+                                        "value": {
+                                            "detailed": {
+                                                "accidental": null,
+                                                "base": "E",
+                                                "chordType": "M",
+                                                "extensions": []
+                                            },
+                                            "plain": "E"
+                                        }
+                                    },
+                                    "denominator": null,
+                                    "metaInfos": []
+                                }
+                            ]
+                        }
+                    ],
+                    "metaInfos": []
+                }
+            ]);
+
+            assert_eq!(result_json, expected);
+        }
+
         #[test]
         fn only_section_meta() {
             let input: &str = "@section=A";

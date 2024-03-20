@@ -321,15 +321,27 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                 // get token
                 match token_type {
                     Some(ValueToken::Denominator) => {
+                        let mut is_reading_extension = false;
                         while let Some(&next_ch) = chars.peek() {
-                            // loop while next char is token char
-                            if is_chord_info_end_char(next_ch) {
-                                break;
+                            // check is reading extension
+                            // NOTE: for preventing break in the middle of extension
+                            if next_ch == '(' {
+                                is_reading_extension = true;
+                            } else if next_ch == ')' {
+                                is_reading_extension = false;
                             }
 
-                            // if white space, break
-                            if next_ch == ' ' || next_ch == '　' || next_ch == '\t' {
-                                break;
+                            // if not reading extension
+                            if !is_reading_extension {
+                                // loop while next char is token char
+                                if is_chord_info_end_char(next_ch) {
+                                    break;
+                                }
+
+                                // if white space, break
+                                if next_ch == ' ' || next_ch == '　' || next_ch == '\t' {
+                                    break;
+                                }
                             }
 
                             token.push(next_ch);
@@ -429,17 +441,14 @@ pub fn tokenize(input: &str) -> Result<Vec<TokenWithPosition>, ErrorInfoWithPosi
                             },
                         })
                     }
-                    Some(ValueToken::Denominator) => {
-                        println!("222222222222: {}", token);
-                        tokens.push(TokenWithPosition {
-                            token: Token::Denominator(token),
-                            position: Position {
-                                line_number: pos.line_number,
-                                column_number: pos.column_number,
-                                length: borrowed_token.len(),
-                            },
-                        })
-                    }
+                    Some(ValueToken::Denominator) => tokens.push(TokenWithPosition {
+                        token: Token::Denominator(token),
+                        position: Position {
+                            line_number: pos.line_number,
+                            column_number: pos.column_number,
+                            length: borrowed_token.len(),
+                        },
+                    }),
                     None => {
                         return Err(ErrorInfoWithPosition {
                             error: ErrorInfo {
