@@ -76,6 +76,7 @@ build-wasm-bundler:
 		--out-dir ./pkg/pkg-bundler \
 		--target bundler
 	make generate-ts-declare-file-for-pkg-bundler
+	make add-package-json-type-module-for-pkg-bundler
 
 # modify package-name
 # append "-bundler" to package json "name" field
@@ -134,8 +135,8 @@ generate-ts-declare-file-for-pkg-bundler:
 # Rewrite definition of return value of run function in pkg-bundler/chord_progression_parser.d.ts to "Ast"
 	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-bundler/chord_progression_parser.d.ts && rm pkg/pkg-bundler/chord_progression_parser.d.ts.bak
 # compile additinal files
-	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module ES6 --outDir pkg/pkg-bundler
-	npx tsc resources/generatedTypes.ts --declaration --allowJs --module ES6 --outDir pkg/pkg-bundler
+	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
+	npx tsc resources/generatedTypes.ts --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
 # add to package.json "files"
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
@@ -143,6 +144,10 @@ generate-ts-declare-file-for-pkg-bundler:
 		"generatedTypes.js", "generatedTypes.ts", "generatedTypes.d.ts",/g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
 # prepend contents of additionalType.ts.txt to pkg/pkg-bundler/chord_progression_parser.d.ts
 	cat resources/additionalType.ts.txt pkg/pkg-bundler/chord_progression_parser.d.ts > pkg/pkg-bundler/chord_progression_parser.d.ts.tmp && mv pkg/pkg-bundler/chord_progression_parser.d.ts.tmp pkg/pkg-bundler/chord_progression_parser.d.ts
+
+# add package.json type module
+add-package-json-type-module-for-pkg-bundler:
+	sed -i.bak 's/"name": "\(.*\)"/"name": "\1",\n  "type": "module"/' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
 
 # generate types
 generate-ts-types:
