@@ -15,8 +15,9 @@
 - `049999d`: 新Parserを追加
 - `0821c1f`: 正常系差分と10,000件の敵対入力を検証
 - `f9de553`: Rust/WASM公開APIを新Parserへ切替
+- `aea37a6`: 旧実装を削除し、Parserと公開モデルを一本化
 
-旧tokenizerと旧parserは最終整理で削除した。AST/API v2候補は本リファクタへ混ぜず、既存JSON契約を維持している。
+AST/API v2候補は本リファクタへ混ぜず、既存JSON契約を維持している。
 
 ## 結論
 
