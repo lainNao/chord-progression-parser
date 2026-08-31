@@ -14,9 +14,9 @@
     "__install:playwright": "npx playwright install"
   },
   "devDependencies": {
-    "@playwright/test": "^1.39.0",
+    "@playwright/test": "1.62.1",
     "bun-types": "latest",
-    "playwright": "^1.39.0",
+    "playwright": "1.62.1",
     "typescript": "^5.4.5",
     "vite": "^4.4.5",
     "vite-plugin-top-level-await": "^1.3.1",

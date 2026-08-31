@@ -2,7 +2,7 @@ import type { PlaywrightTestConfig } from "@playwright/test";
 import { devices } from "@playwright/test";
 
 // https://playwright.dev/docs/test-configuration
-export default <PlaywrightTestConfig>{
+export default {
   // テスト開始の一番最初に発火させる処理を書いたファイル
   // 認証情報をファイルに保存して、皇族のテストで使い回すために使ったりする
   // globalSetup: require.resolve("./src/e2e-tests/global-setup.ts"),
@@ -86,4 +86,4 @@ export default <PlaywrightTestConfig>{
       },
     },
   ],
-};
+} satisfies PlaywrightTestConfig;

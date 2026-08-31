@@ -12,9 +12,9 @@
   "keywords": [],
   "author": "",
   "devDependencies": {
-    "@playwright/test": "^1.39.0",
+    "@playwright/test": "1.62.1",
     "http-server": "^14.1.1",
-    "playwright": "^1.39.0",
+    "playwright": "1.62.1",
     "typescript": "^5.4.5"
   },
   "dependencies": {
