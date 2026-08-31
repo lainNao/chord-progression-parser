@@ -1,11 +1,9 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString, EnumVariantNames};
+use strum_macros::{Display, EnumString, VariantNames};
 use typeshare::typeshare;
 
 #[typeshare]
-#[derive(
-    Debug, PartialEq, Clone, Display, EnumString, EnumVariantNames, Serialize, Deserialize,
-)]
+#[derive(Debug, PartialEq, Clone, Display, EnumString, VariantNames, Serialize, Deserialize)]
 pub enum Extension {
     #[strum(serialize = "2")]
     #[serde(rename = "2")]

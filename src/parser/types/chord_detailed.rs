@@ -81,7 +81,7 @@ impl ChordDetailed {
             },
         );
 
-        if extensions_str_with_parenthesis.eq("") {
+        if extensions_str_with_parenthesis.is_empty() {
             return Ok(ChordDetailed {
                 base,
                 accidental,
@@ -103,7 +103,7 @@ impl ChordDetailed {
         let extensions_str =
             &extensions_str_with_parenthesis[1..extensions_str_with_parenthesis.len() - 1];
 
-        if extensions_str.eq("") {
+        if extensions_str.is_empty() {
             return Ok(ChordDetailed {
                 base,
                 accidental,
@@ -112,7 +112,7 @@ impl ChordDetailed {
             });
         }
 
-        let mut sorted_extensions = (*Extension::VARIANTS.clone()).to_vec();
+        let mut sorted_extensions = Extension::VARIANTS.to_vec();
         sorted_extensions.sort_by_key(|b| std::cmp::Reverse(b.len()));
 
         let extensions_str_vec: Vec<&str> = extensions_str.split(',').collect();

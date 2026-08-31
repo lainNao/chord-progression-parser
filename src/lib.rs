@@ -4,14 +4,11 @@ mod tokenizer;
 mod util;
 use error_code::ErrorInfoWithPosition;
 use parser::{parse, Ast};
+use serde::Serialize;
 use serde_json::json;
 use tokenizer::tokenize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-// FIXME:
-//  "serde_wasm_bindgen::to_value(&json_result).unwrap()" makes Map.
-//  But I want to generate JSON.
-//  So currently use deprecated from_serde() instead.
 #[doc(hidden)]
 /// @param {string} input - The chord progression string to parse.
 /// @returns {ParsedResult} - The parsed result.
@@ -20,8 +17,8 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
     let result = parse_chord_progression_string(input);
 
-    let json_result = if let Err(error_info) = result {
-        json!({
+    let json_result = match result {
+        Err(error_info) => json!({
             "success": false,
             "error": {
                 "code": error_info.error.code.to_string(),
@@ -32,15 +29,16 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
                     "length": error_info.position.length,
                 },
             }
-        })
-    } else {
-        json!({
+        }),
+        Ok(ast) => json!({
             "success": true,
-            "ast": result.unwrap(),
-        })
+            "ast": ast,
+        }),
     };
 
-    JsValue::from_serde(&json_result).unwrap()
+    json_result
+        .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
+        .expect("serializing a serde_json::Value to JsValue should not fail")
 }
 
 /// Parse a chord progression string and return the AST
@@ -67,17 +65,8 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
 ///
 /// Panics if unhandled error occurs.
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
-    let tokenized_result = tokenize(input);
-    if tokenized_result.is_err() {
-        return Err(tokenized_result.err().unwrap());
-    }
-
-    let parsed_result = parse(&tokenized_result.unwrap());
-    if parsed_result.is_err() {
-        return Err(parsed_result.err().unwrap());
-    }
-
-    Ok(parsed_result.unwrap())
+    let tokens = tokenize(input)?;
+    parse(&tokens)
 }
 
 #[cfg(test)]

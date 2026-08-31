@@ -1,6 +1,6 @@
-use strum_macros::{Display, EnumString, EnumVariantNames};
+use strum_macros::{Display, EnumString, VariantNames};
 
-#[derive(Debug, PartialEq, Clone, Display, EnumString, EnumVariantNames)]
+#[derive(Debug, PartialEq, Clone, Display, EnumString, VariantNames)]
 pub enum Token {
     // Common
     #[strum(serialize = "=")]
