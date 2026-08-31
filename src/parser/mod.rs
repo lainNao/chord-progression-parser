@@ -1,4 +1,6 @@
-mod types;
+#[cfg(test)]
+pub(crate) mod new;
+pub(crate) mod types;
 
 use std::str::FromStr;
 

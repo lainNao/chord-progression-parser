@@ -139,9 +139,41 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
     tokens
 }
 
+/** Computes a zero-length span at the end of the source text. */
+pub(crate) fn eof_span(input: &str) -> SourceSpan {
+    let mut chars = input.chars().peekable();
+    let mut line = 1;
+    let mut column = 1;
+
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\r' => {
+                if chars.peek().is_some_and(|next| *next == '\n') {
+                    chars.next();
+                }
+                line += 1;
+                column = 1;
+            }
+            '\n' => {
+                line += 1;
+                column = 1;
+            }
+            _ => column += 1,
+        }
+    }
+
+    SourceSpan {
+        start_byte: input.len(),
+        end_byte: input.len(),
+        line,
+        column,
+        length: 0,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{lex, SourceSpan, Token, TokenKind};
+    use super::{eof_span, lex, SourceSpan, Token, TokenKind};
 
     /** Verifies structural tokens, text tokens, and skipped horizontal space. */
     #[test]
@@ -253,5 +285,20 @@ mod tests {
         let result = std::panic::catch_unwind(|| lex(input));
 
         assert!(result.is_ok());
+    }
+
+    /** Places EOF after skipped space and CRLF using display coordinates. */
+    #[test]
+    fn tracks_the_end_of_the_source() {
+        assert_eq!(
+            eof_span("Cあ \r\nD "),
+            SourceSpan {
+                start_byte: 9,
+                end_byte: 9,
+                line: 2,
+                column: 3,
+                length: 0,
+            }
+        );
     }
 }

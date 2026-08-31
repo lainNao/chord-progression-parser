@@ -29,7 +29,7 @@ use strum_macros::{Display, EnumString};
 
 use crate::util::position::Position;
 
-#[derive(Debug, Display, PartialEq, EnumString)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString)]
 pub enum ErrorCode {
 ${errorCodeSummaries
   .map(
