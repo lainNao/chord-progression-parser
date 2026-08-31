@@ -1,4 +1,6 @@
 mod error_code;
+#[cfg(test)]
+mod lexer;
 mod parser;
 mod tokenizer;
 mod util;
