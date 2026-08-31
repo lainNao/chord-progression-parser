@@ -1,0 +1,28 @@
+document          = blank-line*, section?, blank-line* ;
+section           = section-meta*, chord-line?, { line-break, chord-line } ;
+section-meta      = "@", section-meta-key, "=", section-meta-value, line-end ;
+section-meta-key  = "section" | "repeat" ;
+
+chord-line        = bar, { "-", bar } ;
+bar               = chord-info, { ",", chord-info } ;
+chord-info        = chord-meta*, chord-expression, denominator? ;
+chord-meta        = "[", "key", "=", key, "]" ;
+
+chord-expression  = chord | "?" | "_" | "%" ;
+chord             = base, accidental?, chord-type?, extensions? ;
+base              = "A" | "B" | "C" | "D" | "E" | "F" | "G" ;
+accidental        = "#" | "b" ;
+chord-type        = "m" | "M" | "aug" | "dim" ;
+extensions        = "(", extension, { ",", extension }, ")" ;
+denominator       = "/", denominator-text ;
+
+line-end          = line-break | end-of-input ;
+blank-line        = line-break, line-break, { line-break } ;
+
+(*
+  Space and tab may surround structural tokens, but may not split a text atom.
+  A single line break inside a section is preserved as ChordBlock::Br.
+  Two or more consecutive line breaks start a new section.
+  The concrete values of key, extension, section-meta-value, and
+  denominator-text are defined by semantic validation.
+*)

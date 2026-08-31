@@ -49,12 +49,12 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
 ///
 /// let input: &str = "
 /// @section=Intro
-/// |[key=E]E|C#m(7)|Bm(7)|C#(7)|
-/// |F#m(7)|Am(7)|F#(7)|B|
+/// [key=E]E-C#m(7)-Bm(7)-C#(7)
+/// F#m(7)-Am(7)-F#(7)-B
 ///
 /// @section=Verse
-/// |E|C#m(7)|Bm(7)|C#(7)|
-/// |F#m(7)|Am(7)|F#(7)|B|
+/// E-C#m(7)-Bm(7)-C#(7)
+/// F#m(7)-Am(7)-F#(7)-B
 /// ";
 ///     
 /// let result = parse_chord_progression_string(input);

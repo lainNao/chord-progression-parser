@@ -1,0 +1,101 @@
+{
+  "success": true,
+  "ast": [
+    {
+      "chordBlocks": [
+        {
+          "type": "bar",
+          "value": [
+            {
+              "chordExpression": {
+                "type": "chord",
+                "value": {
+                  "detailed": {
+                    "accidental": null,
+                    "base": "C",
+                    "chordType": "M",
+                    "extensions": ["M9"]
+                  },
+                  "plain": "C(M9)"
+                }
+              },
+              "denominator": null,
+              "metaInfos": [{ "type": "key", "value": "C" }]
+            },
+            {
+              "chordExpression": {
+                "type": "chord",
+                "value": {
+                  "detailed": {
+                    "accidental": null,
+                    "base": "G",
+                    "chordType": "M",
+                    "extensions": []
+                  },
+                  "plain": "G"
+                }
+              },
+              "denominator": "B",
+              "metaInfos": []
+            }
+          ]
+        },
+        {
+          "type": "bar",
+          "value": [
+            {
+              "chordExpression": {
+                "type": "chord",
+                "value": {
+                  "detailed": {
+                    "accidental": null,
+                    "base": "D",
+                    "chordType": "m",
+                    "extensions": ["7"]
+                  },
+                  "plain": "Dm(7)"
+                }
+              },
+              "denominator": null,
+              "metaInfos": []
+            }
+          ]
+        },
+        {
+          "type": "bar",
+          "value": [
+            {
+              "chordExpression": { "type": "unIdentified" },
+              "denominator": null,
+              "metaInfos": []
+            }
+          ]
+        },
+        {
+          "type": "bar",
+          "value": [
+            {
+              "chordExpression": { "type": "noChord" },
+              "denominator": null,
+              "metaInfos": []
+            }
+          ]
+        },
+        {
+          "type": "bar",
+          "value": [
+            {
+              "chordExpression": { "type": "same" },
+              "denominator": null,
+              "metaInfos": []
+            }
+          ]
+        }
+      ],
+      "metaInfos": [
+        { "type": "section", "value": "Verse" },
+        { "type": "repeat", "value": 2 }
+      ]
+    }
+  ]
+}
