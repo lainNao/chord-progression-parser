@@ -24,8 +24,11 @@ fn try_remove_prefix(input: &str, prefix: &str) -> String {
     }
 }
 
-impl ChordDetailed {
-    pub fn from_str(s: &str) -> Result<Self, ErrorInfo> {
+impl FromStr for ChordDetailed {
+    type Err = ErrorInfo;
+
+    /** Parses the legacy combined chord representation into its detailed fields. */
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let base = match s.chars().next() {
             Some('A') => Base::A,
             Some('B') => Base::B,

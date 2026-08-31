@@ -432,7 +432,9 @@ mod tests {
 
     /** Compares both parser implementations through their serialized AST contract. */
     fn assert_matches_legacy(input: &str) {
-        let legacy = crate::parse_chord_progression_string(input)
+        let tokens = crate::tokenizer::tokenize(input)
+            .unwrap_or_else(|error| panic!("legacy tokenizer rejected {input:?}: {error:?}"));
+        let legacy = super::super::parse(&tokens)
             .unwrap_or_else(|error| panic!("legacy parser rejected {input:?}: {error:?}"));
         let current =
             parse(input).unwrap_or_else(|error| panic!("new parser rejected {input:?}: {error:?}"));

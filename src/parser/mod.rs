@@ -1,26 +1,41 @@
-#[cfg(test)]
 pub(crate) mod new;
 pub(crate) mod types;
 
+#[cfg(test)]
 use std::str::FromStr;
 
+#[cfg(test)]
 use crate::error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition};
+#[cfg(test)]
 use crate::tokenizer::types::token::Token;
+#[cfg(test)]
 use crate::tokenizer::types::token_with_position::TokenWithPosition;
+#[cfg(test)]
 use crate::util::position::Position;
 
+#[cfg(test)]
 pub use types::ast::Ast;
+#[cfg(test)]
 use types::chord::Chord;
+#[cfg(test)]
 use types::chord_detailed::ChordDetailed;
+#[cfg(test)]
 use types::chord_expression::ChordExpression;
+#[cfg(test)]
 use types::chord_info::ChordInfo;
+#[cfg(test)]
 use types::chord_info_meta::ChordInfoMeta;
+#[cfg(test)]
 use types::section::Section;
+#[cfg(test)]
 use types::section_meta::SectionMeta;
 
+#[cfg(test)]
 use self::types::chord_block::ChordBlock;
+#[cfg(test)]
 use self::types::extension::Extension;
 
+#[cfg(test)]
 pub fn parse(token_with_position_list: &[TokenWithPosition]) -> Result<Ast, ErrorInfoWithPosition> {
     // if no token_with_position_list, return empty Ast
     if token_with_position_list.is_empty() {

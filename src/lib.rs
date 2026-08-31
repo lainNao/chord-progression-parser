@@ -1,46 +1,85 @@
 mod error_code;
-#[cfg(test)]
 mod lexer;
 mod parser;
+#[cfg(test)]
 mod tokenizer;
 mod util;
-use error_code::ErrorInfoWithPosition;
-use parser::{parse, Ast};
 use serde::Serialize;
-use serde_json::json;
-use tokenizer::tokenize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+
+pub use error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition};
+pub use parser::types::{
+    accidental::Accidental, ast::Ast, bar::Bar, base::Base, chord::Chord, chord_block::ChordBlock,
+    chord_detailed::ChordDetailed, chord_expression::ChordExpression, chord_info::ChordInfo,
+    chord_info_meta::ChordInfoMeta, chord_type::ChordType, extension::Extension, key::Key,
+    section::Section, section_meta::SectionMeta,
+};
+pub use util::position::Position;
+
+/** Successful JavaScript response serialized as a plain object. */
+#[derive(Serialize)]
+struct JsParseSuccess {
+    success: bool,
+    ast: Ast,
+}
+
+/** Failed JavaScript response serialized as a plain object. */
+#[derive(Serialize)]
+struct JsParseFailure {
+    success: bool,
+    error: JsParseError,
+}
+
+/** JavaScript-facing parse error with camel-case field names. */
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsParseError {
+    code: String,
+    additional_info: Option<String>,
+    position: JsPosition,
+}
+
+/** JavaScript-facing source position with camel-case field names. */
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsPosition {
+    line_number: usize,
+    column_number: usize,
+    length: usize,
+}
+
+/** Represents either JavaScript response shape without adding an enum tag. */
+#[derive(Serialize)]
+#[serde(untagged)]
+enum JsParseResult {
+    Success(JsParseSuccess),
+    Failure(JsParseFailure),
+}
 
 #[doc(hidden)]
 /// @param {string} input - The chord progression string to parse.
 /// @returns {ParsedResult} - The parsed result.
-/// @throws {string} - The error information.
 #[wasm_bindgen(js_name = "parseChordProgressionString", skip_jsdoc)]
 pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
-    let result = parse_chord_progression_string(input);
-
-    let json_result = match result {
-        Err(error_info) => json!({
-            "success": false,
-            "error": {
-                "code": error_info.error.code.to_string(),
-                "additionalInfo": error_info.error.additional_info,
-                "position": {
-                    "lineNumber": error_info.position.line_number,
-                    "columnNumber": error_info.position.column_number,
-                    "length": error_info.position.length,
+    let response = match parse_chord_progression_string(input) {
+        Ok(ast) => JsParseResult::Success(JsParseSuccess { success: true, ast }),
+        Err(error_info) => JsParseResult::Failure(JsParseFailure {
+            success: false,
+            error: JsParseError {
+                code: error_info.error.code.to_string(),
+                additional_info: error_info.error.additional_info,
+                position: JsPosition {
+                    line_number: error_info.position.line_number,
+                    column_number: error_info.position.column_number,
+                    length: error_info.position.length,
                 },
-            }
-        }),
-        Ok(ast) => json!({
-            "success": true,
-            "ast": ast,
+            },
         }),
     };
 
-    json_result
+    response
         .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
-        .expect("serializing a serde_json::Value to JsValue should not fail")
+        .expect("serializing the fixed JavaScript response types should not fail")
 }
 
 /// Parse a chord progression string and return the AST
@@ -63,12 +102,11 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
 /// println!("{:#?}", result);
 /// ```
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if unhandled error occurs.
+/// Returns an error code and source position when the input does not follow the grammar.
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
-    let tokens = tokenize(input)?;
-    parse(&tokens)
+    parser::new::parse(input)
 }
 
 #[cfg(test)]

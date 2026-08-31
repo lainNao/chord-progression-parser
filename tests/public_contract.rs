@@ -32,3 +32,28 @@ fn parses_an_empty_document_as_an_empty_ast() {
 
     assert_eq!(json!(ast), json!([]));
 }
+
+/** Verifies every checked-in malformed input is rejected through the public API. */
+#[test]
+fn rejects_the_malformed_fixture_without_panicking() {
+    for input in include_str!("fixtures/malformed_inputs.txt").lines() {
+        let result = std::panic::catch_unwind(|| parse_chord_progression_string(input));
+        assert!(result.is_ok(), "public parser panicked for {input:?}");
+        assert!(
+            result.expect("panic was checked").is_err(),
+            "public parser accepted {input:?}"
+        );
+    }
+}
+
+/** Verifies documented behavior changes at the public boundary. */
+#[test]
+fn applies_the_intentional_compatibility_changes() {
+    let sections = parse_chord_progression_string("C\n\n\n\nD")
+        .expect("extra blank lines must separate sections");
+    assert_eq!(sections.len(), 2);
+
+    let postfix_meta =
+        parse_chord_progression_string("C[key=A]").expect_err("postfix metadata must be rejected");
+    assert_eq!(postfix_meta.error.code.to_string(), "TKN-1");
+}
