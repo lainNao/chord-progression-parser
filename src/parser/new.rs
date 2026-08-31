@@ -430,15 +430,99 @@ mod tests {
 
     use super::parse;
 
+    /** Compares both parser implementations through their serialized AST contract. */
+    fn assert_matches_legacy(input: &str) {
+        let legacy = crate::parse_chord_progression_string(input)
+            .unwrap_or_else(|error| panic!("legacy parser rejected {input:?}: {error:?}"));
+        let current =
+            parse(input).unwrap_or_else(|error| panic!("new parser rejected {input:?}: {error:?}"));
+
+        assert_eq!(json!(current), json!(legacy), "AST differed for {input:?}");
+    }
+
+    /** Advances a deterministic pseudo-random state without adding a runtime dependency. */
+    fn next_random(state: &mut u64) -> u64 {
+        *state ^= *state << 13;
+        *state ^= *state >> 7;
+        *state ^= *state << 17;
+        *state
+    }
+
+    /** Counts display characters on each line using the lexer's CRLF rules. */
+    fn source_line_lengths(input: &str) -> Vec<usize> {
+        let mut lengths = vec![0];
+        let mut characters = input.chars().peekable();
+
+        while let Some(character) = characters.next() {
+            match character {
+                '\r' => {
+                    if characters.peek().is_some_and(|next| *next == '\n') {
+                        characters.next();
+                    }
+                    lengths.push(0);
+                }
+                '\n' => lengths.push(0),
+                _ => {
+                    if let Some(length) = lengths.last_mut() {
+                        *length += 1;
+                    }
+                }
+            }
+        }
+
+        lengths
+    }
+
     /** Matches the legacy AST for the checked-in public contract. */
     #[test]
     fn matches_the_public_contract_ast() {
         let input = include_str!("../../tests/fixtures/public_contract.chord");
-        let legacy = crate::parse_chord_progression_string(input)
-            .expect("the legacy parser must accept the contract fixture");
-        let current = parse(input).expect("the new parser must accept the contract fixture");
+        assert_matches_legacy(input);
+    }
 
-        assert_eq!(json!(current), json!(legacy));
+    /** Compares documented syntax and line structure against the legacy parser. */
+    #[test]
+    fn matches_legacy_for_representative_valid_documents() {
+        let inputs = [
+            "",
+            "C",
+            " C \t-\t Dm(7) ",
+            "C,D-E\nF",
+            "C/D,",
+            "C/D,E",
+            "C\n%",
+            "[key=C][key=G]C",
+            "@section=A",
+            "@section=A\n@repeat=3\n\nC-D",
+            "C\n\nD",
+            "C(9, 11, #13)",
+            "F#m(7,b5)/F#m(7,b5)-Fbm/G7",
+            "?-_-%",
+        ];
+
+        for input in inputs {
+            assert_matches_legacy(input);
+        }
+    }
+
+    /** Compares supported chord heads and extensions as a generated valid corpus. */
+    #[test]
+    fn matches_legacy_for_generated_chord_combinations() {
+        let bases = ["A", "B", "C", "D", "E", "F", "G"];
+        let accidentals = ["", "#", "b"];
+        let chord_types = ["", "M", "m", "aug", "dim"];
+        let extensions = ["2", "b5", "7", "M9", "#11", "add13", "sus4", "o"];
+
+        for base in bases {
+            for accidental in accidentals {
+                for chord_type in chord_types {
+                    for extension in extensions {
+                        let input = format!("{base}{accidental}{chord_type}({extension})");
+                        assert_matches_legacy(&input);
+                    }
+                }
+            }
+        }
     }
 
     /** Supports full chord syntax in a denominator without parsing its semantics. */
@@ -492,5 +576,40 @@ mod tests {
         assert_eq!(error.position.line_number, 1);
         assert_eq!(error.position.column_number, 5);
         assert_eq!(error.position.length, 3);
+    }
+
+    /** Exercises arbitrary delimiter and Unicode mixtures without panics or invalid positions. */
+    #[test]
+    fn handles_deterministic_adversarial_inputs() {
+        let alphabet = [
+            'A', 'C', 'm', '9', '#', 'b', '@', '[', ']', '(', ')', '=', ',', '/', '-', '?', '%',
+            '_', ' ', '\t', '\n', '\r', 'あ', '♭', '|',
+        ];
+        let mut state = 0x4d59_5df4_d0f3_3173;
+
+        for _ in 0..10_000 {
+            let length = (next_random(&mut state) % 40) as usize;
+            let mut input = String::new();
+            for _ in 0..length {
+                let index = (next_random(&mut state) % alphabet.len() as u64) as usize;
+                input.push(alphabet[index]);
+            }
+
+            let result = std::panic::catch_unwind(|| parse(&input));
+            let parsed = result.unwrap_or_else(|_| panic!("parser panicked for {input:?}"));
+            if let Err(error) = parsed {
+                let line_lengths = source_line_lengths(&input);
+                assert!(
+                    (1..=line_lengths.len()).contains(&error.position.line_number),
+                    "invalid error line for {input:?}: {error:?}"
+                );
+
+                let line_length = line_lengths[error.position.line_number - 1];
+                assert!(
+                    (1..=line_length + 1).contains(&error.position.column_number),
+                    "invalid error column for {input:?}: {error:?}"
+                );
+            }
+        }
     }
 }
