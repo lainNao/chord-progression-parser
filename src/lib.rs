@@ -1,14 +1,13 @@
 mod error_code;
 mod lexer;
+mod model;
 mod parser;
-#[cfg(test)]
-mod tokenizer;
 mod util;
 use serde::Serialize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 pub use error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition};
-pub use parser::types::{
+pub use model::{
     accidental::Accidental, ast::Ast, bar::Bar, base::Base, chord::Chord, chord_block::ChordBlock,
     chord_detailed::ChordDetailed, chord_expression::ChordExpression, chord_info::ChordInfo,
     chord_info_meta::ChordInfoMeta, chord_type::ChordType, extension::Extension, key::Key,
@@ -106,7 +105,7 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
 ///
 /// Returns an error code and source position when the input does not follow the grammar.
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
-    parser::new::parse(input)
+    parser::parse(input)
 }
 
 #[cfg(test)]

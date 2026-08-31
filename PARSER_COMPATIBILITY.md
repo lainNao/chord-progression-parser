@@ -34,6 +34,7 @@
 - denominatorは今回も文字列として保持する。ただし空文字列と2個目のslashは拒否する。
 - extensionは定義済み文字列との完全一致だけを許可する。
 - 複数のsection metaは、chord lineが始まるまで同じsectionへ属する。
+- section metaと最初のchord lineの間にある空行はsectionを分割しない。
 
 ## 意図して修正する挙動
 

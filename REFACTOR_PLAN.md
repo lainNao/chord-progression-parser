@@ -2,7 +2,21 @@
 
 作成日: 2026-08-31
 
+状態: Phase 0A〜5 完了。Phase 6 は将来の破壊的変更候補として保留。
+
 関連資料: [REFACTOR_AUDIT.md](./REFACTOR_AUDIT.md)
+
+## 実施結果
+
+- `57a94c9`: 監査と計画を確定
+- `20baa46`: 既存警告を解消し、厳格なclippyを通過
+- `2c02bdc`: EBNF、互換方針、公開JSON契約を固定
+- `b6b2497`: source span付きLexerを追加
+- `049999d`: 新Parserを追加
+- `0821c1f`: 正常系差分と10,000件の敵対入力を検証
+- `f9de553`: Rust/WASM公開APIを新Parserへ切替
+
+旧tokenizerと旧parserは最終整理で削除した。AST/API v2候補は本リファクタへ混ぜず、既存JSON契約を維持している。
 
 ## 結論
 

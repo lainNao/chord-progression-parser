@@ -2,6 +2,8 @@
 
 作成日: 2026-08-30
 
+注記: この文書はリファクタ前の旧実装に対する監査記録である。記載する旧ファイルの一部は計画完了時に削除または移動されている。現在の構成と結果は [REFACTOR_PLAN.md](./REFACTOR_PLAN.md) を参照すること。
+
 ## 目的
 
 Rust 実装をすぐ書き換える前に、改善対象を複数回探索し、それぞれを敵対的に検証した結果をまとめる。
@@ -22,7 +24,7 @@ Rust 実装をすぐ書き換える前に、改善対象を複数回探索し、
 
 ### 改善候補
 
-[src/parser/mod.rs](./src/parser/mod.rs) の `parse` が 800 行超の単一関数になっている。セクションメタ、コードメタ、コード、拡張、分母、改行、区切りの処理が同じループと同じ可変状態に混在している。
+旧 `src/parser/mod.rs` の `parse` が 800 行超の単一関数になっている。セクションメタ、コードメタ、コード、拡張、分母、改行、区切りの処理が同じループと同じ可変状態に混在している。
 
 特に以下が目立つ。
 
@@ -37,7 +39,7 @@ Rust 実装をすぐ書き換える前に、改善対象を複数回探索し、
 
 - `cargo test` は通るため、主要な正常系と一部の異常系は守られている。
 - ただし公開 API 経由で以下が panic する。
-  - `C(`: [src/parser/mod.rs](./src/parser/mod.rs) の `Token::ExtensionStart` 処理で `peek().unwrap()`。
+  - `C(`: 旧 `src/parser/mod.rs` の `Token::ExtensionStart` 処理で `peek().unwrap()`。
   - `@section`: section meta の `Equal` 期待箇所で `next().unwrap()`。
   - `[key=C`: chord meta の `MetaInfoEnd` 期待箇所で `next().unwrap()`。
 
@@ -49,7 +51,7 @@ Rust 実装をすぐ書き換える前に、改善対象を複数回探索し、
 
 ### 改善候補
 
-[src/tokenizer/mod.rs](./src/tokenizer/mod.rs) が字句解析だけでなく、構文・ドメイン寄りの判定まで行っている。
+旧 `src/tokenizer/mod.rs` が字句解析だけでなく、構文・ドメイン寄りの判定まで行っている。
 
 例:
 
@@ -72,7 +74,7 @@ tokenizer は `TokenWithPosition` の生成に寄せ、構文上の期待順序�
 
 ### 改善候補
 
-[src/parser/types/chord_detailed.rs](./src/parser/types/chord_detailed.rs) の `ChordDetailed::from_str` は実装が短い一方で、暗黙のルールが多い。
+旧 `src/parser/types/chord_detailed.rs` の `ChordDetailed::from_str` は実装が短い一方で、暗黙のルールが多い。
 
 - `starts_with('m')`、`starts_with('M')`、`starts_with("aug")`、`starts_with("dim")` で chord type を決めている。
 - extension は `Extension::VARIANTS` を長さ順に並べ、`extension_str.starts_with(candidate)` で解決している。

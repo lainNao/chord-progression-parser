@@ -9,7 +9,7 @@ type ParsedResult =
       success: false;
       error: {
         code: ErrorCode;
-        additionalInfo: string;
+        additionalInfo: string | null;
         position: {
           lineNumber: number;
           columnNumber: number;

@@ -15,6 +15,7 @@ G - Am - Bm(o) - C
 ## syntax
 
 - Basic
+  - Refer to [chord-progression.ebnf](../chord-progression.ebnf) for the exact grammar
   - please refer to [generatedTypes.ts](../../resources/generatedTypes.ts)
 - Details
   - `SectionMeta`
@@ -28,3 +29,12 @@ G - Am - Bm(o) - C
         - `?` ...Unknown chord
         - `%` ...Same as previous chord
         - `_` ...No chord
+  - Separators
+    - `C-D` treats `C` and `D` as separate bars
+    - `C,D` treats `C` and `D` as chords in the same bar
+    - One line break is preserved inside the same section
+    - Two or more consecutive line breaks start a new section
+  - Constraints
+    - Chord metadata must precede its chord; postfix forms such as `C[key=A]` are invalid
+    - Section metadata must occupy its own line
+    - Pipe notation such as `|C|` is not supported

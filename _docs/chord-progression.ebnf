@@ -23,6 +23,8 @@ blank-line        = line-break, line-break, { line-break } ;
   Space and tab may surround structural tokens, but may not split a text atom.
   A single line break inside a section is preserved as ChordBlock::Br.
   Two or more consecutive line breaks start a new section.
+  Section metadata remains attached to the following chord lines even when
+  blank lines occur between the metadata and the first chord line.
   The concrete values of key, extension, section-meta-value, and
   denominator-text are defined by semantic validation.
 *)

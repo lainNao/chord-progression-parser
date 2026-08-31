@@ -15,6 +15,7 @@ G - Am - Bm(o) - C
 ## 構文
 
 - 基本
+  - 厳密な文法は [chord-progression.ebnf](../chord-progression.ebnf) を参照
   - [generatedTypes.ts](../../resources/generatedTypes.ts)を参照
 - 詳細
   - `SectionMeta`
@@ -28,3 +29,12 @@ G - Am - Bm(o) - C
         - `?` ・・・ 不明
         - `%` ・・・ 前のコードと同じ
         - `_` ・・・ コードなし
+  - 区切り
+    - `C-D` ・・・ `C`と`D`を別々のbarとして扱う
+    - `C,D` ・・・ `C`と`D`を同じbarとして扱う
+    - 1個の改行 ・・・ 同じsection内の改行として扱う
+    - 2個以上の連続改行 ・・・ 新しいsectionとして扱う
+  - 制約
+    - chord metaは対象chordの直前に置く。`C[key=A]`のような後置は不可
+    - section metaは専用行に置く
+    - pipeを使う`|C|`記法には対応しない

@@ -15,6 +15,12 @@ check-not-broken:
 	make test-e2e
 	make test-generator
 
+check-local:
+	make check-lint
+	make check-build
+	make test-rust
+	make test-resources
+
 ################################################################
 ################################################################ common 
 ################################################################
@@ -154,6 +160,7 @@ generate-ts-types:
 	typeshare ./src \
 		--lang=typescript \
 		--output-file=resources/generatedTypes.ts
+	bun resources/fix_generated_types.ts
 
 ################################################################
 ################################################################ fixer 
@@ -190,7 +197,7 @@ review-snapshot:
 
 # lint check
 check-lint:
-	cargo clippy
+	cargo clippy --all-targets --all-features -- -D warnings
 	cargo fmt --all -- --check
 
 # build check
@@ -199,7 +206,7 @@ check-build:
 
 # unit & integration test
 test-rust:
-	cargo test --lib
+	cargo test --all-targets --all-features
 
 # e2e test
 test-e2e:
