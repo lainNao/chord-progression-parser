@@ -5,15 +5,20 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   test-and-release:
     runs-on: ubuntu-latest
     outputs:
-      prev-tag: ${{ steps.get-versions.outputs.set-make-release-output }}
+      prev-tag: ${{ steps.get-versions.outputs.prev-tag }}
       new-tag: ${{ steps.makenewtag.outputs.new_tag }}
       changelog: ${{ steps.makenewtag.outputs.changelog }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Make testing environment
         uses: ./.github/actions/make-environment
       - run: make check-not-broken
@@ -29,11 +34,24 @@ jobs:
           echo "new-version=${{ steps.get-versions.outputs.new-version }}"
       - name: Make new tag
         if: steps.get-versions.outputs.prev-tag != format('v{0}', steps.get-versions.outputs.new-version)
-        uses: mathieudutour/github-tag-action@v5.6
         id: makenewtag
-        with:
-          custom_tag: ${{ steps.get-versions.outputs.new-version }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          NEW_TAG: v${{ steps.get-versions.outputs.new-version }}
+          PREV_TAG: ${{ steps.get-versions.outputs.prev-tag }}
+        run: |
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
+          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "changelog<<EOF"
+            if git merge-base "$PREV_TAG" HEAD >/dev/null; then
+              git log "$PREV_TAG"..HEAD --pretty=format:'- %s (%h)'
+            else
+              git log HEAD --max-count=50 --pretty=format:'- %s (%h)'
+            fi
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - name: Echo output
         run: |
           echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
