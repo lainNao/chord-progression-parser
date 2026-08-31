@@ -4,7 +4,7 @@
   "description": "",
   "main": "vite.config.js",
   "scripts": {
-    "dev": "bun run http-server ./generated-src -p 3498",
+    "dev": "python3 -m http.server 3498 --directory generated-src",
     "test": "bun run test:e2e",
     "test:e2e": "bun playwright test",
     "__install:playwright": "npx playwright install"
@@ -13,7 +13,6 @@
   "author": "",
   "devDependencies": {
     "@playwright/test": "1.62.1",
-    "http-server": "^14.1.1",
     "playwright": "1.62.1",
     "typescript": "^5.4.5"
   },
