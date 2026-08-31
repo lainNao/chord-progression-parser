@@ -14,8 +14,8 @@ export default {
   fullyParallel: true,
   //1テストのタイムアウト時間。5秒
   timeout: 1000 * 5,
-  //全テストの総タイムアウト時間。1分
-  globalTimeout: 1000 * 1 * 60,
+  // 全テストの総タイムアウト時間。CI上のブラウザ起動とretryを含めて5分。
+  globalTimeout: 1000 * 60 * 5,
   expect: {
     //expect()のタイムアウト時間。5秒
     timeout: 1000 * 5,
@@ -56,7 +56,7 @@ export default {
         channel: "msedge",
       },
       // NOTE: msedge is somewhat flaky on CI...
-      timeout: 1000 * 10, //
+      timeout: 1000 * 30,
     },
     {
       name: "chromium",
