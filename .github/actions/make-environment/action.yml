@@ -5,16 +5,10 @@ description: "make environment"
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v4
-    - uses: oven-sh/setup-bun@v1
+    - uses: oven-sh/setup-bun@v2
     - name: make environment
       shell: bash
-      run: |
-        # rust
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        source $HOME/.cargo/env
-        make install
-    - uses: jetli/wasm-pack-action@v0.4.0
-      with:
-        # Optional version of wasm-pack to install(eg. 'v0.9.1', 'latest')
-        version: "latest"
+      run: make install
+    - name: Install wasm-pack
+      shell: bash
+      run: curl --proto '=https' --tlsv1.2 -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
