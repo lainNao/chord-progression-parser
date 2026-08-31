@@ -15,6 +15,7 @@ jobs:
       prev-tag: ${{ steps.get-versions.outputs.prev-tag }}
       new-tag: ${{ steps.makenewtag.outputs.new_tag }}
       changelog: ${{ steps.makenewtag.outputs.changelog }}
+      should-release: ${{ steps.get-versions.outputs.should-release }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,14 +27,22 @@ jobs:
         id: get-versions
         run: |
           git fetch --tags
-          echo "prev-tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
-          echo "new-version=$(grep -m1 "version" Cargo.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
+          new_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "chord-progression-parser") | .version')"
+          new_tag="v${new_version}"
+          echo "prev-tag=$(git tag --sort=-version:refname | head -n 1)" >> "$GITHUB_OUTPUT"
+          echo "new-version=${new_version}" >> "$GITHUB_OUTPUT"
+          if git rev-parse --verify --quiet "refs/tags/${new_tag}" >/dev/null; then
+            echo "should-release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should-release=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Echo prev-tag and new-version
         run: |
           echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
           echo "new-version=${{ steps.get-versions.outputs.new-version }}"
+          echo "should-release=${{ steps.get-versions.outputs.should-release }}"
       - name: Make new tag
-        if: steps.get-versions.outputs.prev-tag != format('v{0}', steps.get-versions.outputs.new-version)
+        if: steps.get-versions.outputs.should-release == 'true'
         id: makenewtag
         env:
           NEW_TAG: v${{ steps.get-versions.outputs.new-version }}
@@ -44,7 +53,7 @@ jobs:
           echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
           {
             echo "changelog<<EOF"
-            if git merge-base "$PREV_TAG" HEAD >/dev/null; then
+            if [ -n "$PREV_TAG" ] && git merge-base "$PREV_TAG" HEAD >/dev/null; then
               git log "$PREV_TAG"..HEAD --pretty=format:'- %s (%h)'
             else
               git log HEAD --max-count=50 --pretty=format:'- %s (%h)'
@@ -61,21 +70,21 @@ jobs:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-crates-io.yml
     secrets: inherit
-    if: needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag
+    if: needs.test-and-release.outputs.should-release == 'true'
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
   release-to-npm:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-npm.yml
     secrets: inherit
-    if: needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag
+    if: needs.test-and-release.outputs.should-release == 'true'
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
   release-to-github:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
-    if: needs.test-and-release.outputs.prev-tag != needs.test-and-release.outputs.new-tag
+    if: needs.test-and-release.outputs.should-release == 'true'
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
       changelog: ${{ needs.test-and-release.outputs.changelog }}
