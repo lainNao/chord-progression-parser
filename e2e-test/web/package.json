@@ -14,7 +14,7 @@
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "playwright": "1.62.1",
-    "typescript": "^5.4.5"
+    "typescript": "7.0.2"
   },
   "dependencies": {
     "@lainnao/chord-progression-parser-web": "../../pkg/pkg-web"

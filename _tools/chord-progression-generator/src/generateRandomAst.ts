@@ -27,9 +27,9 @@ function generateRandomExtension(): types.Extension {
   return getRandomEnum(types.Extension);
 }
 
-function generateRandomDenominator(): string | undefined {
+function generateRandomDenominator(): string | null {
   if (randomBetween({ min: 0, max: 10 }) !== 0) {
-    return undefined;
+    return null;
   }
   return (
     getRandomElement(["C", "D", "E", "F", "G", "A", "B"]) +
@@ -75,7 +75,7 @@ function generateRandomChordExpression(
         chordType === types.ChordType.Major ? "" : chordType;
 
       const accidental = getRandomElement([
-        ...new Array(10).fill(undefined).map(() => undefined),
+        ...new Array(10).fill(null),
         types.Accidental.Sharp,
         types.Accidental.Flat,
       ]);
@@ -122,14 +122,17 @@ function generateRandomChordBlock(
   option?: {
     noSame?: boolean;
   }
-): types.Bar {
-  return arrayBy(randomBetween(args.chordInfoCountRange)).map(() => ({
-    metaInfos: generateRandomChordMetaInfos(args),
-    chordExpression: generateRandomChordExpression(args, {
-      noSame: option?.noSame,
-    }),
-    denominator: generateRandomDenominator(),
-  }));
+): types.ChordBlock {
+  return {
+    type: "bar",
+    value: arrayBy(randomBetween(args.chordInfoCountRange)).map(() => ({
+      metaInfos: generateRandomChordMetaInfos(args),
+      chordExpression: generateRandomChordExpression(args, {
+        noSame: option?.noSame,
+      }),
+      denominator: generateRandomDenominator(),
+    })),
+  };
 }
 
 function generateRandomSectionInfoMeta(): types.SectionMeta {

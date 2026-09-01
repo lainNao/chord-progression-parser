@@ -15,10 +15,10 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
-    "bun-types": "latest",
+    "bun-types": "1.4.0",
     "playwright": "1.62.1",
-    "typescript": "^5.4.5",
-    "vite": "6.4.3",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
     "vite-plugin-wasm": "3.6.0"
   },
   "dependencies": {
