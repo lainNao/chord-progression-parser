@@ -9,7 +9,6 @@
     "noEmit": true,
     "composite": true,
     "strict": true,
-    "downlevelIteration": true,
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
@@ -18,5 +17,6 @@
     "types": [
       "bun-types" // add Bun global
     ]
-  }
+  },
+  "include": ["resources"]
 }

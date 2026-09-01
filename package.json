@@ -2,22 +2,14 @@
   "name": "chord-progression-ast-parser",
   "type": "module",
   "devDependencies": {
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
+    "bun-types": "1.4.0",
+    "lefthook": "2.1.12",
+    "typescript": "7.0.2"
   },
   "scripts": {
-    "test": "bun test"
+    "test": "bun test ./resources/error_code_message_map.spec.ts ./resources/generatedTypes.spec.ts"
   },
   "engines": {
-    "node": "please use bun",
-    "yarn": "please use bun",
-    "pnpm": "please use bun",
-    "bun": "^1.0.11"
-  },
-  "dependencies": {
-    "install": "^0.13.0",
-    "lefthook": "^1.5.2"
+    "bun": ">=1.3.3"
   }
 }
