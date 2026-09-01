@@ -7,176 +7,176 @@ use crate::util::position::Position;
 pub enum ErrorCode {
     #[strum(serialize = "SMIK-1")]
     /**
-     * en: SectionMetaInfoKey is invalid
+     * en: Invalid section metadata key
      * ja: セクションメタ情報のキーが不正です
      */
     Smik1,
 
     #[strum(serialize = "SMIK-2")]
     /**
-     * en: SectionMetaInfoKey should not contains line break
-     * ja: セクションメタ情報のキーに改行を含めることはできません
+     * en: Section metadata key is missing or is not followed by '='
+     * ja: セクションメタ情報のキーがないか、キーの後に「=」がありません
      */
     Smik2,
 
     #[strum(serialize = "SMIV-1")]
     /**
-     * en: SectionMetaInfoValue should not be empty
+     * en: Section metadata value must not be empty
      * ja: セクションメタ情報の値は空にできません
      */
     Smiv1,
 
     #[strum(serialize = "SMIV-2")]
     /**
-     * en: SectionMetaInfoValue needs line break after
-     * ja: セクションメタ情報の値の後に改行が必要です
+     * en: Section metadata must occupy its own line
+     * ja: セクションメタ情報は専用の行に記述する必要があります
      */
     Smiv2,
 
     #[strum(serialize = "SMIV-3")]
     /**
-     * en: SectionMetaInfoValue of repeat needs to be number
-     * ja: セクションメタ情報の値のrepeatの値は数値である必要があります
+     * en: The repeat section metadata value must be a non-negative integer
+     * ja: セクションメタ情報「repeat」の値は0以上の整数である必要があります
      */
     Smiv3,
 
     #[strum(serialize = "CIMK-1")]
     /**
-     * en: ChordInfoMetaKey should not contains line break
-     * ja: コードメタ情報のキーに改行を含めることはできません
+     * en: Chord metadata key must be followed by '='
+     * ja: コードメタ情報のキーの後に「=」が必要です
      */
     Cimk1,
 
     #[strum(serialize = "CIMK-2")]
     /**
-     * en: MetaInfoKey should not be empty
+     * en: Chord metadata key must not be empty
      * ja: コードメタ情報のキーは空にできません
      */
     Cimk2,
 
     #[strum(serialize = "CIMK-3")]
     /**
-     * en: MetaInfoKey is invalid
+     * en: Invalid chord metadata key
      * ja: コードメタ情報のキーが不正です
      */
     Cimk3,
 
     #[strum(serialize = "CIMV-1")]
     /**
-     * en: MetaInfoValue should not contains line break
+     * en: Chord metadata value must not contain a line break
      * ja: コードメタ情報の値に改行を含めることはできません
      */
     Cimv1,
 
     #[strum(serialize = "CIMV-2")]
     /**
-     * en: MetaInfoValue should not be empty
+     * en: Chord metadata value must not be empty
      * ja: コードメタ情報の値は空にできません
      */
     Cimv2,
 
     #[strum(serialize = "CIMV-3")]
     /**
-     * en: MetaInfoValue needs close parenthesis after
-     * ja: コードメタ情報の値の後に閉じ括弧が必要です
+     * en: Chord metadata must end with ']'
+     * ja: コードメタ情報の末尾に閉じ角括弧「]」が必要です
      */
     Cimv3,
 
     #[strum(serialize = "CIMV-4")]
     /**
-     * en: MetaInfoValue is invalid
+     * en: Invalid chord metadata value
      * ja: コードメタ情報の値が不正です
      */
     Cimv4,
 
     #[strum(serialize = "CHB-1")]
     /**
-     * en: % should not be placed first of ChordBlock
-     * ja: コードブロックの先頭に%を置くことはできません
+     * en: The repeat symbol '%' cannot be used before the first chord in a section
+     * ja: セクション内の最初のコードより前に繰り返し記号「%」を置くことはできません
      */
     Chb1,
 
     #[strum(serialize = "CHB-2")]
     /**
-     * en: Bar should not contains line break
-     * ja: コードブロックに改行を含めることはできません
+     * en: A bar must not contain a line break
+     * ja: 小節内に改行を含めることはできません
      */
     Chb2,
 
     #[strum(serialize = "CHO-1")]
     /**
-     * en: Invalid chord
+     * en: Invalid chord notation
      * ja: コードが不正です
      */
     Cho1,
 
     #[strum(serialize = "CHO-2")]
     /**
-     * en: Chord should not contains line break
+     * en: A chord must not contain a line break
      * ja: コードに改行を含めることはできません
      */
     Cho2,
 
     #[strum(serialize = "CHO-3")]
     /**
-     * en: Chord should not be empty
+     * en: A chord must not be empty
      * ja: コードは空にできません
      */
     Cho3,
 
     #[strum(serialize = "DEN-1")]
     /**
-     * en: Invalid denominator
+     * en: Invalid slash chord denominator
      * ja: 分母が不正です
      */
     Den1,
 
     #[strum(serialize = "DEN-2")]
     /**
-     * en: Denominator is limited to one per chord
+     * en: A chord can have only one denominator
      * ja: コードに対して分母は1つまでです
      */
     Den2,
 
     #[strum(serialize = "EXT-1")]
     /**
-     * en: Invalid extension
+     * en: Invalid chord extension
      * ja: テンションが不正です
      */
     Ext1,
 
     #[strum(serialize = "EXT-2")]
     /**
-     * en: Extension must not be empty
+     * en: Chord extension must not be empty
      * ja: テンションは空にできません
      */
     Ext2,
 
     #[strum(serialize = "EXT-3")]
     /**
-     * en: Extension must be surrounded by parenthesis
-     * ja: テンションは括弧で囲む必要があります
+     * en: Invalid chord extension parentheses
+     * ja: テンションの括弧が不正です
      */
     Ext3,
 
     #[strum(serialize = "EXT-4")]
     /**
-     * en: No multiple extension parenthesis
-     * ja: テンションの括弧は1つまでです
+     * en: Multiple chord extension groups are not allowed
+     * ja: テンションを複数の括弧に分けることはできません
      */
     Ext4,
 
     #[strum(serialize = "TKN-1")]
     /**
-     * en: Invalid token type
-     * ja: 不正なトークンタイプです
+     * en: Unexpected token
+     * ja: 予期しないトークンです
      */
     Tkn1,
 
     #[strum(serialize = "BS-1")]
     /**
-     * en: Invalid base
-     * ja: 不正なベース音です
+     * en: Invalid chord root
+     * ja: ルート音が不正です
      */
     Bs1,
 
