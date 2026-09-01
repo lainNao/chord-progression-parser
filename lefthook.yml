@@ -4,8 +4,3 @@ pre-commit:
   commands:
     check-local:
       run: make check-local
-
-post-checkout:
-  commands:
-    install:
-      run: make install
