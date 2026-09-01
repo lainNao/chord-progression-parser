@@ -38,4 +38,5 @@ test("success simple usage", async ({ page }) => {
       },
     ],
   });
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
 });

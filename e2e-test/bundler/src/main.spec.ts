@@ -12,4 +12,5 @@ test("success simple usage", async ({ page }) => {
 
   // check
   await expect(JSON.parse(resultText)).toStrictEqual(testData.expected);
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
 });

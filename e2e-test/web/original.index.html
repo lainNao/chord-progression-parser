@@ -14,6 +14,9 @@
       (async () => {
         await mod.default();
         const result = mod.parseChordProgressionString("C");
+        document.querySelector("#result").dataset.formatted = result.success
+          ? mod.formatChordProgression(result.ast)
+          : "";
         console.log(result);
         document.querySelector("#result").innerHTML = JSON.stringify(
           result,

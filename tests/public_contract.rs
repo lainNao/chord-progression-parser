@@ -1,4 +1,4 @@
-use chord_progression_parser::parse_chord_progression_string;
+use chord_progression_parser::{format_chord_progression, parse_chord_progression_string};
 use serde_json::{json, Value};
 
 /** Verifies the JSON contract through the public Rust entry point. */
@@ -11,6 +11,24 @@ fn parses_the_public_contract_fixture() {
     let ast = parse_chord_progression_string(input).expect("the contract input must parse");
 
     assert_eq!(json!({ "success": true, "ast": ast }), expected);
+}
+
+/** Verifies the formatter through the public Rust API and parser contract fixture. */
+#[test]
+fn formats_the_public_contract_fixture() {
+    let ast = parse_chord_progression_string(include_str!("fixtures/public_contract.chord"))
+        .expect("the contract input must parse");
+
+    let formatted = format_chord_progression(&ast).expect("the parsed AST must be formattable");
+
+    assert_eq!(
+        formatted,
+        "@section=Verse\n@repeat=2\n[key=C]C(M9), G/B - Dm(7) - ? - _ - %"
+    );
+    assert_eq!(
+        parse_chord_progression_string(&formatted).expect("formatted source must parse"),
+        ast
+    );
 }
 
 /** Keeps a representative public error code and source position stable. */

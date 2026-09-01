@@ -66,8 +66,8 @@ function generateRandomChordExpression(
       );
 
       const chordType: types.ChordType = getRandomElement([
-        ...new Array(10).map(() => types.ChordType.Major),
-        ...new Array(10).map(() => types.ChordType.Minor),
+        ...new Array(10).fill(types.ChordType.Major),
+        ...new Array(10).fill(types.ChordType.Minor),
         types.ChordType.Augmented,
         types.ChordType.Diminished,
       ]);

@@ -1,5 +1,8 @@
 import "./main.css";
-import { parseChordProgressionString } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
+import {
+  formatChordProgression,
+  parseChordProgressionString,
+} from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
 import {
   ErrorCode,
   getErrorMessage,
@@ -93,6 +96,9 @@ function main() {
             columnNumber: result.error.position.columnNumber,
             length: result.error.position.length,
           });
+      elms.result.dataset.formatted = result.success
+        ? formatChordProgression(result.ast)
+        : "";
     } catch (e: unknown) {
       console.log(e);
       elms.result.innerHTML = JSON.stringify(e, null, 2);

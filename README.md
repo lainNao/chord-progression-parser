@@ -39,7 +39,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
 - And use
 
   ```rust
-  use chord_progression_parser::parse_chord_progression_string;
+  use chord_progression_parser::{format_chord_progression, parse_chord_progression_string};
 
   fn main() {
     let input: &str = "
@@ -53,7 +53,12 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   ";
 
       let result = parse_chord_progression_string(input);
-      println!("{:#?}", result);
+      if let Ok(ast) = result {
+        println!(
+          "{}",
+          format_chord_progression(&ast).expect("parsed AST must be formattable")
+        );
+      }
   }
   ```
 
@@ -80,9 +85,15 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
 - And use
 
   ```typescript
-  import { parseChordProgressionString } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
+  import {
+    formatChordProgression,
+    parseChordProgressionString,
+  } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
 
   const result = parseChordProgressionString("C");
+  if (result.success) {
+    console.log(formatChordProgression(result.ast));
+  }
   console.log(result);
   ```
 
@@ -97,9 +108,15 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
 - And use
 
   ```typescript
-  import { parseChordProgressionString } from "@lainnao/chord-progression-parser-node/chord_progression_parser";
+  import {
+    formatChordProgression,
+    parseChordProgressionString,
+  } from "@lainnao/chord-progression-parser-node/chord_progression_parser";
 
   const result = parseChordProgressionString("C");
+  if (result.success) {
+    console.log(formatChordProgression(result.ast));
+  }
   console.log(result);
   ```
 
@@ -127,6 +144,9 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
           await mod.default();
           // use
           const result = mod.parseChordProgressionString("C");
+          if (result.success) {
+            console.log(mod.formatChordProgression(result.ast));
+          }
           console.log(result);
           document.querySelector("#result").innerHTML = JSON.stringify(
             result,

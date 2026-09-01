@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumString;
+use strum_macros::{Display, EnumString};
 use typeshare::typeshare;
 
 #[typeshare]
 #[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Clone, EnumString, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Display, EnumString, Serialize, Deserialize)]
 pub enum Key {
     #[strum(serialize = "Cb")]
     #[serde(rename = "Cb")]

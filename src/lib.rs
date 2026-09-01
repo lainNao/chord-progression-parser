@@ -1,4 +1,5 @@
 mod error_code;
+mod formatter;
 mod lexer;
 mod model;
 mod parser;
@@ -7,6 +8,7 @@ use serde::Serialize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 pub use error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition};
+pub use formatter::{format_chord_progression, FormatError};
 pub use model::{
     accidental::Accidental, ast::Ast, bar::Bar, base::Base, chord::Chord, chord_block::ChordBlock,
     chord_detailed::ChordDetailed, chord_expression::ChordExpression, chord_info::ChordInfo,
@@ -77,6 +79,9 @@ export type ParsedResult =
         };
       };
     };
+
+/** Formats an AST returned by parseChordProgressionString. */
+export function formatChordProgression(ast: Ast): string;
 "#;
 
 #[doc(hidden)]
@@ -107,6 +112,16 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
     response
         .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
         .expect("serializing the fixed JavaScript response types should not fail")
+}
+
+/** Formats a parser-produced JavaScript AST into stable chord-progression source text. */
+#[wasm_bindgen(js_name = "formatChordProgression", skip_typescript)]
+pub fn format_chord_progression_js(ast: JsValue) -> Result<String, JsValue> {
+    let ast: Ast = serde_wasm_bindgen::from_value(ast)
+        .map_err(|error| JsValue::from_str(&format!("invalid chord progression AST: {error}")))?;
+
+    format_chord_progression(&ast)
+        .map_err(|error| JsValue::from_str(&format!("invalid chord progression AST: {error}")))
 }
 
 /// Parse a chord progression string and return the AST
