@@ -20,3 +20,7 @@ branch rule is not decided yet.
 ## Release
 
 When the `Cargo.toml` `version` is raised and pushed to the `main` branch, it will be automatically tagged and released.
+
+The npm packages use Trusted Publishing. In each package's npm settings, configure `lainNao/chord-progression-parser` as the GitHub repository and `test-and-release.yml` as the workflow.
+
+If a release partially fails, run `test-and-release` manually in GitHub Actions with the existing tag in `tag-to-release`. Artifacts that are already published will be skipped.

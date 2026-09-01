@@ -23,6 +23,16 @@ jobs:
           ref: ${{ inputs.tag-to-release}}
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
-      - run: cargo publish --token ${CRATES_API_TOKEN}
+      - name: Publish if not already published
         env:
-          CRATES_API_TOKEN: ${{ secrets.CRATES_API_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_API_TOKEN }}
+        run: |
+          crate_name="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "chord-progression-parser") | .name')"
+          crate_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "chord-progression-parser") | .version')"
+
+          if cargo info "${crate_name}@${crate_version}" >/dev/null 2>&1; then
+            echo "${crate_name}@${crate_version} is already published; skipping"
+            exit 0
+          fi
+
+          cargo publish

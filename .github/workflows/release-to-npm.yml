@@ -1,12 +1,6 @@
 name: release-to-npm
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag-to-release:
-        type: string
-        description: "Tag to release"
-        required: true
   workflow_call:
     inputs:
       tag-to-release:
@@ -17,6 +11,10 @@ on:
 concurrency:
   group: release-to-npm-${{ inputs.tag-to-release }}
   cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   bundler:
@@ -29,14 +27,13 @@ jobs:
         with:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
         run: bun i && make generate-error-code-rs && make build-wasm-bundler
       - name: publish if not already published
         working-directory: pkg/pkg-bundler
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           package_name="$(npm pkg get name | tr -d '"')"
           package_version="$(npm pkg get version | tr -d '"')"
@@ -58,14 +55,13 @@ jobs:
         with:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
         run: bun i && make generate-error-code-rs && make build-wasm-web
       - name: publish if not already published
         working-directory: pkg/pkg-web
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           package_name="$(npm pkg get name | tr -d '"')"
           package_version="$(npm pkg get version | tr -d '"')"
@@ -87,14 +83,13 @@ jobs:
         with:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
         run: bun i && make generate-error-code-rs && make build-wasm-node
       - name: publish if not already published
         working-directory: pkg/pkg-node
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           package_name="$(npm pkg get name | tr -d '"')"
           package_version="$(npm pkg get version | tr -d '"')"

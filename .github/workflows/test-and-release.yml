@@ -4,53 +4,92 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      tag-to-release:
+        type: string
+        description: "Existing tag to retry"
+        required: true
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   test-and-release:
     runs-on: ubuntu-latest
     outputs:
       prev-tag: ${{ steps.get-versions.outputs.prev-tag }}
-      new-tag: ${{ steps.makenewtag.outputs.new_tag }}
-      changelog: ${{ steps.makenewtag.outputs.changelog }}
+      new-tag: ${{ steps.get-versions.outputs.new-tag }}
+      changelog: ${{ steps.prepare-release.outputs.changelog }}
       should-release: ${{ steps.get-versions.outputs.should-release }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag-to-release || github.sha }}
       - name: Make testing environment
         uses: ./.github/actions/make-environment
       - run: make check-not-broken
       - name: Get prev-tag and new-version
         id: get-versions
+        env:
+          REQUESTED_TAG: ${{ inputs.tag-to-release }}
         run: |
           git fetch --tags
           new_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "chord-progression-parser") | .version')"
-          new_tag="v${new_version}"
-          echo "prev-tag=$(git tag --sort=-version:refname | head -n 1)" >> "$GITHUB_OUTPUT"
-          echo "new-version=${new_version}" >> "$GITHUB_OUTPUT"
-          if git rev-parse --verify --quiet "refs/tags/${new_tag}" >/dev/null; then
-            echo "should-release=false" >> "$GITHUB_OUTPUT"
+          expected_tag="v${new_version}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "$REQUESTED_TAG" != "$expected_tag" ]; then
+              echo "Requested tag $REQUESTED_TAG does not match Cargo version $expected_tag" >&2
+              exit 1
+            fi
+            if ! git rev-parse --verify --quiet "refs/tags/${REQUESTED_TAG}" >/dev/null; then
+              echo "Requested tag $REQUESTED_TAG does not exist" >&2
+              exit 1
+            fi
+            new_tag="$REQUESTED_TAG"
+            should_release=true
           else
-            echo "should-release=true" >> "$GITHUB_OUTPUT"
+            new_tag="$expected_tag"
+            if git rev-parse --verify --quiet "refs/tags/${new_tag}" >/dev/null; then
+              should_release=false
+            else
+              should_release=true
+            fi
           fi
+
+          prev_tag=""
+          while IFS= read -r tag; do
+            if [ "$tag" != "$new_tag" ]; then
+              prev_tag="$tag"
+              break
+            fi
+          done < <(git tag --sort=-version:refname --merged HEAD)
+
+          echo "prev-tag=${prev_tag}" >> "$GITHUB_OUTPUT"
+          echo "new-version=${new_version}" >> "$GITHUB_OUTPUT"
+          echo "new-tag=${new_tag}" >> "$GITHUB_OUTPUT"
+          echo "should-release=${should_release}" >> "$GITHUB_OUTPUT"
       - name: Echo prev-tag and new-version
         run: |
           echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
           echo "new-version=${{ steps.get-versions.outputs.new-version }}"
+          echo "new-tag=${{ steps.get-versions.outputs.new-tag }}"
           echo "should-release=${{ steps.get-versions.outputs.should-release }}"
-      - name: Make new tag
+      - name: Prepare release
         if: steps.get-versions.outputs.should-release == 'true'
-        id: makenewtag
+        id: prepare-release
         env:
-          NEW_TAG: v${{ steps.get-versions.outputs.new-version }}
+          NEW_TAG: ${{ steps.get-versions.outputs.new-tag }}
           PREV_TAG: ${{ steps.get-versions.outputs.prev-tag }}
         run: |
-          git tag "$NEW_TAG"
-          git push origin "$NEW_TAG"
-          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            git tag "$NEW_TAG"
+            git push origin "$NEW_TAG"
+          fi
+
           {
             echo "changelog<<EOF"
             if [ -n "$PREV_TAG" ] && git merge-base "$PREV_TAG" HEAD >/dev/null; then
@@ -64,8 +103,8 @@ jobs:
       - name: Echo output
         run: |
           echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
-          echo "new-tag=${{ steps.makenewtag.outputs.new_tag }}"
-          echo "changelog=${{ steps.makenewtag.outputs.changelog }}"
+          echo "new-tag=${{ steps.get-versions.outputs.new-tag }}"
+          echo "changelog=${{ steps.prepare-release.outputs.changelog }}"
   release-to-crates-io:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-crates-io.yml
@@ -76,7 +115,6 @@ jobs:
   release-to-npm:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-npm.yml
-    secrets: inherit
     if: needs.test-and-release.outputs.should-release == 'true'
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
