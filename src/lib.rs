@@ -55,10 +55,38 @@ enum JsParseResult {
     Failure(JsParseFailure),
 }
 
+#[wasm_bindgen(typescript_custom_section)]
+const PARSED_RESULT_TYPES: &str = r#"
+import type { Ast } from "./generatedTypes.js";
+import type { ErrorCode } from "./error_code_message_map.js";
+
+export type ParsedResult =
+  | {
+      success: true;
+      ast: Ast;
+    }
+  | {
+      success: false;
+      error: {
+        code: ErrorCode;
+        additionalInfo: string | null;
+        position: {
+          lineNumber: number;
+          columnNumber: number;
+          length: number;
+        };
+      };
+    };
+"#;
+
 #[doc(hidden)]
 /// @param {string} input - The chord progression string to parse.
 /// @returns {ParsedResult} - The parsed result.
-#[wasm_bindgen(js_name = "parseChordProgressionString", skip_jsdoc)]
+#[wasm_bindgen(
+    js_name = "parseChordProgressionString",
+    skip_jsdoc,
+    unchecked_return_type = "ParsedResult"
+)]
 pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
     let response = match parse_chord_progression_string(input) {
         Ok(ast) => JsParseResult::Success(JsParseSuccess { success: true, ast }),

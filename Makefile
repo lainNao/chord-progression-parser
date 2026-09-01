@@ -6,10 +6,7 @@ check-not-broken:
 	make build-wasm-web
 	make build-wasm-node
 	make build-wasm-bundler
-	make modify-package-name-web
-	make modify-package-name-node
-	make modify-package-name-bundler
-	make prepare-test
+	make install-e2e-dependencies
 	make test-rust
 	make test-resources
 	make test-e2e
@@ -55,11 +52,6 @@ build-wasm-web:
 		--target web
 	make generate-ts-declare-file-for-pkg-web
 
-# modify package-name
-# append "-web" to package json "name" field
-modify-package-name-web:
-	cd pkg/pkg-web && npx change-package-name @lainnao\/chord-progression-parser-web && bun i
-
 # build wasm for node (use for server javascript without any bundler?)
 build-wasm-node:
 	wasm-pack build \
@@ -69,11 +61,6 @@ build-wasm-node:
 		--target nodejs
 	make generate-ts-declare-file-for-pkg-node
 
-# modify package-name
-# append "-node" to package json "name" field
-modify-package-name-node:
-	cd pkg/pkg-node && npx change-package-name @lainnao\/chord-progression-parser-node && bun i
-
 # build wasm for bundler (use for server/client javascript with bundler?)
 build-wasm-bundler:
 	wasm-pack build \
@@ -82,12 +69,6 @@ build-wasm-bundler:
 		--out-dir ./pkg/pkg-bundler \
 		--target bundler
 	make generate-ts-declare-file-for-pkg-bundler
-	make add-package-json-type-module-for-pkg-bundler
-
-# modify package-name
-# append "-bundler" to package json "name" field
-modify-package-name-bundler:
-	cd pkg/pkg-bundler && npx change-package-name @lainnao\/chord-progression-parser-bundler && bun i
 
 ################################################################
 ################################################################ generator 
@@ -97,63 +78,29 @@ modify-package-name-bundler:
 generate-error-code-rs:
 	bun resources/error_code_message_map.util.ts
 
-# generate and modify d.ts
-# HACK: this is not good way. do it by wasm_bindgen directly
-# NOTE: dependes on build-wasm-web
+# generate additional TypeScript files
+# NOTE: depends on build-wasm-web
 generate-ts-declare-file-for-pkg-web:
 	make generate-ts-types
-# Rewrite definition of return value of run function in pkg-web/chord_progression_parser.d.ts to "Ast"
-	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-web/chord_progression_parser.d.ts && rm pkg/pkg-web/chord_progression_parser.d.ts.bak
-# compile additinal files
 	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
 	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
-# add to package.json "files"
-	sed -i.bak 's/"files": \[/"files": \[\
-		"error_code_message_map.js", "error_code_message_map.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
-	sed -i.bak 's/"files": \[/"files": \[\
-		"generatedTypes.js", "generatedTypes.ts", "generatedTypes.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
-# prepend contents of additionalType.ts.txt to pkg/pkg-web/chord_progression_parser.d.ts
-	cat resources/additionalType.ts.txt pkg/pkg-web/chord_progression_parser.d.ts > pkg/pkg-web/chord_progression_parser.d.ts.tmp && mv pkg/pkg-web/chord_progression_parser.d.ts.tmp pkg/pkg-web/chord_progression_parser.d.ts
+	bun resources/prepare_wasm_package.ts web
 
-# generate and modify d.ts
-# HACK: this is not good way. do it by wasm_bindgen directly
-# NOTE: dependes on build-wasm-node
+# generate additional TypeScript files
+# NOTE: depends on build-wasm-node
 generate-ts-declare-file-for-pkg-node:
 	make generate-ts-types
-# Rewrite definition of return value of run function in pkg-node/chord_progression_parser.d.ts to "Ast"
-	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-node/chord_progression_parser.d.ts && rm pkg/pkg-node/chord_progression_parser.d.ts.bak
-# compile additinal files
 	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
 	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
-# add to package.json "files"
-	sed -i.bak 's/"files": \[/"files": \[\
-		"error_code_message_map.js", "error_code_message_map.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
-	sed -i.bak 's/"files": \[/"files": \[\
-		"generatedTypes.js", "generatedTypes.ts", "generatedTypes.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
-# prepend contents of additionalType.ts.txt to pkg/pkg-node/chord_progression_parser.d.ts
-	cat resources/additionalType.ts.txt pkg/pkg-node/chord_progression_parser.d.ts > pkg/pkg-node/chord_progression_parser.d.ts.tmp && mv pkg/pkg-node/chord_progression_parser.d.ts.tmp pkg/pkg-node/chord_progression_parser.d.ts
+	bun resources/prepare_wasm_package.ts node
 
-# generate and modify d.ts
-# HACK: this is not good way. do it by wasm_bindgen directly
-# NOTE: dependes on build-wasm-bundler
+# generate additional TypeScript files
+# NOTE: depends on build-wasm-bundler
 generate-ts-declare-file-for-pkg-bundler:
 	make generate-ts-types
-# Rewrite definition of return value of run function in pkg-bundler/chord_progression_parser.d.ts to "Ast"
-	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-bundler/chord_progression_parser.d.ts && rm pkg/pkg-bundler/chord_progression_parser.d.ts.bak
-# compile additinal files
 	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
 	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
-# add to package.json "files"
-	sed -i.bak 's/"files": \[/"files": \[\
-		"error_code_message_map.js", "error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
-	sed -i.bak 's/"files": \[/"files": \[\
-		"generatedTypes.js", "generatedTypes.ts", "generatedTypes.d.ts",/g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
-# prepend contents of additionalType.ts.txt to pkg/pkg-bundler/chord_progression_parser.d.ts
-	cat resources/additionalType.ts.txt pkg/pkg-bundler/chord_progression_parser.d.ts > pkg/pkg-bundler/chord_progression_parser.d.ts.tmp && mv pkg/pkg-bundler/chord_progression_parser.d.ts.tmp pkg/pkg-bundler/chord_progression_parser.d.ts
-
-# add package.json type module
-add-package-json-type-module-for-pkg-bundler:
-	sed -i.bak 's/"name": "\(.*\)"/"name": "\1",\n  "type": "module"/' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
+	bun resources/prepare_wasm_package.ts bundler
 
 # generate types
 generate-ts-types:
@@ -178,17 +125,11 @@ fix:
 ################################################################ tester 
 ################################################################
 
-# preparet est
-prepare-test:
-# HACK: remove dependencies from package.json
-#       → error: Package "@lainnao/chord-progression-parser-node@0.4.2" has a dependency loop
-	cd e2e-test/node && sed -i.bak '/chord-progression-parser/d' package.json && rm package.json.bak
-	cd e2e-test/bundler && sed -i.bak '/chord-progression-parser/d' package.json && rm package.json.bak
-	cd e2e-test/web && sed -i.bak '/chord-progression-parser/d' package.json && rm package.json.bak
-# install
-	cd e2e-test/node && bun add ../../pkg/pkg-node 
-	cd e2e-test/bundler &&  bun add ../../pkg/pkg-bundler
-	cd e2e-test/web && bun add ../../pkg/pkg-web
+# Install e2e dependencies without changing their tracked manifests or lockfiles.
+install-e2e-dependencies:
+	cd e2e-test/node && bun install --frozen-lockfile
+	cd e2e-test/bundler && bun install --frozen-lockfile
+	cd e2e-test/web && bun install --frozen-lockfile
 
 # review snapshot
 # use it when you want to update snapshot and pass snapshot test
