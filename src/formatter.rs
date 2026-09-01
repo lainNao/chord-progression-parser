@@ -173,6 +173,21 @@ mod tests {
         );
     }
 
+    /** Preserves enharmonic key spellings as distinct parser variants. */
+    #[test]
+    fn preserves_enharmonic_key_spellings() {
+        let input = "[key=Fb]C-[key=E#]F\n[key=Fbm]C-[key=E#m]F";
+        let ast = parse_chord_progression_string(input).expect("fixture must parse");
+
+        let formatted = format_chord_progression(&ast).expect("fixture must be formattable");
+
+        assert_eq!(formatted, "[key=Fb]C - [key=E#]F\n[key=Fbm]C - [key=E#m]F");
+        assert_eq!(
+            parse_chord_progression_string(&formatted).expect("formatted source must parse"),
+            ast
+        );
+    }
+
     /** Rejects typed AST shapes that would produce invalid source or lose information. */
     #[test]
     fn rejects_unrepresentable_asts() {

@@ -56,9 +56,15 @@ pub enum Key {
     E_m,
     #[strum(serialize = "E#")]
     #[serde(rename = "E#")]
-    Fb_M,
+    Es_M,
     #[strum(serialize = "E#m")]
     #[serde(rename = "E#m")]
+    Es_m,
+    #[strum(serialize = "Fb")]
+    #[serde(rename = "Fb")]
+    Fb_M,
+    #[strum(serialize = "Fbm")]
+    #[serde(rename = "Fbm")]
     Fb_m,
     #[strum(serialize = "F")]
     #[serde(rename = "F")]
@@ -123,4 +129,38 @@ pub enum Key {
     #[strum(serialize = "?")]
     #[serde(rename = "?")]
     UnIdentified,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::Key;
+
+    /** Keeps F-flat and E-sharp distinct across parsing, display, and JSON. */
+    #[test]
+    fn preserves_enharmonic_key_spellings() {
+        let cases = [
+            ("Fb", Key::Fb_M),
+            ("Fbm", Key::Fb_m),
+            ("E#", Key::Es_M),
+            ("E#m", Key::Es_m),
+        ];
+
+        for (source, expected) in cases {
+            let parsed = Key::from_str(source).expect("supported key must parse");
+
+            assert_eq!(parsed, expected);
+            assert_eq!(parsed.to_string(), source);
+            assert_eq!(
+                serde_json::to_string(&parsed).expect("key must serialize"),
+                format!("\"{source}\"")
+            );
+            assert_eq!(
+                serde_json::from_str::<Key>(&format!("\"{source}\""))
+                    .expect("key must deserialize"),
+                parsed
+            );
+        }
+    }
 }

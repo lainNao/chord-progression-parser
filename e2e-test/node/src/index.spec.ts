@@ -26,3 +26,18 @@ test("rejects an AST that cannot round trip", () => {
     parser.formatChordProgression([{ metaInfos: [], chordBlocks: [] }])
   ).toThrow("AST cannot be represented");
 });
+
+test("preserves F-flat and E-sharp as distinct JavaScript values", () => {
+  const result = parser.parseChordProgressionString("[key=Fb]C-[key=E#]F");
+  expect(result.success).toBe(true);
+
+  if (result.success) {
+    const serializedAst = JSON.stringify(result.ast);
+
+    expect(serializedAst).toContain('"value":"Fb"');
+    expect(serializedAst).toContain('"value":"E#"');
+    expect(parser.formatChordProgression(result.ast)).toBe(
+      "[key=Fb]C - [key=E#]F"
+    );
+  }
+});
