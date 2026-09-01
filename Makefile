@@ -105,8 +105,8 @@ generate-ts-declare-file-for-pkg-web:
 # Rewrite definition of return value of run function in pkg-web/chord_progression_parser.d.ts to "Ast"
 	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-web/chord_progression_parser.d.ts && rm pkg/pkg-web/chord_progression_parser.d.ts.bak
 # compile additinal files
-	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
-	npx tsc resources/generatedTypes.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
+	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
+	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
 # add to package.json "files"
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.d.ts",/g' pkg/pkg-web/package.json && rm pkg/pkg-web/package.json.bak
@@ -123,8 +123,8 @@ generate-ts-declare-file-for-pkg-node:
 # Rewrite definition of return value of run function in pkg-node/chord_progression_parser.d.ts to "Ast"
 	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-node/chord_progression_parser.d.ts && rm pkg/pkg-node/chord_progression_parser.d.ts.bak
 # compile additinal files
-	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
-	npx tsc resources/generatedTypes.ts --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
+	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
+	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
 # add to package.json "files"
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.d.ts",/g' pkg/pkg-node/package.json && rm pkg/pkg-node/package.json.bak
@@ -141,8 +141,8 @@ generate-ts-declare-file-for-pkg-bundler:
 # Rewrite definition of return value of run function in pkg-bundler/chord_progression_parser.d.ts to "Ast"
 	sed -i.bak 's/any/ParsedResult/g' pkg/pkg-bundler/chord_progression_parser.d.ts && rm pkg/pkg-bundler/chord_progression_parser.d.ts.bak
 # compile additinal files
-	npx tsc resources/error_code_message_map.ts --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
-	npx tsc resources/generatedTypes.ts --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
+	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
+	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
 # add to package.json "files"
 	sed -i.bak 's/"files": \[/"files": \[\
 		"error_code_message_map.js", "error_code_message_map.d.ts", /g' pkg/pkg-bundler/package.json && rm pkg/pkg-bundler/package.json.bak
