@@ -14,6 +14,10 @@ on:
         description: "Tag to release"
         required: true
 
+concurrency:
+  group: release-to-npm-${{ inputs.tag-to-release }}
+  cancel-in-progress: false
+
 jobs:
   bundler:
     runs-on: ubuntu-latest
@@ -28,11 +32,22 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-bundler && make modify-package-name-bundler
-      - run: npm publish --access public
+        run: bun i && make generate-error-code-rs && make build-wasm-bundler
+      - name: publish if not already published
         working-directory: pkg/pkg-bundler
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          package_name="$(npm pkg get name | tr -d '"')"
+          package_version="$(npm pkg get version | tr -d '"')"
+          package_spec="${package_name}@${package_version}"
+
+          if npm view "$package_spec" version >/dev/null 2>&1; then
+            echo "${package_spec} is already published; skipping"
+            exit 0
+          fi
+
+          npm publish --access public
   web:
     runs-on: ubuntu-latest
     steps:
@@ -46,11 +61,22 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-web && make modify-package-name-web
-      - run: npm publish --access public
+        run: bun i && make generate-error-code-rs && make build-wasm-web
+      - name: publish if not already published
         working-directory: pkg/pkg-web
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          package_name="$(npm pkg get name | tr -d '"')"
+          package_version="$(npm pkg get version | tr -d '"')"
+          package_spec="${package_name}@${package_version}"
+
+          if npm view "$package_spec" version >/dev/null 2>&1; then
+            echo "${package_spec} is already published; skipping"
+            exit 0
+          fi
+
+          npm publish --access public
   node:
     runs-on: ubuntu-latest
     steps:
@@ -64,8 +90,19 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-node && make modify-package-name-node
-      - run: npm publish --access public
+        run: bun i && make generate-error-code-rs && make build-wasm-node
+      - name: publish if not already published
         working-directory: pkg/pkg-node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          package_name="$(npm pkg get name | tr -d '"')"
+          package_version="$(npm pkg get version | tr -d '"')"
+          package_spec="${package_name}@${package_version}"
+
+          if npm view "$package_spec" version >/dev/null 2>&1; then
+            echo "${package_spec} is already published; skipping"
+            exit 0
+          fi
+
+          npm publish --access public
