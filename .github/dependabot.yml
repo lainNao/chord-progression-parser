@@ -9,7 +9,19 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: 'github-actions'
-    directory: '/'
+  - package-ecosystem: "bun"
+    directories:
+      - "/"
+      - "/e2e-test/node"
+      - "/e2e-test/bundler"
+      - "/e2e-test/web"
+      - "/_tools/chord-progression-generator"
     schedule:
-      interval: 'weekly'
+      interval: "weekly"
+    groups:
+      bun-dependencies:
+        group-by: "dependency-name"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
