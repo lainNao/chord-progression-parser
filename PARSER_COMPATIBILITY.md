@@ -11,6 +11,8 @@
 - 成功時の AST JSON 形式はリファクタ前と一致させる。
 - syntax error は戻り値として返し、ユーザー入力によって panic または JavaScript throw を発生させない。
 - `lineNumber` と `columnNumber` は 1 始まりとする。
+- syntax error は入力順の配列で返し、安全に再開できるcomma、bar、改行の境界から解析を継続する。
+- `startOffset` と `endOffset` は JavaScript の文字列・editor APIに合わせた0始まりのUTF-16 offsetとし、`endOffset`は範囲末尾の次を指す。
 - 空入力は空の AST を返す。
 
 ## 正式に維持する構文
@@ -61,7 +63,6 @@ panic、入力の黙殺、入力範囲外のerror positionは互換対象にし�
 
 - `-5` を `b5` のaliasとして扱う機能
 - denominatorのchordまたはdegreeへの構造化
-- 複数errorの同時返却
 - AST nodeへのsource span追加
 - pipe記法やescape構文
 

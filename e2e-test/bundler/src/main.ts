@@ -37,6 +37,7 @@ const getHighlightedTextLines = ({
   return lines;
 };
 
+/** Formats one parser diagnostic and highlights its exact source range. */
 function createErrorMessage({
   currentValue,
   errorCode,
@@ -49,7 +50,7 @@ function createErrorMessage({
   lineNumber: number;
   columnNumber: number;
   length: number;
-}) {
+}): string {
   return (
     "" +
     `${lineNumber}行目: ` +
@@ -68,14 +69,15 @@ function createErrorMessage({
   );
 }
 
-function main() {
+/** Runs the interactive bundler example. */
+function main(): void {
   const elms = {
     textarea: document.querySelector<HTMLTextAreaElement>("#textarea")!,
     result: document.querySelector<HTMLTextAreaElement>("#result")!,
     time: document.querySelector<HTMLDivElement>("#time")!,
   };
 
-  const applyValue = (value: string) => {
+  const applyValue = (value: string): void => {
     try {
       const start = performance.now();
       elms.result.innerHTML = "";
@@ -89,13 +91,17 @@ function main() {
       // result
       elms.result.innerHTML = result.success
         ? JSON.stringify(result, null, 2)
-        : createErrorMessage({
-            currentValue: value,
-            errorCode: result.error.code as ErrorCode,
-            lineNumber: result.error.position.lineNumber,
-            columnNumber: result.error.position.columnNumber,
-            length: result.error.position.length,
-          });
+        : result.errors
+            .map((error) =>
+              createErrorMessage({
+                currentValue: value,
+                errorCode: error.code as ErrorCode,
+                lineNumber: error.position.lineNumber,
+                columnNumber: error.position.columnNumber,
+                length: error.position.length,
+              })
+            )
+            .join("\n\n");
       elms.result.dataset.formatted = result.success
         ? formatChordProgression(result.ast)
         : "";
@@ -105,7 +111,7 @@ function main() {
     }
   };
 
-  const handleChange = (e: Event) => {
+  const handleChange = (e: Event): void => {
     if (!e?.target) return;
     if (!(e.target instanceof HTMLTextAreaElement)) return;
     applyValue(e.target.value);

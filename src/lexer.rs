@@ -19,6 +19,8 @@ pub(crate) enum TokenKind<'src> {
 pub(crate) struct SourceSpan {
     pub(crate) start_byte: usize,
     pub(crate) end_byte: usize,
+    pub(crate) start_offset: usize,
+    pub(crate) end_offset: usize,
     pub(crate) line: usize,
     pub(crate) column: usize,
     pub(crate) length: usize,
@@ -58,6 +60,7 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
     let mut chars = input.char_indices().peekable();
     let mut line = 1;
     let mut column = 1;
+    let mut offset = 0;
 
     while let Some((start_byte, ch)) = chars.next() {
         match ch {
@@ -69,11 +72,14 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
                 let start_column = column;
                 let mut end_byte = start_byte + ch.len_utf8();
                 let mut length = 1;
+                let start_offset = offset;
+                offset += ch.len_utf16();
 
                 if ch == '\r' && chars.peek().is_some_and(|(_, next)| *next == '\n') {
                     if let Some((next_byte, next)) = chars.next() {
                         end_byte = next_byte + next.len_utf8();
                         length += 1;
+                        offset += next.len_utf16();
                     }
                 }
 
@@ -82,6 +88,8 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
                     span: SourceSpan {
                         start_byte,
                         end_byte,
+                        start_offset,
+                        end_offset: offset,
                         line: start_line,
                         column: start_column,
                         length,
@@ -92,11 +100,15 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
             }
             _ => {
                 if let Some(kind) = structural_kind(ch) {
+                    let start_offset = offset;
+                    offset += ch.len_utf16();
                     tokens.push(Token {
                         kind,
                         span: SourceSpan {
                             start_byte,
                             end_byte: start_byte + ch.len_utf8(),
+                            start_offset,
+                            end_offset: offset,
                             line,
                             column,
                             length: 1,
@@ -107,9 +119,11 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
                 }
 
                 let start_column = column;
+                let start_offset = offset;
                 let mut end_byte = start_byte + ch.len_utf8();
                 let mut length = 1;
                 column += 1;
+                offset += ch.len_utf16();
 
                 while let Some((next_byte, next)) = chars.peek().copied() {
                     if ends_text(next) {
@@ -120,6 +134,7 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
                     end_byte = next_byte + next.len_utf8();
                     length += 1;
                     column += 1;
+                    offset += next.len_utf16();
                 }
 
                 tokens.push(Token {
@@ -127,6 +142,8 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
                     span: SourceSpan {
                         start_byte,
                         end_byte,
+                        start_offset,
+                        end_offset: offset,
                         line,
                         column: start_column,
                         length,
@@ -165,6 +182,8 @@ pub(crate) fn eof_span(input: &str) -> SourceSpan {
     SourceSpan {
         start_byte: input.len(),
         end_byte: input.len(),
+        start_offset: input.encode_utf16().count(),
+        end_offset: input.encode_utf16().count(),
         line,
         column,
         length: 0,
@@ -221,6 +240,8 @@ mod tests {
                     span: SourceSpan {
                         start_byte: 0,
                         end_byte: 4,
+                        start_offset: 0,
+                        end_offset: 2,
                         line: 1,
                         column: 1,
                         length: 2,
@@ -231,6 +252,8 @@ mod tests {
                     span: SourceSpan {
                         start_byte: 4,
                         end_byte: 5,
+                        start_offset: 2,
+                        end_offset: 3,
                         line: 1,
                         column: 3,
                         length: 1,
@@ -241,6 +264,8 @@ mod tests {
                     span: SourceSpan {
                         start_byte: 5,
                         end_byte: 6,
+                        start_offset: 3,
+                        end_offset: 4,
                         line: 2,
                         column: 1,
                         length: 1,
@@ -295,6 +320,8 @@ mod tests {
             SourceSpan {
                 start_byte: 9,
                 end_byte: 9,
+                start_offset: 7,
+                end_offset: 7,
                 line: 2,
                 column: 3,
                 length: 0,

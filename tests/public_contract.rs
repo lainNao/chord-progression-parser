@@ -34,13 +34,16 @@ fn formats_the_public_contract_fixture() {
 /** Keeps a representative public error code and source position stable. */
 #[test]
 fn reports_extension_error_at_the_invalid_extension() {
-    let error = parse_chord_progression_string("C(9,111)")
+    let errors = parse_chord_progression_string("C(9,111)")
         .expect_err("an unknown extension must be rejected");
+    let error = &errors[0];
 
     assert_eq!(error.error.code.to_string(), "EXT-1");
     assert_eq!(error.position.line_number, 1);
     assert_eq!(error.position.column_number, 5);
     assert_eq!(error.position.length, 3);
+    assert_eq!(error.position.start_offset, 4);
+    assert_eq!(error.position.end_offset, 7);
 }
 
 /** Keeps an empty document distinct from a document with one empty section. */
@@ -71,7 +74,21 @@ fn applies_the_intentional_compatibility_changes() {
         .expect("extra blank lines must separate sections");
     assert_eq!(sections.len(), 2);
 
-    let postfix_meta =
+    let postfix_meta_errors =
         parse_chord_progression_string("C[key=A]").expect_err("postfix metadata must be rejected");
+    let postfix_meta = &postfix_meta_errors[0];
     assert_eq!(postfix_meta.error.code.to_string(), "TKN-1");
+}
+
+/** Reports independent errors from the same document in source order. */
+#[test]
+fn reports_multiple_public_diagnostics() {
+    let errors = parse_chord_progression_string("H-C(111)-I\nJ")
+        .expect_err("all invalid chord regions must be reported");
+
+    assert_eq!(errors.len(), 4);
+    assert_eq!(errors[0].position.start_offset, 0);
+    assert_eq!(errors[1].position.start_offset, 4);
+    assert_eq!(errors[2].position.start_offset, 9);
+    assert_eq!(errors[3].position.start_offset, 11);
 }

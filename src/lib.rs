@@ -28,7 +28,7 @@ struct JsParseSuccess {
 #[derive(Serialize)]
 struct JsParseFailure {
     success: bool,
-    error: JsParseError,
+    errors: Vec<JsParseError>,
 }
 
 /** JavaScript-facing parse error with camel-case field names. */
@@ -47,6 +47,8 @@ struct JsPosition {
     line_number: usize,
     column_number: usize,
     length: usize,
+    start_offset: usize,
+    end_offset: usize,
 }
 
 /** Represents either JavaScript response shape without adding an enum tag. */
@@ -69,15 +71,17 @@ export type ParsedResult =
     }
   | {
       success: false;
-      error: {
+      errors: Array<{
         code: ErrorCode;
         additionalInfo: string | null;
         position: {
           lineNumber: number;
           columnNumber: number;
           length: number;
+          startOffset: number;
+          endOffset: number;
         };
-      };
+      }>;
     };
 
 /** Formats an AST returned by parseChordProgressionString. */
@@ -95,17 +99,22 @@ export function formatChordProgression(ast: Ast): string;
 pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
     let response = match parse_chord_progression_string(input) {
         Ok(ast) => JsParseResult::Success(JsParseSuccess { success: true, ast }),
-        Err(error_info) => JsParseResult::Failure(JsParseFailure {
+        Err(error_infos) => JsParseResult::Failure(JsParseFailure {
             success: false,
-            error: JsParseError {
-                code: error_info.error.code.to_string(),
-                additional_info: error_info.error.additional_info,
-                position: JsPosition {
-                    line_number: error_info.position.line_number,
-                    column_number: error_info.position.column_number,
-                    length: error_info.position.length,
-                },
-            },
+            errors: error_infos
+                .into_iter()
+                .map(|error_info| JsParseError {
+                    code: error_info.error.code.to_string(),
+                    additional_info: error_info.error.additional_info,
+                    position: JsPosition {
+                        line_number: error_info.position.line_number,
+                        column_number: error_info.position.column_number,
+                        length: error_info.position.length,
+                        start_offset: error_info.position.start_offset,
+                        end_offset: error_info.position.end_offset,
+                    },
+                })
+                .collect(),
         }),
     };
 
@@ -146,8 +155,8 @@ pub fn format_chord_progression_js(ast: JsValue) -> Result<String, JsValue> {
 ///
 /// # Errors
 ///
-/// Returns an error code and source position when the input does not follow the grammar.
-pub fn parse_chord_progression_string(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
+/// Returns all recoverable errors and source ranges when the input does not follow the grammar.
+pub fn parse_chord_progression_string(input: &str) -> Result<Ast, Vec<ErrorInfoWithPosition>> {
     parser::parse(input)
 }
 
@@ -444,11 +453,13 @@ C-A,B
 
             let result = parse_chord_progression_string(input);
             assert_eq!(
-                result.unwrap_err().position,
+                result.unwrap_err()[0].position,
                 Position {
                     line_number: 1,
                     column_number: 5,
                     length: 3,
+                    start_offset: 4,
+                    end_offset: 7,
                 },
             )
         }

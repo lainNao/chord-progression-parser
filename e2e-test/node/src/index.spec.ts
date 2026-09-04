@@ -41,3 +41,58 @@ test("preserves F-flat and E-sharp as distinct JavaScript values", () => {
     );
   }
 });
+
+test("reports multiple diagnostics with exact editor ranges", () => {
+  const result = parser.parseChordProgressionString("H-C(111)-I");
+  expect(result.success).toBe(false);
+
+  if (!result.success) {
+    expect(result.errors).toHaveLength(3);
+    expect(result.errors.map(({ position }) => position)).toEqual([
+      {
+        lineNumber: 1,
+        columnNumber: 1,
+        length: 1,
+        startOffset: 0,
+        endOffset: 1,
+      },
+      {
+        lineNumber: 1,
+        columnNumber: 5,
+        length: 3,
+        startOffset: 4,
+        endOffset: 7,
+      },
+      {
+        lineNumber: 1,
+        columnNumber: 10,
+        length: 1,
+        startOffset: 9,
+        endOffset: 10,
+      },
+    ]);
+  }
+});
+
+test("keeps reporting after malformed metadata on earlier lines", () => {
+  const result = parser.parseChordProgressionString(
+    "@section\nH\n@repeat=nope\nI"
+  );
+  expect(result.success).toBe(false);
+
+  if (!result.success) {
+    expect(
+      result.errors.map(({ code, position }) => ({
+        code,
+        lineNumber: position.lineNumber,
+        startOffset: position.startOffset,
+        endOffset: position.endOffset,
+      }))
+    ).toEqual([
+      { code: "SMIK-2", lineNumber: 1, startOffset: 8, endOffset: 9 },
+      { code: "CHO-1", lineNumber: 2, startOffset: 9, endOffset: 10 },
+      { code: "SMIV-3", lineNumber: 3, startOffset: 19, endOffset: 23 },
+      { code: "CHO-1", lineNumber: 4, startOffset: 24, endOffset: 25 },
+    ]);
+  }
+});

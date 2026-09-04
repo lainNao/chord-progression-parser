@@ -12,7 +12,7 @@ type ParseChordProgressionResult =
     }
   | {
       isOk: false;
-      error: unknown;
+      errors: unknown[];
     };
 
 export function parseChordProgression(
@@ -22,13 +22,15 @@ export function parseChordProgression(
     const result = parser.parseChordProgressionString(chordProgressionString);
 
     if (!result.success) {
-      const errorMessage = getErrorMessage({
-        errorCode: result.error.code as ErrorCode,
-        lang: "ja",
-      });
       return {
         isOk: false,
-        error: errorMessage ?? "Unknown error",
+        errors: result.errors.map(
+          (error) =>
+            getErrorMessage({
+              errorCode: error.code as ErrorCode,
+              lang: "ja",
+            }) ?? "Unknown error"
+        ),
       };
     }
 
@@ -40,7 +42,7 @@ export function parseChordProgression(
     console.log(e);
     return {
       isOk: false,
-      error: e,
+      errors: [e],
     };
   }
 }

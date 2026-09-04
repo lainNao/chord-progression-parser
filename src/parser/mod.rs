@@ -12,7 +12,7 @@ use crate::{
 };
 
 /** Parses source text with the context-free lexer and the new parser. */
-pub(crate) fn parse(input: &str) -> Result<Ast, ErrorInfoWithPosition> {
+pub(crate) fn parse(input: &str) -> Result<Ast, Vec<ErrorInfoWithPosition>> {
     let tokens = lex(input);
     Parser::new(&tokens, eof_span(input)).parse_document()
 }
@@ -35,10 +35,11 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     }
 
     /** Parses all sections while interpreting line-break runs at document level. */
-    fn parse_document(mut self) -> Result<Ast, ErrorInfoWithPosition> {
+    fn parse_document(mut self) -> Result<Ast, Vec<ErrorInfoWithPosition>> {
         let mut sections = Vec::new();
         let mut current_section = empty_section();
         let mut has_prior_chord = false;
+        let mut errors = Vec::new();
 
         loop {
             let newline_count = self.consume_newlines();
@@ -58,11 +59,40 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
 
             if starts_section_meta {
-                current_section.meta_infos.push(self.parse_section_meta()?);
+                match self.parse_section_meta() {
+                    Ok(meta) => current_section.meta_infos.push(meta),
+                    Err(error) => {
+                        errors.push(error);
+                        self.skip_to_line_end();
+                    }
+                }
             } else {
-                current_section
-                    .chord_blocks
-                    .extend(self.parse_chord_line(&mut has_prior_chord)?);
+                loop {
+                    match self.parse_chord_line(&mut has_prior_chord) {
+                        Ok(blocks) => {
+                            current_section.chord_blocks.extend(blocks);
+                            break;
+                        }
+                        Err(line_errors) => errors.extend(line_errors),
+                    }
+
+                    self.skip_to_bar_or_line_end();
+                    if !self.at(TokenKind::Dash) && !self.at(TokenKind::Comma) {
+                        break;
+                    }
+
+                    let separator = self.advance().expect("separator was checked above");
+                    if self.is_at_end() || self.at(TokenKind::Newline) {
+                        if separator.kind == TokenKind::Dash {
+                            errors.push(parse_error(
+                                ErrorCode::Cho3,
+                                separator.span,
+                                Some("-".to_string()),
+                            ));
+                        }
+                        break;
+                    }
+                }
             }
         }
 
@@ -70,7 +100,11 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             sections.push(current_section);
         }
 
-        Ok(sections)
+        if errors.is_empty() {
+            Ok(sections)
+        } else {
+            Err(errors)
+        }
     }
 
     /** Parses a section metadata line and leaves its terminating newline untouched. */
@@ -78,6 +112,19 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         self.expect_symbol(TokenKind::At, ErrorCode::Smik1)?;
         let (key, key_span) = self.expect_text(ErrorCode::Smik2)?;
         self.expect_symbol(TokenKind::Equal, ErrorCode::Smik2)?;
+
+        if key == "repeat" && self.at(TokenKind::Dash) {
+            let dash = self.advance().expect("dash was checked above");
+            let span = match self.peek().copied() {
+                Some(token) if matches!(token.kind, TokenKind::Text(_)) => {
+                    self.advance();
+                    span_through(dash.span, token.span)
+                }
+                _ => dash.span,
+            };
+            return Err(parse_error(ErrorCode::Smiv3, span, None));
+        }
+
         let (value, value_span) = self.expect_text(ErrorCode::Smiv1)?;
 
         if !self.is_at_end() && !self.at(TokenKind::Newline) {
@@ -102,19 +149,19 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     fn parse_chord_line(
         &mut self,
         has_prior_chord: &mut bool,
-    ) -> Result<Vec<ChordBlock>, ErrorInfoWithPosition> {
+    ) -> Result<Vec<ChordBlock>, Vec<ErrorInfoWithPosition>> {
         let mut blocks = vec![ChordBlock::Bar(self.parse_bar(has_prior_chord)?)];
 
         while self.at(TokenKind::Dash) {
             let separator = self
                 .advance()
-                .ok_or_else(|| parse_error(ErrorCode::Cho3, self.eof_span, None))?;
+                .ok_or_else(|| vec![parse_error(ErrorCode::Cho3, self.eof_span, None)])?;
             if self.is_at_end() || self.at(TokenKind::Newline) {
-                return Err(parse_error(
+                return Err(vec![parse_error(
                     ErrorCode::Cho3,
                     separator.span,
                     Some("-".to_string()),
-                ));
+                )]);
             }
             blocks.push(ChordBlock::Bar(self.parse_bar(has_prior_chord)?));
         }
@@ -123,19 +170,19 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             let token = self
                 .peek()
                 .copied()
-                .ok_or_else(|| parse_error(ErrorCode::Tkn1, self.eof_span, None))?;
-            return Err(parse_error(
+                .ok_or_else(|| vec![parse_error(ErrorCode::Tkn1, self.eof_span, None)])?;
+            return Err(vec![parse_error(
                 ErrorCode::Tkn1,
                 token.span,
                 Some(token_label(token.kind)),
-            ));
+            )]);
         }
 
         Ok(blocks)
     }
 
     /** Parses one bar and groups comma-separated chord information. */
-    fn parse_bar(&mut self, has_prior_chord: &mut bool) -> Result<Bar, ErrorInfoWithPosition> {
+    fn parse_bar(&mut self, has_prior_chord: &mut bool) -> Result<Bar, Vec<ErrorInfoWithPosition>> {
         let mut bar = vec![self.parse_chord_info(*has_prior_chord)?];
         *has_prior_chord = true;
 
@@ -155,25 +202,27 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     fn parse_chord_info(
         &mut self,
         has_prior_chord: bool,
-    ) -> Result<ChordInfo, ErrorInfoWithPosition> {
+    ) -> Result<ChordInfo, Vec<ErrorInfoWithPosition>> {
         let mut meta_infos = Vec::new();
         while self.at(TokenKind::LeftBracket) {
-            meta_infos.push(self.parse_chord_meta()?);
+            meta_infos.push(self.parse_chord_meta().map_err(|error| vec![error])?);
         }
 
-        let (head, head_span) = self.expect_text(ErrorCode::Cho3)?;
+        let (head, head_span) = self
+            .expect_text(ErrorCode::Cho3)
+            .map_err(|error| vec![error])?;
         let mut chord_expression = match head {
             "?" => ChordExpression::UnIdentified,
             "_" => ChordExpression::NoChord,
             "%" if has_prior_chord => ChordExpression::Same,
-            "%" => return Err(parse_error(ErrorCode::Chb1, head_span, None)),
+            "%" => return Err(vec![parse_error(ErrorCode::Chb1, head_span, None)]),
             _ => {
                 let detailed = ChordDetailed::from_head(head).map_err(|error| {
-                    parse_error(
+                    vec![parse_error(
                         ErrorCode::Cho1,
                         head_span,
                         Some(format!("{}: {head}", error.code)),
-                    )
+                    )]
                 })?;
                 ChordExpression::Chord(Chord {
                     plain: head.to_string(),
@@ -198,17 +247,21 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                     chord.detailed.extensions = extensions;
                 }
                 _ => {
-                    return Err(parse_error(ErrorCode::Ext3, head_span, None));
+                    return Err(vec![parse_error(ErrorCode::Ext3, head_span, None)]);
                 }
             }
         }
 
         if self.at(TokenKind::LeftParen) {
-            return Err(parse_error(ErrorCode::Ext4, self.current_span(), None));
+            return Err(vec![parse_error(
+                ErrorCode::Ext4,
+                self.current_span(),
+                None,
+            )]);
         }
 
         let denominator = if self.at(TokenKind::Slash) {
-            Some(self.parse_denominator()?)
+            Some(self.parse_denominator().map_err(|error| vec![error])?)
         } else {
             None
         };
@@ -238,32 +291,46 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     }
 
     /** Parses a non-empty comma-separated extension list with exact matches. */
-    fn parse_extensions(&mut self) -> Result<Vec<Extension>, ErrorInfoWithPosition> {
-        let opening = self.expect_symbol(TokenKind::LeftParen, ErrorCode::Ext3)?;
+    fn parse_extensions(&mut self) -> Result<Vec<Extension>, Vec<ErrorInfoWithPosition>> {
+        let opening = self
+            .expect_symbol(TokenKind::LeftParen, ErrorCode::Ext3)
+            .map_err(|error| vec![error])?;
         if self.at(TokenKind::RightParen) || self.is_at_end() {
-            return Err(parse_error(ErrorCode::Ext2, opening.span, None));
+            return Err(vec![parse_error(ErrorCode::Ext2, opening.span, None)]);
         }
 
         let mut extensions = Vec::new();
+        let mut errors = Vec::new();
         loop {
-            let (value, span) = self.expect_text(ErrorCode::Ext2)?;
-            let extension = Extension::from_str(value)
-                .map_err(|_| parse_error(ErrorCode::Ext1, span, Some(value.to_string())))?;
-            extensions.push(extension);
+            let (value, span) = self
+                .expect_text(ErrorCode::Ext2)
+                .map_err(|error| vec![error])?;
+            match Extension::from_str(value) {
+                Ok(extension) => extensions.push(extension),
+                Err(_) => errors.push(parse_error(ErrorCode::Ext1, span, Some(value.to_string()))),
+            }
 
             if !self.at(TokenKind::Comma) {
                 break;
             }
             let comma = self
                 .advance()
-                .ok_or_else(|| parse_error(ErrorCode::Ext2, self.eof_span, None))?;
+                .ok_or_else(|| vec![parse_error(ErrorCode::Ext2, self.eof_span, None)])?;
             if self.at(TokenKind::RightParen) || self.is_at_end() {
-                return Err(parse_error(ErrorCode::Ext2, comma.span, None));
+                errors.push(parse_error(ErrorCode::Ext2, comma.span, None));
+                break;
             }
         }
 
-        self.expect_symbol(TokenKind::RightParen, ErrorCode::Ext3)?;
-        Ok(extensions)
+        if let Err(error) = self.expect_symbol(TokenKind::RightParen, ErrorCode::Ext3) {
+            errors.push(error);
+        }
+
+        if errors.is_empty() {
+            Ok(extensions)
+        } else {
+            Err(errors)
+        }
     }
 
     /** Collects a denominator until the enclosing bar or line ends. */
@@ -282,7 +349,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 TokenKind::Dash | TokenKind::Comma if parenthesis_depth == 0 => break,
                 TokenKind::Slash => {
                     self.advance();
-                    return Err(parse_error(ErrorCode::Den1, self.current_span(), None));
+                    return Err(parse_error(ErrorCode::Den1, token.span, None));
                 }
                 TokenKind::LeftParen => {
                     parenthesis_depth += 1;
@@ -315,16 +382,38 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         count
     }
 
+    /** Skips invalid input until another chord or bar can be parsed, or the line ends. */
+    fn skip_to_bar_or_line_end(&mut self) {
+        while !self.is_at_end()
+            && !self.at(TokenKind::Comma)
+            && !self.at(TokenKind::Dash)
+            && !self.at(TokenKind::Newline)
+        {
+            self.advance();
+        }
+    }
+
+    /** Skips the remainder of a metadata line after a diagnostic. */
+    fn skip_to_line_end(&mut self) {
+        while !self.is_at_end() && !self.at(TokenKind::Newline) {
+            self.advance();
+        }
+    }
+
     /** Reads a text token or returns the requested syntax error. */
     fn expect_text(
         &mut self,
         code: ErrorCode,
     ) -> Result<(&'src str, SourceSpan), ErrorInfoWithPosition> {
         let token = self
-            .advance()
+            .peek()
+            .copied()
             .ok_or_else(|| parse_error(code, self.eof_span, None))?;
         match token.kind {
-            TokenKind::Text(value) => Ok((value, token.span)),
+            TokenKind::Text(value) => {
+                self.advance();
+                Ok((value, token.span))
+            }
             _ => Err(parse_error(code, token.span, None)),
         }
     }
@@ -336,9 +425,11 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         code: ErrorCode,
     ) -> Result<Token<'src>, ErrorInfoWithPosition> {
         let token = self
-            .advance()
+            .peek()
+            .copied()
             .ok_or_else(|| parse_error(code, self.eof_span, None))?;
         if token.kind == expected {
+            self.advance();
             Ok(token)
         } else {
             Err(parse_error(code, token.span, None))
@@ -383,6 +474,19 @@ fn empty_section() -> Section {
     }
 }
 
+/** Joins two same-line spans so a compound invalid value is highlighted together. */
+fn span_through(start: SourceSpan, end: SourceSpan) -> SourceSpan {
+    SourceSpan {
+        start_byte: start.start_byte,
+        end_byte: end.end_byte,
+        start_offset: start.start_offset,
+        end_offset: end.end_offset,
+        line: start.line,
+        column: start.column,
+        length: end.column + end.length - start.column,
+    }
+}
+
 /** Converts an internal source span into the existing public error shape. */
 fn parse_error(
     code: ErrorCode,
@@ -398,6 +502,8 @@ fn parse_error(
             line_number: span.line,
             column_number: span.column,
             length: span.length,
+            start_offset: span.start_offset,
+            end_offset: span.end_offset,
         },
     }
 }
@@ -543,7 +649,8 @@ mod tests {
     /** Rejects metadata placed after the chord it would otherwise be detached from. */
     #[test]
     fn rejects_chord_metadata_after_a_chord() {
-        let error = parse("C[key=A]").expect_err("postfix metadata must not be ignored");
+        let errors = parse("C[key=A]").expect_err("postfix metadata must not be ignored");
+        let error = &errors[0];
 
         assert_eq!(error.error.code.to_string(), "TKN-1");
         assert_eq!(error.position.column_number, 2);
@@ -565,12 +672,310 @@ mod tests {
     /** Reports an exact extension token rather than accepting its prefix. */
     #[test]
     fn rejects_partial_extension_matches() {
-        let error = parse("C(9,111)").expect_err("111 is not a known extension");
+        let errors = parse("C(9,111)").expect_err("111 is not a known extension");
+        let error = &errors[0];
 
         assert_eq!(error.error.code.to_string(), "EXT-1");
         assert_eq!(error.position.line_number, 1);
         assert_eq!(error.position.column_number, 5);
         assert_eq!(error.position.length, 3);
+        assert_eq!(error.position.start_offset, 4);
+        assert_eq!(error.position.end_offset, 7);
+    }
+
+    /** Recovers at bar and line boundaries to report independent diagnostics together. */
+    #[test]
+    fn reports_multiple_errors_in_source_order() {
+        let errors = parse("H-C(111)-I\n@repeat=nope\nJ")
+            .expect_err("each invalid source region must be reported");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("CHO-1".to_string(), 1, 1, 1),
+                ("EXT-1".to_string(), 1, 5, 3),
+                ("CHO-1".to_string(), 1, 10, 1),
+                ("SMIV-3".to_string(), 2, 9, 4),
+                ("CHO-1".to_string(), 3, 1, 1),
+            ]
+        );
+    }
+
+    /** Keeps collecting diagnostics inside comma-separated chords and extensions. */
+    #[test]
+    fn reports_multiple_errors_within_a_bar_and_extension_list() {
+        let errors = parse("H,I-C(111,222)")
+            .expect_err("invalid comma-separated values must all be reported");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.start_offset,
+                    error.position.end_offset,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("CHO-1".to_string(), 0, 1),
+                ("CHO-1".to_string(), 2, 3),
+                ("EXT-1".to_string(), 6, 9),
+                ("EXT-1".to_string(), 10, 13),
+            ]
+        );
+    }
+
+    /** Continues with the next line when truncated section metadata ends at a newline. */
+    #[test]
+    fn reports_errors_after_truncated_section_metadata() {
+        let errors = parse("@section\nH\n@repeat=nope\nI")
+            .expect_err("metadata and chord errors on later lines must all be reported");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.start_offset,
+                    error.position.end_offset,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("SMIK-2".to_string(), 1, 9, 8, 9),
+                ("CHO-1".to_string(), 2, 1, 9, 10),
+                ("SMIV-3".to_string(), 3, 9, 19, 23),
+                ("CHO-1".to_string(), 4, 1, 24, 25),
+            ]
+        );
+    }
+
+    /** Reports every supported section metadata failure without swallowing later lines. */
+    #[test]
+    fn reports_section_metadata_boundary_errors() {
+        let errors = parse("@unknown=x\n@section=\n@repeat=nope\n@section=Ok extra\nH")
+            .expect_err("each malformed metadata line must produce a diagnostic");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("SMIK-1".to_string(), 1, 2, 7),
+                ("SMIV-1".to_string(), 2, 10, 1),
+                ("SMIV-3".to_string(), 3, 9, 4),
+                ("SMIV-2".to_string(), 4, 13, 5),
+                ("CHO-1".to_string(), 5, 1, 1),
+            ]
+        );
+    }
+
+    /** Accepts the inclusive unsigned repeat boundaries. */
+    #[test]
+    fn accepts_repeat_integer_boundaries() {
+        parse("@repeat=0\nC").expect("zero repeats must remain valid");
+        parse("@repeat=4294967295\nC").expect("u32::MAX repeats must remain valid");
+    }
+
+    /** Rejects negative and overflowing repeat values with their complete ranges. */
+    #[test]
+    fn reports_repeat_integer_boundary_errors() {
+        let errors = parse("@repeat=-1\nH\n@repeat=4294967296")
+            .expect_err("out-of-range repeat values must be rejected");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("SMIV-3".to_string(), 1, 9, 2),
+                ("CHO-1".to_string(), 2, 1, 1),
+                ("SMIV-3".to_string(), 3, 9, 10),
+            ]
+        );
+    }
+
+    /** Recovers from chord metadata errors at both bar and line boundaries. */
+    #[test]
+    fn reports_chord_metadata_errors_across_lines() {
+        let errors = parse("[key=H]C-[bad=C]D\n[key=G]I")
+            .expect_err("invalid chord metadata and later chords must all be reported");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("CIMV-4".to_string(), 1, 6, 1),
+                ("CIMK-3".to_string(), 1, 11, 3),
+                ("CHO-1".to_string(), 2, 8, 1),
+            ]
+        );
+    }
+
+    /** Treats CRLF as one line break while retaining both UTF-16 code units. */
+    #[test]
+    fn reports_multiple_errors_with_crlf_offsets() {
+        let errors = parse("H\r\nI\r\n@repeat=x")
+            .expect_err("CRLF-separated invalid lines must all be reported");
+        let positions: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.position.line_number,
+                    error.position.start_offset,
+                    error.position.end_offset,
+                )
+            })
+            .collect();
+
+        assert_eq!(positions, vec![(1, 0, 1), (2, 3, 4), (3, 14, 15)]);
+    }
+
+    /** Reports leading, repeated, and trailing bar separators independently. */
+    #[test]
+    fn reports_errors_around_repeated_bar_separators() {
+        let errors = parse("-H--I-").expect_err("every malformed bar region must be reported");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| (error.error.code.to_string(), error.position.column_number))
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("CHO-3".to_string(), 1),
+                ("CHO-1".to_string(), 2),
+                ("CHO-3".to_string(), 4),
+                ("CHO-1".to_string(), 5),
+                ("CHO-3".to_string(), 6),
+            ]
+        );
+    }
+
+    /** Collects empty extensions, invalid extensions, and denominator failures by line. */
+    #[test]
+    fn reports_delimiter_and_eof_boundary_errors() {
+        let errors = parse("C()\nD(111,)\nE//G\nF/\n[key=")
+            .expect_err("delimiter and EOF failures must all be reported");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("EXT-2".to_string(), 1, 2, 1),
+                ("EXT-1".to_string(), 2, 3, 3),
+                ("EXT-2".to_string(), 2, 6, 1),
+                ("DEN-1".to_string(), 3, 3, 1),
+                ("DEN-1".to_string(), 4, 2, 1),
+                ("CIMV-2".to_string(), 5, 6, 0),
+            ]
+        );
+
+        let eof = errors.last().expect("EOF error was asserted above");
+        assert_eq!(eof.position.start_offset, eof.position.end_offset);
+    }
+
+    /** Keeps reporting after multiple blank lines that create a section boundary. */
+    #[test]
+    fn reports_errors_across_blank_section_boundaries() {
+        let errors = parse("H\n\n\nI").expect_err("both invalid sections must be reported");
+
+        assert_eq!(errors.len(), 2);
+        assert_eq!(errors[0].position.line_number, 1);
+        assert_eq!(errors[1].position.line_number, 4);
+        assert_eq!(errors[1].position.start_offset, 4);
+    }
+
+    /** Retains the full range of a large invalid token without truncation. */
+    #[test]
+    fn reports_a_large_invalid_token_range() {
+        let input = "H".repeat(4096);
+        let errors = parse(&input).expect_err("a large invalid chord must be rejected");
+
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].position.length, 4096);
+        assert_eq!(errors[0].position.start_offset, 0);
+        assert_eq!(errors[0].position.end_offset, 4096);
+    }
+
+    /** Returns every diagnostic from a document with many malformed lines. */
+    #[test]
+    fn reports_many_invalid_lines_without_stopping_early() {
+        const LINE_COUNT: usize = 512;
+        let input = vec!["H"; LINE_COUNT].join("\n");
+        let errors = parse(&input).expect_err("every generated line is invalid");
+
+        assert_eq!(errors.len(), LINE_COUNT);
+        assert_eq!(errors[0].position.line_number, 1);
+        assert_eq!(errors[LINE_COUNT - 1].position.line_number, LINE_COUNT);
+        assert_eq!(errors[LINE_COUNT - 1].position.end_offset, input.len());
+    }
+
+    /** Reports editor offsets as UTF-16 code units rather than UTF-8 bytes. */
+    #[test]
+    fn reports_utf16_offsets_for_javascript_editors() {
+        let errors = parse("😀\nH").expect_err("the emoji and invalid chord must be rejected");
+
+        assert_eq!(errors[0].position.start_offset, 0);
+        assert_eq!(errors[0].position.end_offset, 2);
+        assert_eq!(errors[1].position.start_offset, 3);
+        assert_eq!(errors[1].position.end_offset, 4);
     }
 
     /** Exercises arbitrary delimiter and Unicode mixtures without panics or invalid positions. */
@@ -592,18 +997,37 @@ mod tests {
 
             let result = std::panic::catch_unwind(|| parse(&input));
             let parsed = result.unwrap_or_else(|_| panic!("parser panicked for {input:?}"));
-            if let Err(error) = parsed {
+            if let Err(errors) = parsed {
                 let line_lengths = source_line_lengths(&input);
-                assert!(
-                    (1..=line_lengths.len()).contains(&error.position.line_number),
-                    "invalid error line for {input:?}: {error:?}"
-                );
+                let source_length = input.encode_utf16().count();
+                let mut previous_offset = 0;
+                assert!(!errors.is_empty(), "empty error list for {input:?}");
 
-                let line_length = line_lengths[error.position.line_number - 1];
-                assert!(
-                    (1..=line_length + 1).contains(&error.position.column_number),
-                    "invalid error column for {input:?}: {error:?}"
-                );
+                for error in errors {
+                    assert!(
+                        (1..=line_lengths.len()).contains(&error.position.line_number),
+                        "invalid error line for {input:?}: {error:?}"
+                    );
+
+                    let line_length = line_lengths[error.position.line_number - 1];
+                    assert!(
+                        (1..=line_length + 1).contains(&error.position.column_number),
+                        "invalid error column for {input:?}: {error:?}"
+                    );
+                    assert!(
+                        error.position.start_offset <= error.position.end_offset,
+                        "reversed error range for {input:?}: {error:?}"
+                    );
+                    assert!(
+                        error.position.end_offset <= source_length,
+                        "out-of-bounds editor range for {input:?}: {error:?}"
+                    );
+                    assert!(
+                        previous_offset <= error.position.start_offset,
+                        "out-of-order error range for {input:?}: {error:?}"
+                    );
+                    previous_offset = error.position.start_offset;
+                }
             }
         }
     }

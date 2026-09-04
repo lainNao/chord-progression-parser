@@ -93,6 +93,8 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   const result = parseChordProgressionString("C");
   if (result.success) {
     console.log(formatChordProgression(result.ast));
+  } else {
+    console.log(result.errors);
   }
   console.log(result);
   ```
@@ -116,6 +118,8 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   const result = parseChordProgressionString("C");
   if (result.success) {
     console.log(formatChordProgression(result.ast));
+  } else {
+    console.log(result.errors);
   }
   console.log(result);
   ```
@@ -137,7 +141,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
       <h2>parse C</h2>
       <pre id="result"></pre>
       <script type="module">
-        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.8.0/chord_progression_parser.js";
+        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.9.0/chord_progression_parser.js";
 
         (async () => {
           // initialize wasm
@@ -146,6 +150,8 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
           const result = mod.parseChordProgressionString("C");
           if (result.success) {
             console.log(mod.formatChordProgression(result.ast));
+          } else {
+            console.log(result.errors);
           }
           console.log(result);
           document.querySelector("#result").innerHTML = JSON.stringify(
