@@ -61,8 +61,8 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             if starts_section_meta {
                 match self.parse_section_meta() {
                     Ok(meta) => current_section.meta_infos.push(meta),
-                    Err(error) => {
-                        errors.push(error);
+                    Err(meta_errors) => {
+                        errors.extend(meta_errors);
                         self.skip_to_line_end();
                     }
                 }
@@ -108,12 +108,25 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     }
 
     /** Parses a section metadata line and leaves its terminating newline untouched. */
-    fn parse_section_meta(&mut self) -> Result<SectionMeta, ErrorInfoWithPosition> {
-        self.expect_symbol(TokenKind::At, ErrorCode::Smik1)?;
-        let (key, key_span) = self.expect_text(ErrorCode::Smik2)?;
-        self.expect_symbol(TokenKind::Equal, ErrorCode::Smik2)?;
+    fn parse_section_meta(&mut self) -> Result<SectionMeta, Vec<ErrorInfoWithPosition>> {
+        self.expect_symbol(TokenKind::At, ErrorCode::Smik1)
+            .map_err(|error| vec![error])?;
+        let (key, key_span) = self
+            .expect_text(ErrorCode::Smik2)
+            .map_err(|error| vec![error])?;
+        self.expect_symbol(TokenKind::Equal, ErrorCode::Smik2)
+            .map_err(|error| vec![error])?;
 
-        if key == "repeat" && self.at(TokenKind::Dash) {
+        let mut errors = Vec::new();
+        if !matches!(key, "section" | "repeat") {
+            errors.push(parse_error(
+                ErrorCode::Smik1,
+                key_span,
+                Some(key.to_string()),
+            ));
+        }
+
+        let value = if key == "repeat" && self.at(TokenKind::Dash) {
             let dash = self.advance().expect("dash was checked above");
             let span = match self.peek().copied() {
                 Some(token) if matches!(token.kind, TokenKind::Text(_)) => {
@@ -122,26 +135,38 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 }
                 _ => dash.span,
             };
-            return Err(parse_error(ErrorCode::Smiv3, span, None));
+            errors.push(parse_error(ErrorCode::Smiv3, span, None));
+            None
+        } else {
+            match self.expect_text(ErrorCode::Smiv1) {
+                Ok(value) => Some(value),
+                Err(error) => {
+                    errors.push(error);
+                    None
+                }
+            }
+        };
+
+        let meta = match (key, value) {
+            ("section", Some((value, _))) => Some(SectionMeta::Section(value.to_string())),
+            ("repeat", Some((value, value_span))) => match value.parse::<u32>() {
+                Ok(repeat) => Some(SectionMeta::Repeat(repeat)),
+                Err(_) => {
+                    errors.push(parse_error(ErrorCode::Smiv3, value_span, None));
+                    None
+                }
+            },
+            _ => None,
+        };
+
+        if value.is_some() && !self.is_at_end() && !self.at(TokenKind::Newline) {
+            errors.push(parse_error(ErrorCode::Smiv2, self.current_span(), None));
         }
 
-        let (value, value_span) = self.expect_text(ErrorCode::Smiv1)?;
-
-        if !self.is_at_end() && !self.at(TokenKind::Newline) {
-            return Err(parse_error(ErrorCode::Smiv2, self.current_span(), None));
-        }
-
-        match key {
-            "section" => Ok(SectionMeta::Section(value.to_string())),
-            "repeat" => value
-                .parse::<u32>()
-                .map(SectionMeta::Repeat)
-                .map_err(|_| parse_error(ErrorCode::Smiv3, value_span, None)),
-            _ => Err(parse_error(
-                ErrorCode::Smik1,
-                key_span,
-                Some(key.to_string()),
-            )),
+        if errors.is_empty() {
+            Ok(meta.expect("known metadata with a parsed value must produce a result"))
+        } else {
+            Err(errors)
         }
     }
 
@@ -295,27 +320,44 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let opening = self
             .expect_symbol(TokenKind::LeftParen, ErrorCode::Ext3)
             .map_err(|error| vec![error])?;
-        if self.at(TokenKind::RightParen) || self.is_at_end() {
-            return Err(vec![parse_error(ErrorCode::Ext2, opening.span, None)]);
-        }
-
         let mut extensions = Vec::new();
         let mut errors = Vec::new();
+        let mut is_first_value = true;
+
         loop {
-            let (value, span) = self
-                .expect_text(ErrorCode::Ext2)
-                .map_err(|error| vec![error])?;
-            match Extension::from_str(value) {
-                Ok(extension) => extensions.push(extension),
-                Err(_) => errors.push(parse_error(ErrorCode::Ext1, span, Some(value.to_string()))),
+            if self.at(TokenKind::RightParen) || self.is_at_end() {
+                if is_first_value {
+                    errors.push(parse_error(ErrorCode::Ext2, opening.span, None));
+                }
+                break;
             }
+
+            if self.at(TokenKind::Comma) {
+                let comma = self.advance().expect("comma was checked above");
+                errors.push(parse_error(ErrorCode::Ext2, comma.span, None));
+                is_first_value = false;
+                continue;
+            }
+
+            match self.expect_text(ErrorCode::Ext2) {
+                Ok((value, span)) => match Extension::from_str(value) {
+                    Ok(extension) => extensions.push(extension),
+                    Err(_) => {
+                        errors.push(parse_error(ErrorCode::Ext1, span, Some(value.to_string())))
+                    }
+                },
+                Err(error) => {
+                    errors.push(error);
+                    self.skip_to_extension_delimiter();
+                }
+            }
+            is_first_value = false;
 
             if !self.at(TokenKind::Comma) {
                 break;
             }
-            let comma = self
-                .advance()
-                .ok_or_else(|| vec![parse_error(ErrorCode::Ext2, self.eof_span, None)])?;
+
+            let comma = self.advance().expect("comma was checked above");
             if self.at(TokenKind::RightParen) || self.is_at_end() {
                 errors.push(parse_error(ErrorCode::Ext2, comma.span, None));
                 break;
@@ -338,18 +380,18 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let slash = self.expect_symbol(TokenKind::Slash, ErrorCode::Den1)?;
         let mut value = String::new();
         let mut parenthesis_depth = 0;
+        let mut last_span = slash.span;
 
         while let Some(token) = self.peek().copied() {
             match token.kind {
-                TokenKind::Newline | TokenKind::At | TokenKind::LeftBracket
-                    if parenthesis_depth == 0 =>
-                {
+                TokenKind::Newline => break,
+                TokenKind::At | TokenKind::LeftBracket if parenthesis_depth == 0 => {
                     break;
                 }
                 TokenKind::Dash | TokenKind::Comma if parenthesis_depth == 0 => break,
                 TokenKind::Slash => {
                     self.advance();
-                    return Err(parse_error(ErrorCode::Den1, token.span, None));
+                    return Err(parse_error(ErrorCode::Den2, token.span, None));
                 }
                 TokenKind::LeftParen => {
                     parenthesis_depth += 1;
@@ -362,11 +404,19 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 TokenKind::RightParen => break,
                 kind => value.push_str(&token_label(kind)),
             }
+            last_span = token.span;
             self.advance();
         }
 
-        if value.is_empty() || parenthesis_depth != 0 {
+        if value.is_empty() {
             return Err(parse_error(ErrorCode::Den1, slash.span, None));
+        }
+        if parenthesis_depth != 0 {
+            return Err(parse_error(
+                ErrorCode::Den1,
+                span_through(slash.span, last_span),
+                None,
+            ));
         }
 
         Ok(value)
@@ -396,6 +446,17 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     /** Skips the remainder of a metadata line after a diagnostic. */
     fn skip_to_line_end(&mut self) {
         while !self.is_at_end() && !self.at(TokenKind::Newline) {
+            self.advance();
+        }
+    }
+
+    /** Skips an invalid extension fragment without leaving its parenthesized list. */
+    fn skip_to_extension_delimiter(&mut self) {
+        while !self.is_at_end()
+            && !self.at(TokenKind::Comma)
+            && !self.at(TokenKind::RightParen)
+            && !self.at(TokenKind::Newline)
+        {
             self.advance();
         }
     }
@@ -483,7 +544,10 @@ fn span_through(start: SourceSpan, end: SourceSpan) -> SourceSpan {
         end_offset: end.end_offset,
         line: start.line,
         column: start.column,
-        length: end.column + end.length - start.column,
+        length: end
+            .column
+            .saturating_add(end.length)
+            .saturating_sub(start.column),
     }
 }
 
@@ -669,6 +733,43 @@ mod tests {
         }
     }
 
+    /** Keeps representative source inputs mapped to every parser-reachable error code. */
+    #[test]
+    fn maps_representative_failures_to_specific_error_codes() {
+        let cases = [
+            ("@unknown=x", "SMIK-1"),
+            ("@section", "SMIK-2"),
+            ("@section=", "SMIV-1"),
+            ("@section=A extra", "SMIV-2"),
+            ("@repeat=nope", "SMIV-3"),
+            ("[key C]C", "CIMK-1"),
+            ("[]C", "CIMK-2"),
+            ("[bad=C]C", "CIMK-3"),
+            ("[key=]C", "CIMV-2"),
+            ("[key=C", "CIMV-3"),
+            ("[key=H]C", "CIMV-4"),
+            ("%", "CHB-1"),
+            ("H", "CHO-1"),
+            ("-", "CHO-3"),
+            ("C/", "DEN-1"),
+            ("C//G", "DEN-2"),
+            ("C(111)", "EXT-1"),
+            ("C()", "EXT-2"),
+            ("C(7", "EXT-3"),
+            ("C(7)(9)", "EXT-4"),
+            ("C]", "TKN-1"),
+        ];
+
+        for (input, expected_code) in cases {
+            let errors = parse(input).expect_err("the representative input must be invalid");
+            assert_eq!(
+                errors[0].error.code.to_string(),
+                expected_code,
+                "unexpected error code for {input:?}"
+            );
+        }
+    }
+
     /** Reports an exact extension token rather than accepting its prefix. */
     #[test]
     fn rejects_partial_extension_matches() {
@@ -739,6 +840,43 @@ mod tests {
         );
     }
 
+    /** Keeps empty and invalid extension slots within the extension diagnostic domain. */
+    #[test]
+    fn reports_multiple_malformed_extension_slots() {
+        let cases = [
+            ("C(,111)", vec![("EXT-2", 3, 1), ("EXT-1", 4, 3)]),
+            (
+                "C(111,,222)",
+                vec![("EXT-1", 3, 3), ("EXT-2", 7, 1), ("EXT-1", 8, 3)],
+            ),
+            ("C(,,)", vec![("EXT-2", 3, 1), ("EXT-2", 4, 1)]),
+            ("C(/,111)", vec![("EXT-2", 3, 1), ("EXT-1", 5, 3)]),
+        ];
+
+        for (input, expected) in cases {
+            let errors = parse(input).expect_err("malformed extensions must be rejected");
+            let diagnostics: Vec<_> = errors
+                .iter()
+                .map(|error| {
+                    (
+                        error.error.code.to_string(),
+                        error.position.column_number,
+                        error.position.length,
+                    )
+                })
+                .collect();
+            let expected: Vec<_> = expected
+                .into_iter()
+                .map(|(code, column, length)| (code.to_string(), column, length))
+                .collect();
+
+            assert_eq!(
+                diagnostics, expected,
+                "unexpected diagnostics for {input:?}"
+            );
+        }
+    }
+
     /** Continues with the next line when truncated section metadata ends at a newline. */
     #[test]
     fn reports_errors_after_truncated_section_metadata() {
@@ -797,6 +935,35 @@ mod tests {
         );
     }
 
+    /** Reports independent key, value, and trailing-token errors on metadata lines. */
+    #[test]
+    fn reports_multiple_errors_within_section_metadata() {
+        let errors = parse("@unknown=x extra\n@repeat=nope extra\nH")
+            .expect_err("each independent metadata issue must be reported");
+        let diagnostics: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            diagnostics,
+            vec![
+                ("SMIK-1".to_string(), 1, 2, 7),
+                ("SMIV-2".to_string(), 1, 12, 5),
+                ("SMIV-3".to_string(), 2, 9, 4),
+                ("SMIV-2".to_string(), 2, 14, 5),
+                ("CHO-1".to_string(), 3, 1, 1),
+            ]
+        );
+    }
+
     /** Accepts the inclusive unsigned repeat boundaries. */
     #[test]
     fn accepts_repeat_integer_boundaries() {
@@ -829,6 +996,23 @@ mod tests {
                 ("SMIV-3".to_string(), 3, 9, 10),
             ]
         );
+
+        let trailing_minus = parse("@repeat=-").expect_err("a bare minus must be rejected");
+        assert_eq!(trailing_minus[0].error.code.to_string(), "SMIV-3");
+        assert_eq!(trailing_minus[0].position.column_number, 9);
+        assert_eq!(trailing_minus[0].position.length, 1);
+    }
+
+    /** Rejects extension lists attached to non-chord expressions. */
+    #[test]
+    fn rejects_extensions_on_non_chord_expressions() {
+        for input in ["?(7)", "_(7)"] {
+            let errors = parse(input).expect_err("non-chords cannot have extensions");
+
+            assert_eq!(errors.len(), 1, "unexpected diagnostics for {input:?}");
+            assert_eq!(errors[0].error.code.to_string(), "EXT-3");
+            assert_eq!(errors[0].position.column_number, 1);
+        }
     }
 
     /** Recovers from chord metadata errors at both bar and line boundaries. */
@@ -921,7 +1105,7 @@ mod tests {
                 ("EXT-2".to_string(), 1, 2, 1),
                 ("EXT-1".to_string(), 2, 3, 3),
                 ("EXT-2".to_string(), 2, 6, 1),
-                ("DEN-1".to_string(), 3, 3, 1),
+                ("DEN-2".to_string(), 3, 3, 1),
                 ("DEN-1".to_string(), 4, 2, 1),
                 ("CIMV-2".to_string(), 5, 6, 0),
             ]
@@ -929,6 +1113,32 @@ mod tests {
 
         let eof = errors.last().expect("EOF error was asserted above");
         assert_eq!(eof.position.start_offset, eof.position.end_offset);
+    }
+
+    /** Highlights the complete unclosed denominator instead of only its slash. */
+    #[test]
+    fn reports_unclosed_denominator_ranges() {
+        let errors = parse("C/F#m(7\nD/(G")
+            .expect_err("each denominator with an unclosed parenthesis must be rejected");
+        let positions: Vec<_> = errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.to_string(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            positions,
+            vec![
+                ("DEN-1".to_string(), 1, 2, 6),
+                ("DEN-1".to_string(), 2, 2, 3),
+            ]
+        );
     }
 
     /** Keeps reporting after multiple blank lines that create a section boundary. */

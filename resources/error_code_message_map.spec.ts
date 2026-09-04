@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { ERROR_CODE_MESSAGE_MAP } from "./error_code_message_map";
+import {
+  ERROR_CODE_MESSAGE_MAP,
+  type ErrorCode,
+  getErrorMessage,
+} from "./error_code_message_map";
 
 describe("ERROR_CODE_MESSAGE_MAP", () => {
   it("has unique error messages", () => {
@@ -28,5 +32,20 @@ describe("ERROR_CODE_MESSAGE_MAP", () => {
       en: "A bar must not contain a line break",
       ja: "小節内に改行を含めることはできません",
     });
+  });
+
+  it("resolves every declared error code in both languages", () => {
+    for (const errorCodes of Object.values(ERROR_CODE_MESSAGE_MAP)) {
+      for (const [errorCode, messages] of Object.entries(errorCodes)) {
+        expect(getErrorMessage({ errorCode: errorCode as ErrorCode, lang: "en" })).toBe(
+          messages.en
+        );
+        expect(getErrorMessage({ errorCode: errorCode as ErrorCode, lang: "ja" })).toBe(
+          messages.ja
+        );
+        expect(messages.en.length).toBeGreaterThan(0);
+        expect(messages.ja.length).toBeGreaterThan(0);
+      }
+    }
   });
 });

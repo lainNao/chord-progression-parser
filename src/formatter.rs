@@ -135,7 +135,10 @@ fn format_chord_expression(expression: &ChordExpression) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{format_chord_progression, FormatError};
-    use crate::model::{chord_block::ChordBlock, section::Section};
+    use crate::model::{
+        base::Base, chord_block::ChordBlock, chord_expression::ChordExpression, section::Section,
+        section_meta::SectionMeta,
+    };
     use crate::parse_chord_progression_string;
 
     /** Advances a deterministic pseudo-random state for reproducible source generation. */
@@ -170,6 +173,10 @@ mod tests {
         assert_eq!(
             format_chord_progression(&Vec::new()).expect("empty AST must be formattable"),
             ""
+        );
+        assert_eq!(
+            FormatError.to_string(),
+            "AST cannot be represented by the chord progression syntax"
         );
     }
 
@@ -208,6 +215,42 @@ mod tests {
             Err(FormatError)
         );
         assert_eq!(format_chord_progression(&empty_section), Err(FormatError));
+    }
+
+    /** Rejects AST mutations that would be lost or reinterpreted as syntax. */
+    #[test]
+    fn rejects_structurally_ambiguous_asts() {
+        let mut empty_bar = parse_chord_progression_string("C").expect("fixture must parse");
+        let ChordBlock::Bar(bar) = &mut empty_bar[0].chord_blocks[0] else {
+            panic!("fixture must contain a bar");
+        };
+        bar.clear();
+
+        let mut leading_break = parse_chord_progression_string("C").expect("fixture must parse");
+        leading_break[0].chord_blocks.insert(0, ChordBlock::Br);
+
+        let mut injected_metadata =
+            parse_chord_progression_string("@section=A\nC").expect("fixture must parse");
+        injected_metadata[0].meta_infos[0] = SectionMeta::Section("A\n@section=B".to_string());
+
+        let mut inconsistent_chord =
+            parse_chord_progression_string("C").expect("fixture must parse");
+        let ChordBlock::Bar(bar) = &mut inconsistent_chord[0].chord_blocks[0] else {
+            panic!("fixture must contain a bar");
+        };
+        let ChordExpression::Chord(chord) = &mut bar[0].chord_expression else {
+            panic!("fixture must contain a chord");
+        };
+        chord.detailed.base = Base::D;
+
+        for ast in [
+            empty_bar,
+            leading_break,
+            injected_metadata,
+            inconsistent_chord,
+        ] {
+            assert_eq!(format_chord_progression(&ast), Err(FormatError));
+        }
     }
 
     /** Round-trips every valid document found in an adversarial deterministic corpus. */

@@ -4,121 +4,114 @@ import {
   parseChordProgressionString,
 } from "@lainnao/chord-progression-parser-bundler/chord_progression_parser";
 import {
-  ErrorCode,
+  type ErrorCode,
   getErrorMessage,
 } from "@lainnao/chord-progression-parser-bundler/error_code_message_map";
 
-const getHighlightedTextLines = ({
-  text,
-  row,
-  col,
-  length,
-}: {
-  text: string;
-  row: number;
-  col: number;
-  length: number;
-}): string[] => {
-  const lines = text.split("\n");
-
-  if (row < 0 || row >= lines.length || col < 0 || col >= lines[row].length) {
-    return lines; // 範囲外の場合は元のテキストをそのまま返す
-  }
-
-  const start = Math.max(col, 0);
-  const end = Math.min(col + length, lines[row].length);
-
-  const beforeHighlight = lines[row].substring(0, start);
-  const highlight = lines[row].substring(start, end);
-  const afterHighlight = lines[row].substring(end);
-
-  lines[row] = `${beforeHighlight}<mark>${highlight}</mark>${afterHighlight}`;
-
-  return lines;
-};
-
-/** Formats one parser diagnostic and highlights its exact source range. */
-function createErrorMessage({
-  currentValue,
-  errorCode,
-  lineNumber,
-  columnNumber,
-  length,
-}: {
+type ErrorElementArgs = {
   currentValue: string;
+  endOffset: number;
   errorCode: ErrorCode;
   lineNumber: number;
-  columnNumber: number;
-  length: number;
-}): string {
-  return (
-    "" +
-    `${lineNumber}行目: ` +
-    getErrorMessage({
-      errorCode,
-      lang: "ja",
-    }) +
-    `(${errorCode})\n` +
-    "\n" +
-    getHighlightedTextLines({
-      text: currentValue,
-      row: lineNumber - 1,
-      col: columnNumber - 1,
-      length: length,
-    })[lineNumber - 1]
+  startOffset: number;
+};
+
+/** Returns the start and exclusive end offsets of the line containing a diagnostic. */
+function getLineRange({
+  source,
+  startOffset,
+}: {
+  source: string;
+  startOffset: number;
+}): { endOffset: number; startOffset: number } {
+  const lineStart =
+    startOffset === 0 ? 0 : source.lastIndexOf("\n", startOffset - 1) + 1;
+  const newlineOffset = source.indexOf("\n", startOffset);
+  const rawLineEnd = newlineOffset === -1 ? source.length : newlineOffset;
+  const lineEnd = source[rawLineEnd - 1] === "\r" ? rawLineEnd - 1 : rawLineEnd;
+
+  return { endOffset: lineEnd, startOffset: lineStart };
+}
+
+/** Creates one diagnostic using text nodes so malformed source cannot become HTML. */
+function createErrorElement({
+  currentValue,
+  endOffset,
+  errorCode,
+  lineNumber,
+  startOffset,
+}: ErrorElementArgs): HTMLDivElement {
+  const container = document.createElement("div");
+  const title = document.createElement("div");
+  title.textContent = `${lineNumber}行目: ${getErrorMessage({
+    errorCode,
+    lang: "ja",
+  })}(${errorCode})`;
+
+  const source = document.createElement("div");
+  const line = getLineRange({ source: currentValue, startOffset });
+  const safeStart = Math.min(Math.max(startOffset, line.startOffset), line.endOffset);
+  const safeEnd = Math.min(Math.max(endOffset, safeStart), line.endOffset);
+  const mark = document.createElement("mark");
+  mark.textContent = currentValue.slice(safeStart, safeEnd) || "▏";
+  source.append(
+    document.createTextNode(currentValue.slice(line.startOffset, safeStart)),
+    mark,
+    document.createTextNode(currentValue.slice(safeEnd, line.endOffset)),
   );
+
+  container.append(title, source);
+  return container;
 }
 
 /** Runs the interactive bundler example. */
 function main(): void {
   const elms = {
     textarea: document.querySelector<HTMLTextAreaElement>("#textarea")!,
-    result: document.querySelector<HTMLTextAreaElement>("#result")!,
-    time: document.querySelector<HTMLDivElement>("#time")!,
+    result: document.querySelector<HTMLDivElement>("#result")!,
+    time: document.querySelector<HTMLSpanElement>("#time")!,
   };
 
+  /** Parses and renders the current source value. */
   const applyValue = (value: string): void => {
     try {
       const start = performance.now();
-      elms.result.innerHTML = "";
       const result = parseChordProgressionString(value);
       const end = performance.now();
       console.info(result);
 
-      // time
-      elms.time.innerHTML = `${((end - start) * 0.001).toFixed(5)}sec`;
+      elms.time.textContent = `${((end - start) * 0.001).toFixed(5)}sec`;
+      if (result.success) {
+        elms.result.textContent = JSON.stringify(result, null, 2);
+        elms.result.dataset.formatted = formatChordProgression(result.ast);
+        return;
+      }
 
-      // result
-      elms.result.innerHTML = result.success
-        ? JSON.stringify(result, null, 2)
-        : result.errors
-            .map((error) =>
-              createErrorMessage({
-                currentValue: value,
-                errorCode: error.code as ErrorCode,
-                lineNumber: error.position.lineNumber,
-                columnNumber: error.position.columnNumber,
-                length: error.position.length,
-              })
-            )
-            .join("\n\n");
-      elms.result.dataset.formatted = result.success
-        ? formatChordProgression(result.ast)
-        : "";
-    } catch (e: unknown) {
-      console.log(e);
-      elms.result.innerHTML = JSON.stringify(e, null, 2);
+      elms.result.replaceChildren(
+        ...result.errors.map((error) =>
+          createErrorElement({
+            currentValue: value,
+            endOffset: error.position.endOffset,
+            errorCode: error.code as ErrorCode,
+            lineNumber: error.position.lineNumber,
+            startOffset: error.position.startOffset,
+          }),
+        ),
+      );
+      elms.result.dataset.formatted = "";
+    } catch (error: unknown) {
+      console.error(error);
+      elms.result.textContent = JSON.stringify(error, null, 2);
     }
   };
 
-  const handleChange = (e: Event): void => {
-    if (!e?.target) return;
-    if (!(e.target instanceof HTMLTextAreaElement)) return;
-    applyValue(e.target.value);
+  /** Revalidates after every direct edit, paste, or drop operation. */
+  const handleInput = (event: Event): void => {
+    if (!(event.target instanceof HTMLTextAreaElement)) return;
+    applyValue(event.target.value);
   };
 
-  elms.textarea.addEventListener("keyup", handleChange);
-  elms.textarea.addEventListener("change", handleChange);
+  elms.textarea.addEventListener("input", handleInput);
 }
 
 main();

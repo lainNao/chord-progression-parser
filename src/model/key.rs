@@ -163,4 +163,25 @@ mod tests {
             );
         }
     }
+
+    /** Parses and round-trips every key spelling supported by the public grammar. */
+    #[test]
+    fn round_trips_every_supported_key_spelling() {
+        let spellings = [
+            "Cb", "Cbm", "C", "Cm", "C#", "C#m", "Db", "Dbm", "D", "Dm", "D#", "D#m", "Eb", "Ebm",
+            "E", "Em", "E#", "E#m", "Fb", "Fbm", "F", "Fm", "F#", "F#m", "Gb", "Gbm", "G", "Gm",
+            "G#", "G#m", "Ab", "Abm", "A", "Am", "A#", "A#m", "Bb", "Bbm", "B", "Bm", "?",
+        ];
+
+        for spelling in spellings {
+            let parsed = Key::from_str(spelling)
+                .unwrap_or_else(|error| panic!("supported key {spelling:?} failed: {error:?}"));
+            let serialized = serde_json::to_string(&parsed).expect("supported key must serialize");
+            let deserialized = serde_json::from_str::<Key>(&serialized)
+                .expect("serialized supported key must deserialize");
+
+            assert_eq!(parsed.to_string(), spelling);
+            assert_eq!(deserialized, parsed);
+        }
+    }
 }

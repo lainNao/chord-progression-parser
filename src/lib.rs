@@ -461,7 +461,10 @@ C-A,B
                     start_offset: 4,
                     end_offset: 7,
                 },
-            )
+            );
+
+            let errors = parse_chord_progression_string(input).expect_err("fixture must fail");
+            assert_eq!(errors[0].error.to_string(), "EXT-1: 111");
         }
     }
 }

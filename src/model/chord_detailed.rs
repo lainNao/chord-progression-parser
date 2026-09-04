@@ -137,7 +137,7 @@ mod tests {
     /** Rejects extension prefixes, empty lists, and multiple parenthesis groups. */
     #[test]
     fn rejects_ambiguous_extension_text() {
-        for input in ["C(111)", "C()", "C(7)(9)", "C(7,)"] {
+        for input in ["C)", "C(7", "C(111)", "C()", "C(7)(9)", "C(7,)"] {
             assert!(
                 ChordDetailed::from_str(input).is_err(),
                 "unexpectedly accepted {input:?}"

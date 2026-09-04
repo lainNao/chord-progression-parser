@@ -48,6 +48,7 @@
 | `C[key=A]` | metaを黙殺して成功 | token順序error |
 | 3個以上の連続改行 | `BL-1` | 余分な空行として許可 |
 | 未完の括弧・角括弧・slash | 一部でpanicまたは不定なerror | position付きerror |
+| 2個目のslash | `DEN-1` | `DEN-2` |
 | 定義文字列のprefixだけが一致するextension | 経路によって受理可能 | `EXT-1` |
 
 panic、入力の黙殺、入力範囲外のerror positionは互換対象にしない。

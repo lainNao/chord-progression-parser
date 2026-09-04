@@ -2,7 +2,7 @@
 
 ## 周辺ツール
 
-- `chord-progression-hub`をv0.8.0以降へ更新する
+- `chord-progression-hub`をv0.9.0以降へ更新する
   - parser依存を更新し、`Es_M`と`Es_m`を音高6へ対応付ける
   - 生成済みの検索用データがあれば再計算する
   - 検索設計ドキュメントへ、原文表記と検索用表現を分ける方針を反映する
@@ -13,7 +13,6 @@
 
 - 次期AST/APIで破壊的変更を行うか判断する
   - denominatorを文字列のまま扱うか、コードまたはディグリーとして構造化する
-  - 複数の構文エラーを一度に返すか
   - ASTまたはtoken一覧へsource spanを付与するか
   - error codeと表示用メッセージの責務を分離するか
   - 詳細は[REFACTOR_PLAN.md](./REFACTOR_PLAN.md#phase-6-astapi-v2-の要否を再評価)を参照

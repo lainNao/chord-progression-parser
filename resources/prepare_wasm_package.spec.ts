@@ -45,7 +45,10 @@ for (const testCase of PACKAGE_TARGET_TEST_CASES) {
       await writeFile(
         path.join(packageDirectory, "package.json"),
         JSON.stringify({
-          files: ["chord_progression_parser.js"],
+          files: [
+            "chord_progression_parser.js",
+            "error_code_message_map.js",
+          ],
           name: "@lainnao/chord-progression-parser",
           type: "legacy-value",
           version: "1.2.3",
@@ -73,3 +76,41 @@ for (const testCase of PACKAGE_TARGET_TEST_CASES) {
     }
   });
 }
+
+test("rejects generated package metadata with an invalid files field", async () => {
+  const packageDirectory = await mkdtemp(
+    path.join(os.tmpdir(), "prepare-wasm-package-invalid-files-"),
+  );
+
+  try {
+    await writeFile(
+      path.join(packageDirectory, "package.json"),
+      JSON.stringify({ files: "chord_progression_parser.js" }),
+    );
+
+    await expect(
+      prepareWasmPackage({ packageDirectory, target: "web" }),
+    ).rejects.toThrow('string array in "files"');
+  } finally {
+    await rm(packageDirectory, { force: true, recursive: true });
+  }
+});
+
+test("rejects packages that are missing required generated files", async () => {
+  const packageDirectory = await mkdtemp(
+    path.join(os.tmpdir(), "prepare-wasm-package-missing-files-"),
+  );
+
+  try {
+    await writeFile(
+      path.join(packageDirectory, "package.json"),
+      JSON.stringify({ files: ["chord_progression_parser.js"] }),
+    );
+
+    await expect(
+      prepareWasmPackage({ packageDirectory, target: "bundler" }),
+    ).rejects.toThrow();
+  } finally {
+    await rm(packageDirectory, { force: true, recursive: true });
+  }
+});

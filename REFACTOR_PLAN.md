@@ -285,7 +285,6 @@ src/
 
 - AST ノードまたは token 一覧への source span 付与
 - denominator の構造化
-- 複数エラー返却とエラー回復
 - `Br` を AST に残すか、表示情報として分離するか
 - `Ast = Vec<Section>` を document struct にするか
 - error code と human-readable message の責務分離
