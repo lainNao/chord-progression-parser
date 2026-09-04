@@ -66,6 +66,7 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
         match ch {
             ' ' | '\t' => {
                 column += 1;
+                offset += ch.len_utf16();
             }
             '\r' | '\n' => {
                 let start_line = line;
@@ -273,6 +274,18 @@ mod tests {
                 },
             ]
         );
+    }
+
+    /** Counts skipped horizontal whitespace in JavaScript editor offsets. */
+    #[test]
+    fn tracks_offsets_across_horizontal_whitespace() {
+        let tokens = lex("C - G\t- Fあ");
+        let last = tokens.last().expect("the final text token must exist");
+
+        assert_eq!(last.kind, TokenKind::Text("Fあ"));
+        assert_eq!(last.span.column, 9);
+        assert_eq!(last.span.start_offset, 8);
+        assert_eq!(last.span.end_offset, 10);
     }
 
     /** Treats CRLF as one newline while retaining both source characters. */

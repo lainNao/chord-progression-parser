@@ -1188,6 +1188,19 @@ mod tests {
         assert_eq!(errors[1].position.end_offset, 4);
     }
 
+    /** Keeps absolute editor offsets aligned after metadata and skipped spaces. */
+    #[test]
+    fn reports_offsets_after_metadata_and_spaces() {
+        let input = "@section=Verse\n[key=C]C - G - Am - Fあ";
+        let errors = parse(input).expect_err("the invalid chord must be rejected");
+
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].position.line_number, 2);
+        assert_eq!(errors[0].position.column_number, 21);
+        assert_eq!(errors[0].position.start_offset, 35);
+        assert_eq!(errors[0].position.end_offset, 37);
+    }
+
     /** Exercises arbitrary delimiter and Unicode mixtures without panics or invalid positions. */
     #[test]
     fn handles_deterministic_adversarial_inputs() {
