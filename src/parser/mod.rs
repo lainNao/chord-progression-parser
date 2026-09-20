@@ -85,7 +85,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                     if self.is_at_end() || self.at(TokenKind::Newline) {
                         if separator.kind == TokenKind::Dash {
                             errors.push(parse_error(
-                                ErrorCode::Cho3,
+                                ErrorCode::Chb3,
                                 separator.span,
                                 Some("-".to_string()),
                             ));
@@ -183,7 +183,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 .ok_or_else(|| vec![parse_error(ErrorCode::Cho3, self.eof_span, None)])?;
             if self.is_at_end() || self.at(TokenKind::Newline) {
                 return Err(vec![parse_error(
-                    ErrorCode::Cho3,
+                    ErrorCode::Chb3,
                     separator.span,
                     Some("-".to_string()),
                 )]);
@@ -751,6 +751,7 @@ mod tests {
             ("%", "CHB-1"),
             ("H", "CHO-1"),
             ("-", "CHO-3"),
+            ("C -", "CHB-3"),
             ("C/", "DEN-1"),
             ("C//G", "DEN-2"),
             ("C(111)", "EXT-1"),
@@ -1077,7 +1078,7 @@ mod tests {
                 ("CHO-1".to_string(), 2),
                 ("CHO-3".to_string(), 4),
                 ("CHO-1".to_string(), 5),
-                ("CHO-3".to_string(), 6),
+                ("CHB-3".to_string(), 6),
             ]
         );
     }

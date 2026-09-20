@@ -103,6 +103,13 @@ pub enum ErrorCode {
      */
     Chb2,
 
+    #[strum(serialize = "CHB-3")]
+    /**
+     * en: The input ends with a bar separator. Enter the next chord
+     * ja: 小節区切りで終わっています。次のコードを入力してください
+     */
+    Chb3,
+
     #[strum(serialize = "CHO-1")]
     /**
      * en: Invalid chord notation

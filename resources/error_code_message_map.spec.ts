@@ -32,6 +32,10 @@ describe("ERROR_CODE_MESSAGE_MAP", () => {
       en: "A bar must not contain a line break",
       ja: "小節内に改行を含めることはできません",
     });
+    expect(ERROR_CODE_MESSAGE_MAP.CHB["CHB-3"]).toEqual({
+      en: "The input ends with a bar separator. Enter the next chord",
+      ja: "小節区切りで終わっています。次のコードを入力してください",
+    });
   });
 
   it("resolves every declared error code in both languages", () => {

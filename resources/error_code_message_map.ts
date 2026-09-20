@@ -93,6 +93,10 @@ export const ERROR_CODE_MESSAGE_MAP = {
       en: "A bar must not contain a line break",
       ja: "小節内に改行を含めることはできません",
     },
+    "CHB-3": {
+      en: "The input ends with a bar separator. Enter the next chord",
+      ja: "小節区切りで終わっています。次のコードを入力してください",
+    },
   },
   CHO: {
     "CHO-1": {
