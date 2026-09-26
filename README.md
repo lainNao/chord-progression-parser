@@ -9,6 +9,21 @@ A converter from chord progression strings to AST built in Rust that outputs was
 > - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-node>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 
+## Canonical syntax
+
+This syntax is a canonical serialization format for chord progression ASTs,
+not an attempt to accept every conventional chord-symbol notation.
+Extensions always go inside `(...)`: use `C(7)`, `Cm(7)`, `C(M7)`,
+`C(add9)`, and `C(sus4)`. Conventional spellings such as `C7`, `Cm7`,
+`Cmaj7`, `CM7`, and `C△7` are rejected.
+
+This intentional restriction reduces spelling variations and supports stable
+AST → string → AST round trips. Applications accepting conventional chord names
+should convert them to canonical syntax in a separate layer before parsing.
+Keep canonical spelling when generating input or editing examples, including with AI.
+See the [syntax reference](./_docs/en/about-chord-progression-syntax.md)
+([日本語](./_docs/ja/about-chord-progression-syntax.md)) for all accepted extensions.
+
 ## Example
 
 You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-forked-phmkrs?file=%2Fsrc%2FApp.tsx)
