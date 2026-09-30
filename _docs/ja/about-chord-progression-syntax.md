@@ -54,11 +54,12 @@ G - Am - Bm(o) - C
 
 ## Extension の有効値
 
-受理する値は以下の29種類です。大文字・小文字は区別され、
+受理する値は以下の30種類です。大文字・小文字は区別され、
 [`Extension`](../../resources/generatedTypes.ts) enum と一致します。
 
 <!-- extension-values:start -->
 ```txt
+1
 2
 3
 b3
@@ -96,12 +97,17 @@ extension 自体は省略可能ですが、指定する場合はコード本体�
 分数コードの `/E` などは `C(7)/E` のように括弧の後に置きます。
 コード種別の `m`、`M`、`aug`、`dim` は extension ではなく、コード本体に記述します。
 
+`1` は `C(1)` のように、ルート単音を意図する表記に使えます。
+parser はこの指定を `extensions` に保存し、コード本体の種別は保持します。
+構成音の算出や extension の組み合わせの音楽的な検証は行わず、実音の解釈は利用側に委ねます。
+
 canonical syntax として有効な例：
 
 ```txt
 C
 Cm
 C#
+C(1)
 C(7)
 Cm(7)
 C(M7)
@@ -116,6 +122,7 @@ C(7)/E
 以下の一般的な表記は canonical syntax ではなく、parse に失敗します：
 
 ```txt
+C1
 C7
 Cm7
 Cmaj7

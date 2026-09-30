@@ -57,6 +57,8 @@ export enum ChordType {
 }
 
 export enum Extension {
+	/** Preserves a root-only notation without deriving its sounding pitches. */
+	One = "1",
 	Two = "2",
 	Three = "3",
 	FlatThree = "b3",

@@ -5,6 +5,10 @@ use typeshare::typeshare;
 #[typeshare]
 #[derive(Debug, PartialEq, Clone, Display, EnumString, VariantNames, Serialize, Deserialize)]
 pub enum Extension {
+    /// Preserves a root-only notation without deriving its sounding pitches.
+    #[strum(serialize = "1")]
+    #[serde(rename = "1")]
+    One,
     #[strum(serialize = "2")]
     #[serde(rename = "2")]
     Two,

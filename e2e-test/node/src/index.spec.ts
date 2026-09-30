@@ -1,6 +1,10 @@
 import { test, expect } from "bun:test";
 import parser from "@lainnao/chord-progression-parser-node";
-import { Accidental } from "@lainnao/chord-progression-parser-node/generatedTypes";
+import {
+  Accidental,
+  ChordType,
+  Extension,
+} from "@lainnao/chord-progression-parser-node/generatedTypes";
 import {
   ERROR_CODE_MESSAGE_MAP,
   getErrorMessage,
@@ -10,6 +14,36 @@ test("can import", () => {
   expect(Accidental.Flat).toBeDefined();
   expect(ERROR_CODE_MESSAGE_MAP).toBeDefined();
   expect(getErrorMessage).toBeDefined();
+});
+
+/** Keeps the generated enum and the WASM AST aligned for the root-only modifier. */
+test("preserves extension 1 through the JavaScript API", (): void => {
+  expect(Extension.One.toString()).toBe("1");
+  const result = parser.parseChordProgressionString("C(1,5)/G");
+  expect(result.success).toBe(true);
+  if (!result.success) throw new Error("root-only notation must parse");
+
+  expect(result.ast[0].chordBlocks[0]).toMatchObject({
+    type: "bar",
+    value: [
+      {
+        denominator: "G",
+        chordExpression: {
+          type: "chord",
+          value: {
+            plain: "C(1,5)",
+            detailed: {
+              chordType: ChordType.Major,
+              extensions: [Extension.One, Extension.Five],
+            },
+          },
+        },
+      },
+    ],
+  });
+  const formatted = parser.formatChordProgression(result.ast);
+  expect(formatted).toBe("C(1,5)/G");
+  expect(parser.parseChordProgressionString(formatted)).toEqual(result);
 });
 
 test("can format a parsed AST", () => {

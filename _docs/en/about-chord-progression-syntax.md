@@ -57,11 +57,12 @@ G - Am - Bm(o) - C
 
 ## Extensions
 
-The accepted values are exactly the following 29 case-sensitive strings,
+The accepted values are exactly the following 30 case-sensitive strings,
 matching [`Extension`](../../resources/generatedTypes.ts).
 
 <!-- extension-values:start -->
 ```txt
+1
 2
 3
 b3
@@ -99,12 +100,18 @@ group immediately after the chord head. Separate multiple values with commas.
 Write the slash denominator after the group, as in `C(7)/E`.
 Chord types `m`, `M`, `aug`, and `dim` belong to the chord head, not the extension list.
 
+Use `1`, as in `C(1)`, to express a root-only notation.
+The parser stores this modifier in `extensions` and preserves the chord head's type.
+It does not derive sounding pitches or validate extension combinations musically;
+applications are responsible for interpreting the sounding pitches.
+
 Valid canonical examples:
 
 ```txt
 C
 Cm
 C#
+C(1)
 C(7)
 Cm(7)
 C(M7)
@@ -119,6 +126,7 @@ C(7)/E
 These conventional spellings are not canonical syntax and fail to parse:
 
 ```txt
+C1
 C7
 Cm7
 Cmaj7
