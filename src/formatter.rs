@@ -1,4 +1,4 @@
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, fmt::Write};
 
 use crate::model::{
     ast::Ast, bar::Bar, chord_block::ChordBlock, chord_expression::ChordExpression,
@@ -34,41 +34,41 @@ pub fn format_chord_progression(ast: &Ast) -> Result<String, FormatError> {
 
 /** Renders an AST before the public round-trip validation. */
 fn format_ast(ast: &Ast) -> String {
-    ast.iter()
-        .map(format_section)
-        .collect::<Vec<_>>()
-        .join("\n\n")
-}
-
-/** Formats one section, placing metadata before its chord lines. */
-fn format_section(section: &Section) -> String {
-    let mut source = section
-        .meta_infos
-        .iter()
-        .map(format_section_meta)
-        .collect::<Vec<_>>()
-        .join("\n");
-    let chord_blocks = format_chord_blocks(&section.chord_blocks);
-
-    if !source.is_empty() && !chord_blocks.is_empty() {
-        source.push('\n');
+    let mut source = String::new();
+    for (index, section) in ast.iter().enumerate() {
+        if index > 0 {
+            source.push_str("\n\n");
+        }
+        write_section(&mut source, section);
     }
-    source.push_str(&chord_blocks);
-
     source
 }
 
-/** Formats section metadata using its concrete syntax. */
-fn format_section_meta(meta: &SectionMeta) -> String {
-    match meta {
-        SectionMeta::Section(value) => format!("@section={value}"),
-        SectionMeta::Repeat(value) => format!("@repeat={value}"),
+/** Appends a section directly to the document, placing metadata before its chord lines. */
+fn write_section(source: &mut String, section: &Section) {
+    for (index, meta) in section.meta_infos.iter().enumerate() {
+        if index > 0 {
+            source.push('\n');
+        }
+        write_section_meta(source, meta);
     }
+    if !section.meta_infos.is_empty() && !section.chord_blocks.is_empty() {
+        source.push('\n');
+    }
+    write_chord_blocks(source, &section.chord_blocks);
 }
 
-/** Formats bars and preserves explicit line-break blocks. */
-fn format_chord_blocks(chord_blocks: &[ChordBlock]) -> String {
-    let mut source = String::new();
+/** Writes section metadata without allocating an intermediate string. */
+fn write_section_meta(source: &mut String, meta: &SectionMeta) {
+    match meta {
+        SectionMeta::Section(value) => write!(source, "@section={value}"),
+        SectionMeta::Repeat(value) => write!(source, "@repeat={value}"),
+    }
+    .expect("writing into a String cannot fail");
+}
+
+/** Appends bars while preserving explicit line-break blocks. */
+fn write_chord_blocks(source: &mut String, chord_blocks: &[ChordBlock]) {
     let mut needs_bar_separator = false;
 
     for chord_block in chord_blocks {
@@ -77,7 +77,7 @@ fn format_chord_blocks(chord_blocks: &[ChordBlock]) -> String {
                 if needs_bar_separator {
                     source.push_str(" - ");
                 }
-                source.push_str(&format_bar(bar));
+                write_bar(source, bar);
                 needs_bar_separator = true;
             }
             ChordBlock::Br => {
@@ -86,40 +86,37 @@ fn format_chord_blocks(chord_blocks: &[ChordBlock]) -> String {
             }
         }
     }
-
-    source
 }
 
-/** Formats the chord information grouped within one bar. */
-fn format_bar(bar: &Bar) -> String {
-    bar.iter()
-        .map(format_chord_info)
-        .collect::<Vec<_>>()
-        .join(", ")
+/** Appends comma-separated chord information without allocating one string per chord. */
+fn write_bar(source: &mut String, bar: &Bar) {
+    for (index, chord_info) in bar.iter().enumerate() {
+        if index > 0 {
+            source.push_str(", ");
+        }
+        write_chord_info(source, chord_info);
+    }
 }
 
-/** Formats chord metadata, expression, and optional denominator. */
-fn format_chord_info(chord_info: &ChordInfo) -> String {
-    let mut source = chord_info
-        .meta_infos
-        .iter()
-        .map(format_chord_info_meta)
-        .collect::<String>();
+/** Appends chord metadata, expression, and optional denominator. */
+fn write_chord_info(source: &mut String, chord_info: &ChordInfo) {
+    for meta in &chord_info.meta_infos {
+        write_chord_info_meta(source, meta);
+    }
     source.push_str(format_chord_expression(&chord_info.chord_expression));
 
     if let Some(denominator) = &chord_info.denominator {
         source.push('/');
         source.push_str(denominator);
     }
-
-    source
 }
 
-/** Formats metadata attached to the following chord expression. */
-fn format_chord_info_meta(meta: &ChordInfoMeta) -> String {
+/** Writes metadata attached to the following chord expression. */
+fn write_chord_info_meta(source: &mut String, meta: &ChordInfoMeta) {
     match meta {
-        ChordInfoMeta::Key(key) => format!("[key={key}]"),
+        ChordInfoMeta::Key(key) => write!(source, "[key={key}]"),
     }
+    .expect("writing into a String cannot fail");
 }
 
 /** Formats a chord expression without discarding its original chord spelling. */
