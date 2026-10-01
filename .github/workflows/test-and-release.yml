@@ -96,7 +96,7 @@ jobs:
             if [ -n "$PREV_TAG" ] && git merge-base "$PREV_TAG" HEAD >/dev/null; then
               git log "$PREV_TAG"..HEAD --pretty=format:'- %s (%h)'
             else
-              git log HEAD --max-count=50 --pretty=format:'- %s (%h)'
+              git log HEAD --pretty=format:'- %s (%h)'
             fi
             echo
             echo "EOF"
