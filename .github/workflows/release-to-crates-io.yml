@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Keep release tooling from the workflow revision when retrying an older source tag.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.workflow_sha }}
       - name: Preserve publication check
         run: cp _tools/release/is_published.sh "$RUNNER_TEMP/chord-parser-is-published.sh"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag-to-release }}
       - name: Install stable toolchain
