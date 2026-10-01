@@ -163,7 +163,8 @@ function main(): void {
       }
     } catch (error: unknown) {
       console.error(error);
-      elms.result.textContent = JSON.stringify(error, null, 2);
+      elms.result.dataset.formatted = "";
+      elms.result.textContent = String(error);
     }
   };
 

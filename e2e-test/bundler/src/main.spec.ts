@@ -145,6 +145,37 @@ test("preserves diagnostic ranges and line boundaries in excerpts", async ({
   );
 });
 
+/** A failed render must show its error and discard the preceding formatted result. */
+test("reports unexpected exceptions and recovers on the next input", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  await page.locator("#textarea").fill("C");
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
+  await page
+    .locator("#textarea")
+    .evaluate((textarea: HTMLTextAreaElement): void => {
+      const originalNow = performance.now.bind(performance);
+      // Fail once at the start of processing, then restore the browser clock immediately.
+      performance.now = (): number => {
+        performance.now = originalNow;
+        throw new Error("Simulated processing failure");
+      };
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  await expect(page.locator("#result")).toHaveText(
+    "Error: Simulated processing failure",
+  );
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "");
+
+  await page.locator("#textarea").fill("Dm(7)");
+  await expect(page.locator("#result")).toHaveAttribute(
+    "data-formatted",
+    "Dm(7)",
+  );
+  await expect(page.locator("#result")).toContainText('"success": true');
+});
+
 /** Large result arrays must not become a single call with too many arguments. */
 test("renders large diagnostic lists without exceeding argument limits", async ({
   page,
