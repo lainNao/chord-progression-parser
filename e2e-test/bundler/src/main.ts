@@ -16,21 +16,50 @@ type ErrorElementArgs = {
   startOffset: number;
 };
 
-/** Returns the start and exclusive end offsets of the line containing a diagnostic. */
-function getLineRange({
+/** Finds nearby same-line context without rescanning or copying a complete long line per error. */
+function getDiagnosticRange({
   source,
   startOffset,
+  endOffset,
 }: {
   source: string;
   startOffset: number;
+  endOffset: number;
 }): { endOffset: number; startOffset: number } {
-  const lineStart =
-    startOffset === 0 ? 0 : source.lastIndexOf("\n", startOffset - 1) + 1;
-  const newlineOffset = source.indexOf("\n", startOffset);
-  const rawLineEnd = newlineOffset === -1 ? source.length : newlineOffset;
-  const lineEnd = source[rawLineEnd - 1] === "\r" ? rawLineEnd - 1 : rawLineEnd;
+  const contextLength = 80;
+  let windowStart = Math.max(0, startOffset - contextLength);
+  let windowEnd = Math.min(source.length, endOffset + contextLength);
+  // A UTF-16 window may otherwise cut a surrogate pair in half.
+  const firstCodeUnit = source.charCodeAt(windowStart);
+  if (windowStart > 0 && firstCodeUnit >= 0xdc00 && firstCodeUnit <= 0xdfff) {
+    windowStart -= 1;
+  }
+  const nextCodeUnit = source.charCodeAt(windowEnd);
+  if (
+    windowEnd < source.length &&
+    nextCodeUnit >= 0xdc00 &&
+    nextCodeUnit <= 0xdfff
+  ) {
+    windowEnd += 1;
+  }
 
-  return { endOffset: lineEnd, startOffset: lineStart };
+  const window = source.slice(windowStart, windowEnd);
+  const relativeStart = startOffset - windowStart;
+  const lineStart =
+    relativeStart === 0
+      ? 0
+      : Math.max(
+          window.lastIndexOf("\n", relativeStart - 1),
+          window.lastIndexOf("\r", relativeStart - 1),
+        ) + 1;
+  const newlineOffset = window.slice(relativeStart).search(/[\r\n]/);
+  const lineEnd =
+    newlineOffset === -1 ? window.length : relativeStart + newlineOffset;
+
+  return {
+    endOffset: windowStart + lineEnd,
+    startOffset: windowStart + lineStart,
+  };
 }
 
 /** Creates one diagnostic using text nodes so malformed source cannot become HTML. */
@@ -49,7 +78,11 @@ function createErrorElement({
   })}(${errorCode})`;
 
   const source = document.createElement("div");
-  const line = getLineRange({ source: currentValue, startOffset });
+  const line = getDiagnosticRange({
+    source: currentValue,
+    startOffset,
+    endOffset,
+  });
   const safeStart = Math.min(
     Math.max(startOffset, line.startOffset),
     line.endOffset,
@@ -57,10 +90,26 @@ function createErrorElement({
   const safeEnd = Math.min(Math.max(endOffset, safeStart), line.endOffset);
   const mark = document.createElement("mark");
   mark.textContent = currentValue.slice(safeStart, safeEnd) || "▏";
+  const leadingEllipsis =
+    line.startOffset > 0 &&
+    currentValue[line.startOffset - 1] !== "\n" &&
+    currentValue[line.startOffset - 1] !== "\r"
+      ? "…"
+      : "";
+  const trailingEllipsis =
+    line.endOffset < currentValue.length &&
+    currentValue[line.endOffset] !== "\n" &&
+    currentValue[line.endOffset] !== "\r"
+      ? "…"
+      : "";
   source.append(
-    document.createTextNode(currentValue.slice(line.startOffset, safeStart)),
+    document.createTextNode(
+      leadingEllipsis + currentValue.slice(line.startOffset, safeStart),
+    ),
     mark,
-    document.createTextNode(currentValue.slice(safeEnd, line.endOffset)),
+    document.createTextNode(
+      currentValue.slice(safeEnd, line.endOffset) + trailingEllipsis,
+    ),
   );
 
   container.append(title, source);

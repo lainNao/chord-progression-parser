@@ -76,6 +76,75 @@ test("renders every parser diagnostic", async ({ page }) => {
   expect(resultText.match(/EXT-1/g)).toHaveLength(2);
 });
 
+/** Repeated errors on one long line must not duplicate that entire line for each diagnostic. */
+test("bounds the surrounding text of diagnostics on a long line", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  await expect(page.locator("#result")).toContainText('"success": true');
+  await page.addStyleTag({ content: "#textarea, #result { display: none; }" });
+  await page
+    .locator("#textarea")
+    .evaluate((textarea: HTMLTextAreaElement): void => {
+      textarea.value = "H,".repeat(2_000);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  const excerpts = await page
+    .locator("#result > div > div:last-child")
+    .allTextContents();
+  expect(excerpts).toHaveLength(2_000);
+  expect(excerpts.every((text): boolean => text.length < 400)).toBe(true);
+  expect(excerpts[0]).toMatch(/^H,.*…$/);
+  expect(excerpts[excerpts.length - 1]).toMatch(/^….*H,$/);
+  await expect(page.locator("#result mark")).toHaveCount(2_000);
+});
+
+/** Truncation must keep complete UTF-16 pairs on both sides of the highlighted range. */
+test("keeps Unicode context intact when shortening long diagnostic lines", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  for (const source of [`C/${"😀".repeat(81)},H`, `H,C/${"😀".repeat(81)}`]) {
+    await page.locator("#textarea").fill(source);
+    await expect(page.locator("#result mark")).toHaveText("H");
+    const excerpt = await page
+      .locator("#result > div > div:last-child")
+      .textContent();
+    expect(excerpt).toContain("…");
+    expect(excerpt).toContain("😀");
+    // Array.from iterates complete code points; a remaining surrogate is an unpaired half.
+    expect(
+      Array.from(excerpt!).some((point): boolean => {
+        const code = point.codePointAt(0)!;
+        return code >= 0xd800 && code <= 0xdfff;
+      }),
+    ).toBe(false);
+  }
+});
+
+/** Short lines, EOF carets, and the complete invalid token remain visible after context trimming. */
+test("preserves diagnostic ranges and line boundaries in excerpts", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  await page.locator("#textarea").fill("C\nH\nD");
+  await expect(page.locator("#result > div > div:last-child")).toHaveText("H");
+
+  await page.locator("#textarea").fill("C(");
+  await expect(page.locator("#result mark")).toHaveText(["(", "▏"]);
+  await expect(page.locator("#result > div > div:last-child")).toHaveText([
+    "C(",
+    "C(▏",
+  ]);
+
+  const invalidToken = "H".repeat(1_000);
+  await page.locator("#textarea").fill(invalidToken);
+  await expect(page.locator("#result mark")).toHaveText(invalidToken);
+  await expect(page.locator("#result > div > div:last-child")).toHaveText(
+    invalidToken,
+  );
+});
+
 /** Large result arrays must not become a single call with too many arguments. */
 test("renders large diagnostic lists without exceeding argument limits", async ({
   page,
