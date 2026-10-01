@@ -18,5 +18,5 @@
       "bun-types" // add Bun global
     ]
   },
-  "include": ["../../generatedTypes.ts", "src"]
+  "include": ["src"]
 }

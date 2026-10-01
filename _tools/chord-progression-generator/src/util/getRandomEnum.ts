@@ -1,6 +1,8 @@
-export function getRandomEnum<T>(anEnum: T): T[keyof T] {
-  // @ts-ignore
-  const enumValues = Object.keys(anEnum).map((key) => anEnum[key]);
-  const randomIndex = Math.floor(Math.random() * enumValues.length);
-  return enumValues[randomIndex];
+import { getRandomElement } from "./getRandomElement";
+
+/** Selects a value from one of the generated string enums without losing its type. */
+export function getRandomEnum<T extends string>(
+  enumObject: Readonly<Record<string, T>>,
+): T {
+  return getRandomElement(Object.values(enumObject));
 }

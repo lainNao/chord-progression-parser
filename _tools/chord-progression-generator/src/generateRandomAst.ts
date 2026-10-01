@@ -1,32 +1,32 @@
 import * as types from "@lainnao/chord-progression-parser-node/generatedTypes";
-import { Range } from "./util/Range";
-import { arrayBy } from "./util/arrayBy";
+import { assertIntegerRange, type Range } from "./util/Range";
 import { getRandomElement } from "./util/getRandomElement";
 import { getRandomEnum } from "./util/getRandomEnum";
 import { randomBetween } from "./util/randomBetween";
 
-type GenerateRandomChordInfoArgs = generateRandomChordMetaInfoArgs & {
+type GenerateRandomChordInfoArgs = GenerateRandomChordMetaInfoArgs & {
   chordInfoCountRange: Range;
   extensionCountRange: Range;
 };
 
-type generateRandomChordMetaInfoArgs = {
+type GenerateRandomChordMetaInfoArgs = {
   chordMetaInfoCountRange: Range;
 };
 
 type GenerateRandomSectionArgs = GenerateRandomChordInfoArgs & {
   chordBlockCountRange: Range;
-  chordMetaInfoCountRange: Range;
 };
 
 type GenerateRandomAstArgs = GenerateRandomSectionArgs & {
   sectionCountRange: Range;
 };
 
+/** Selects a supported extension spelling. */
 function generateRandomExtension(): types.Extension {
   return getRandomEnum(types.Extension);
 }
 
+/** Occasionally generates an opaque chord-shaped denominator. */
 function generateRandomDenominator(): string | null {
   if (randomBetween({ min: 0, max: 10 }) !== 0) {
     return null;
@@ -38,12 +38,13 @@ function generateRandomDenominator(): string | null {
   );
 }
 
-function generateRandomChordExpression(
-  args: GenerateRandomChordInfoArgs,
-  option?: {
-    noSame?: boolean;
-  }
-): types.ChordExpression {
+/** Generates an expression, permitting repetition only after a prior expression. */
+function generateRandomChordExpression({
+  extensionCountRange,
+  hasPriorChord,
+}: GenerateRandomChordInfoArgs & {
+  hasPriorChord: boolean;
+}): types.ChordExpression {
   switch (randomBetween({ min: 1, max: 20 })) {
     case 1:
       return {
@@ -54,28 +55,29 @@ function generateRandomChordExpression(
         type: "unIdentified",
       };
     case 3: {
-      if (!option?.noSame) {
+      if (hasPriorChord) {
         return {
           type: "same",
         };
       }
     }
     default: {
-      const extensions = arrayBy(randomBetween(args.extensionCountRange)).map(
-        () => generateRandomExtension()
+      const extensions = Array.from(
+        { length: randomBetween(extensionCountRange) },
+        () => generateRandomExtension(),
       );
 
       const chordType: types.ChordType = getRandomElement([
-        ...new Array(10).fill(types.ChordType.Major),
-        ...new Array(10).fill(types.ChordType.Minor),
+        ...Array<types.ChordType>(10).fill(types.ChordType.Major),
+        ...Array<types.ChordType>(10).fill(types.ChordType.Minor),
         types.ChordType.Augmented,
         types.ChordType.Diminished,
       ]);
       const chordTypeString =
         chordType === types.ChordType.Major ? "" : chordType;
 
-      const accidental = getRandomElement([
-        ...new Array(10).fill(null),
+      const accidental = getRandomElement<types.Accidental | null>([
+        ...Array<null>(10).fill(null),
         types.Accidental.Sharp,
         types.Accidental.Flat,
       ]);
@@ -85,7 +87,7 @@ function generateRandomChordExpression(
       const plain =
         base +
         (accidental ?? "") +
-        (chordTypeString ?? "") +
+        chordTypeString +
         (extensions.length > 0 ? `(${extensions.join(",")})` : "");
 
       return {
@@ -104,41 +106,49 @@ function generateRandomChordExpression(
   }
 }
 
+/** Occasionally attaches key metadata to the following chord. */
 function generateRandomChordMetaInfos(
-  args: generateRandomChordMetaInfoArgs
+  args: GenerateRandomChordMetaInfoArgs,
 ): types.ChordInfoMeta[] {
   if (randomBetween({ min: 0, max: 10 }) !== 0) {
     return [];
   }
 
-  return arrayBy(randomBetween(args.chordMetaInfoCountRange)).map(() => ({
-    type: "key",
-    value: getRandomEnum(types.Key),
-  }));
+  return Array.from(
+    { length: randomBetween(args.chordMetaInfoCountRange) },
+    () => ({
+      type: "key",
+      value: getRandomEnum(types.Key),
+    }),
+  );
 }
 
-function generateRandomChordBlock(
-  args: GenerateRandomSectionArgs,
-  option?: {
-    noSame?: boolean;
-  }
-): types.ChordBlock {
+/** Generates a non-empty bar with valid repetition context for each expression. */
+function generateRandomChordBlock({
+  hasPriorChord,
+  ...args
+}: GenerateRandomSectionArgs & { hasPriorChord: boolean }): types.ChordBlock {
   return {
     type: "bar",
-    value: arrayBy(randomBetween(args.chordInfoCountRange)).map(() => ({
-      metaInfos: generateRandomChordMetaInfos(args),
-      chordExpression: generateRandomChordExpression(args, {
-        noSame: option?.noSame,
+    value: Array.from(
+      { length: randomBetween(args.chordInfoCountRange) },
+      (_, index) => ({
+        metaInfos: generateRandomChordMetaInfos(args),
+        chordExpression: generateRandomChordExpression({
+          ...args,
+          hasPriorChord: hasPriorChord || index > 0,
+        }),
+        denominator: generateRandomDenominator(),
       }),
-      denominator: generateRandomDenominator(),
-    })),
+    ),
   };
 }
 
+/** Generates a supported section name or repeat count. */
 function generateRandomSectionInfoMeta(): types.SectionMeta {
-  // get 1 or 0 by random
-  const oneOrZero = randomBetween({ min: 0, max: 5 });
-  if (oneOrZero > 0) {
+  // Prefer section names while also exercising numeric repeat metadata.
+  const choice = randomBetween({ min: 0, max: 5 });
+  if (choice > 0) {
     return {
       type: "section",
       value: getRandomElement(["A", "B", "C"]),
@@ -151,19 +161,32 @@ function generateRandomSectionInfoMeta(): types.SectionMeta {
   }
 }
 
+/** Generates section metadata and at least one non-empty bar. */
 function generateRandomSection(args: GenerateRandomSectionArgs): types.Section {
   return {
-    metaInfos: arrayBy(randomBetween(args.chordMetaInfoCountRange)).map(() =>
-      generateRandomSectionInfoMeta()
+    metaInfos: Array.from(
+      { length: randomBetween(args.chordMetaInfoCountRange) },
+      () => generateRandomSectionInfoMeta(),
     ),
-    chordBlocks: arrayBy(randomBetween(args.chordBlockCountRange)).map((_, i) =>
-      generateRandomChordBlock(args, i === 0 ? { noSame: true } : undefined)
+    chordBlocks: Array.from(
+      { length: randomBetween(args.chordBlockCountRange) },
+      (_, index) =>
+        generateRandomChordBlock({ ...args, hasPriorChord: index > 0 }),
     ),
   };
 }
 
+/** Validates every count range before generating a parser-compatible AST. */
 export function generateRandomAst(args: GenerateRandomAstArgs): types.Ast {
-  return arrayBy(randomBetween(args.sectionCountRange)).map(() =>
-    generateRandomSection(args)
+  for (const [name, range] of Object.entries(args)) {
+    assertIntegerRange(range);
+    const minimum =
+      name === "chordInfoCountRange" || name === "chordBlockCountRange" ? 1 : 0;
+    if (range.min < minimum) {
+      throw new RangeError(`${name} must start at ${minimum} or greater`);
+    }
+  }
+  return Array.from({ length: randomBetween(args.sectionCountRange) }, () =>
+    generateRandomSection(args),
   );
 }
