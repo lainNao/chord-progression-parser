@@ -34,6 +34,7 @@ install:
 	rustup component add rustfmt clippy
 	cargo install typeshare-cli
 	cargo install cargo-insta
+	command -v wasm-pack >/dev/null 2>&1 || cargo install wasm-pack --locked
 	bun install --frozen-lockfile
 	bun lefthook install
 

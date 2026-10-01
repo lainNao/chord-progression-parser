@@ -4,6 +4,9 @@
 
 ## Make development environment
 
+Install Rust through `rustup` and install Bun first. `make install` adds the
+WASM target, development tools, and a missing `wasm-pack` executable.
+
 please refer to `.github/workflows/check-not-broken.yml` and `Makefile`.
 and please run these commands for local CI
 

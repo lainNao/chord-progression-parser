@@ -6,9 +6,10 @@ runs:
   using: composite
   steps:
     - uses: oven-sh/setup-bun@v2
-    - name: make environment
-      shell: bash
-      run: make install
+    # Use the prebuilt tool in CI; make install also handles fresh local environments.
     - name: Install wasm-pack
       shell: bash
       run: curl --proto '=https' --tlsv1.2 -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
+    - name: make environment
+      shell: bash
+      run: make install

@@ -4,6 +4,10 @@
 
 ## 環境構築
 
+事前に `rustup` で Rust を導入し、Bun もインストールしてください。
+`make install` は WASM のターゲットと開発ツールを導入し、`wasm-pack` が
+見つからない場合はそれもインストールします。
+
 `.github/workflows/check-not-broken.yml`と`Makefile`を参照してください。
 あと以下のコマンドを実行してください。
 
