@@ -1,18 +1,18 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 use crate::{
     error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition},
     lexer::{eof_span, lex, SourceSpan, Token, TokenKind},
     model::{
-        ast::Ast, bar::Bar, chord::Chord, chord_block::ChordBlock, chord_detailed::ChordDetailed,
+        bar::Bar, chord::Chord, chord_block::ChordBlock, chord_detailed::ChordDetailed,
         chord_expression::ChordExpression, chord_info::ChordInfo, chord_info_meta::ChordInfoMeta,
         extension::Extension, key::Key, section::Section, section_meta::SectionMeta,
     },
-    util::position::Position,
+    ParseReport, ParseWarning, WarningCode,
 };
 
 /** Parses source text with the context-free lexer and the new parser. */
-pub(crate) fn parse(input: &str) -> Result<Ast, Vec<ErrorInfoWithPosition>> {
+pub(crate) fn parse(input: &str) -> ParseReport {
     let tokens = lex(input);
     Parser::new(&tokens, eof_span(input)).parse_document()
 }
@@ -22,6 +22,7 @@ struct Parser<'tokens, 'src> {
     tokens: &'tokens [Token<'src>],
     cursor: usize,
     eof_span: SourceSpan,
+    warnings: Vec<ParseWarning>,
 }
 
 impl<'tokens, 'src> Parser<'tokens, 'src> {
@@ -31,11 +32,12 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             tokens,
             cursor: 0,
             eof_span,
+            warnings: Vec::new(),
         }
     }
 
     /** Parses all sections while interpreting line-break runs at document level. */
-    fn parse_document(mut self) -> Result<Ast, Vec<ErrorInfoWithPosition>> {
+    fn parse_document(mut self) -> ParseReport {
         let mut sections = Vec::new();
         let mut current_section = empty_section();
         let mut has_prior_chord = false;
@@ -100,10 +102,13 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             sections.push(current_section);
         }
 
-        if errors.is_empty() {
-            Ok(sections)
-        } else {
-            Err(errors)
+        ParseReport {
+            result: if errors.is_empty() {
+                Ok(sections)
+            } else {
+                Err(errors)
+            },
+            warnings: self.warnings,
         }
     }
 
@@ -257,7 +262,8 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         };
 
         if self.at(TokenKind::LeftParen) {
-            let extensions = self.parse_extensions()?;
+            let extensions =
+                self.parse_extensions(matches!(chord_expression, ChordExpression::Chord(_)))?;
             match &mut chord_expression {
                 ChordExpression::Chord(chord) => {
                     chord.plain.push('(');
@@ -315,12 +321,17 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             .map_err(|_| parse_error(ErrorCode::Cimv4, value_span, None))
     }
 
-    /** Parses a non-empty comma-separated extension list with exact matches. */
-    fn parse_extensions(&mut self) -> Result<Vec<Extension>, Vec<ErrorInfoWithPosition>> {
+    /** Parses extensions without removing duplicates; non-chords cannot receive warnings. */
+    fn parse_extensions(
+        &mut self,
+        warn_on_duplicates: bool,
+    ) -> Result<Vec<Extension>, Vec<ErrorInfoWithPosition>> {
         let opening = self
             .expect_symbol(TokenKind::LeftParen, ErrorCode::Ext3)
             .map_err(|error| vec![error])?;
         let mut extensions = Vec::new();
+        // Track distinct valid spellings separately so long duplicate lists stay linear.
+        let mut seen = HashSet::new();
         let mut errors = Vec::new();
         let mut is_first_value = true;
 
@@ -341,7 +352,16 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
 
             match self.expect_text(ErrorCode::Ext2) {
                 Ok((value, span)) => match Extension::from_str(value) {
-                    Ok(extension) => extensions.push(extension),
+                    Ok(extension) => {
+                        if warn_on_duplicates && !seen.insert(value) {
+                            self.warnings.push(ParseWarning {
+                                code: WarningCode::DuplicateExtension,
+                                additional_info: Some(value.to_string()),
+                                position: span.into(),
+                            });
+                        }
+                        extensions.push(extension);
+                    }
                     Err(_) => {
                         errors.push(parse_error(ErrorCode::Ext1, span, Some(value.to_string())))
                     }
@@ -562,13 +582,7 @@ fn parse_error(
             code,
             additional_info,
         },
-        position: Position {
-            line_number: span.line,
-            column_number: span.column,
-            length: span.length,
-            start_offset: span.start_offset,
-            end_offset: span.end_offset,
-        },
+        position: span.into(),
     }
 }
 
@@ -594,7 +608,7 @@ fn token_label(kind: TokenKind<'_>) -> String {
 mod tests {
     use serde_json::{json, Value};
 
-    use super::parse;
+    use crate::parse_chord_progression_string as parse;
 
     /** Advances a deterministic pseudo-random state without adding a runtime dependency. */
     fn next_random(state: &mut u64) -> u64 {

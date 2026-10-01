@@ -21,7 +21,7 @@ impl Error for FormatError {}
 /** Formats an AST and rejects structures that cannot round-trip through the parser. */
 pub fn format_chord_progression(ast: &Ast) -> Result<String, FormatError> {
     let source = format_ast(ast);
-    let Ok(reparsed) = crate::parser::parse(&source) else {
+    let Ok(reparsed) = crate::parse_chord_progression_string(&source) else {
         return Err(FormatError);
     };
 

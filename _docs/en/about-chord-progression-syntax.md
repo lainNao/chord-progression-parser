@@ -49,11 +49,31 @@ G - Am - Bm(o) - C
     - `C-D` treats `C` and `D` as separate bars
     - `C,D` treats `C` and `D` as chords in the same bar
     - One line break is preserved inside the same section
-    - Two or more consecutive line breaks start a new section
+    - Two or more consecutive line breaks after chord lines start a new section
+    - Section metadata after chord lines also starts a new section, even with one line break
+    - Blank lines before the first chord line retain preceding section metadata in the same section
   - Constraints
     - Chord metadata must precede its chord; postfix forms such as `C[key=A]` are invalid
     - Section metadata must occupy its own line
     - Pipe notation such as `|C|` is not supported
+
+## Duplicate-extension warnings
+
+`C(9,9)` remains valid and preserves both extensions in the AST. Each occurrence
+after the first identical value in one chord's extension list produces a
+`DUPLICATE_EXTENSION` warning. Related musical meanings, such as `9` and `add9`,
+are not compared.
+
+The JavaScript API always returns a `warnings` array, on success and failure.
+Warnings do not fail parsing; no warnings produces an empty array. Positions
+refer to the original input and use the same display line/column numbers and
+UTF-16 offsets as errors. Duplicates detected in malformed chord lists may
+accompany errors. Unsupported extensions on `%`, `_`, or `?`, and opaque slash
+denominators are not checked.
+
+Each npm package provides `getWarningMessage({ warningCode: warning.code, lang: "en" })`
+through its `warning_code_message_map` submodule. `lang` accepts `"en"` or `"ja"`.
+Use the `.js` filename when importing directly in a browser.
 
 ## Extensions
 

@@ -7,6 +7,7 @@ export const testData: TestData = {
   input: `C`,
   expected: {
     success: true,
+    warnings: [],
     ast: [
       {
         metaInfos: [],

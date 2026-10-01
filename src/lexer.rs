@@ -26,6 +26,19 @@ pub(crate) struct SourceSpan {
     pub(crate) length: usize,
 }
 
+impl From<SourceSpan> for crate::Position {
+    /** Uses the same display position and UTF-16 offsets for errors and warnings. */
+    fn from(span: SourceSpan) -> Self {
+        Self {
+            line_number: span.line,
+            column_number: span.column,
+            length: span.length,
+            start_offset: span.start_offset,
+            end_offset: span.end_offset,
+        }
+    }
+}
+
 /** A token paired with the exact source range from which it was read. */
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Token<'src> {

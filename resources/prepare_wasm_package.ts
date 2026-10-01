@@ -15,6 +15,8 @@ type PrepareWasmPackageArgs = {
 const ADDITIONAL_PACKAGE_FILES = [
   "error_code_message_map.js",
   "error_code_message_map.d.ts",
+  "warning_code_message_map.js",
+  "warning_code_message_map.d.ts",
   "generatedTypes.js",
   "generatedTypes.d.ts",
 ] as const;
@@ -27,7 +29,9 @@ function parsePackageTarget(value: string | undefined): PackageTarget {
     case "bundler":
       return value;
     default:
-      throw new Error(`Expected package target to be web, node, or bundler: ${value}`);
+      throw new Error(
+        `Expected package target to be web, node, or bundler: ${value}`,
+      );
   }
 }
 
@@ -60,7 +64,9 @@ function parsePackageJson(source: string): PackageJson {
     !Array.isArray(packageJson.files) ||
     !packageJson.files.every((file) => typeof file === "string")
   ) {
-    throw new Error('Generated package.json must contain a string array in "files"');
+    throw new Error(
+      'Generated package.json must contain a string array in "files"',
+    );
   }
 
   return packageJson as PackageJson;
@@ -69,7 +75,9 @@ function parsePackageJson(source: string): PackageJson {
 /** Ensures every manually generated file exists before adding it to package.json. */
 async function verifyAdditionalFiles(packageDirectory: string): Promise<void> {
   await Promise.all(
-    ADDITIONAL_PACKAGE_FILES.map((file) => access(path.join(packageDirectory, file))),
+    ADDITIONAL_PACKAGE_FILES.map((file) =>
+      access(path.join(packageDirectory, file)),
+    ),
   );
 }
 
@@ -84,7 +92,9 @@ export async function prepareWasmPackage({
   await verifyAdditionalFiles(packageDirectory);
 
   packageJson.name = getPackageName(target);
-  packageJson.files = [...new Set([...packageJson.files, ...ADDITIONAL_PACKAGE_FILES])];
+  packageJson.files = [
+    ...new Set([...packageJson.files, ...ADDITIONAL_PACKAGE_FILES]),
+  ];
 
   switch (target) {
     case "web":

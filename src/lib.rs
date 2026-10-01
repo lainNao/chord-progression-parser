@@ -2,6 +2,7 @@ mod error_code;
 mod formatter;
 mod lexer;
 mod model;
+mod parse_report;
 mod parser;
 mod util;
 use serde::Serialize;
@@ -15,6 +16,7 @@ pub use model::{
     chord_info_meta::ChordInfoMeta, chord_type::ChordType, extension::Extension, key::Key,
     section::Section, section_meta::SectionMeta,
 };
+pub use parse_report::{ParseReport, ParseWarning, WarningCode};
 pub use util::position::Position;
 
 /** Successful JavaScript response serialized as a plain object. */
@@ -22,19 +24,21 @@ pub use util::position::Position;
 struct JsParseSuccess {
     success: bool,
     ast: Ast,
+    warnings: Vec<JsParseDiagnostic>,
 }
 
 /** Failed JavaScript response serialized as a plain object. */
 #[derive(Serialize)]
 struct JsParseFailure {
     success: bool,
-    errors: Vec<JsParseError>,
+    errors: Vec<JsParseDiagnostic>,
+    warnings: Vec<JsParseDiagnostic>,
 }
 
-/** JavaScript-facing parse error with camel-case field names. */
+/** JavaScript-facing error or warning with camel-case field names. */
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct JsParseError {
+struct JsParseDiagnostic {
     code: String,
     additional_info: Option<String>,
     position: JsPosition,
@@ -51,6 +55,41 @@ struct JsPosition {
     end_offset: usize,
 }
 
+impl From<Position> for JsPosition {
+    /** Converts a source position without changing its UTF-16 range. */
+    fn from(position: Position) -> Self {
+        Self {
+            line_number: position.line_number,
+            column_number: position.column_number,
+            length: position.length,
+            start_offset: position.start_offset,
+            end_offset: position.end_offset,
+        }
+    }
+}
+
+impl From<ErrorInfoWithPosition> for JsParseDiagnostic {
+    /** Retains the existing JavaScript error shape and code. */
+    fn from(error: ErrorInfoWithPosition) -> Self {
+        Self {
+            code: error.error.code.to_string(),
+            additional_info: error.error.additional_info,
+            position: error.position.into(),
+        }
+    }
+}
+
+impl From<ParseWarning> for JsParseDiagnostic {
+    /** Serializes warning codes independently of the error-code domain. */
+    fn from(warning: ParseWarning) -> Self {
+        Self {
+            code: warning.code.to_string(),
+            additional_info: warning.additional_info,
+            position: warning.position.into(),
+        }
+    }
+}
+
 /** Represents either JavaScript response shape without adding an enum tag. */
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -63,25 +102,39 @@ enum JsParseResult {
 const PARSED_RESULT_TYPES: &str = r#"
 import type { Ast } from "./generatedTypes.js";
 import type { ErrorCode } from "./error_code_message_map.js";
+import type { WarningCode } from "./warning_code_message_map.js";
+export type { WarningCode } from "./warning_code_message_map.js";
+
+export type ParsePosition = {
+  lineNumber: number;
+  columnNumber: number;
+  length: number;
+  startOffset: number;
+  endOffset: number;
+};
+
+export type ParseError = {
+  code: ErrorCode;
+  additionalInfo: string | null;
+  position: ParsePosition;
+};
+
+export type ParseWarning = {
+  code: WarningCode;
+  additionalInfo: string | null;
+  position: ParsePosition;
+};
 
 export type ParsedResult =
   | {
       success: true;
       ast: Ast;
+      warnings: ParseWarning[];
     }
   | {
       success: false;
-      errors: Array<{
-        code: ErrorCode;
-        additionalInfo: string | null;
-        position: {
-          lineNumber: number;
-          columnNumber: number;
-          length: number;
-          startOffset: number;
-          endOffset: number;
-        };
-      }>;
+      errors: ParseError[];
+      warnings: ParseWarning[];
     };
 
 /** Formats an AST returned by parseChordProgressionString. */
@@ -97,23 +150,20 @@ export function formatChordProgression(ast: Ast): string;
     unchecked_return_type = "ParsedResult"
 )]
 pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
-    let response = match parse_chord_progression_string(input) {
-        Ok(ast) => JsParseResult::Success(JsParseSuccess { success: true, ast }),
+    let ParseReport { result, warnings } = parse_chord_progression_string_with_warnings(input);
+    let warnings = warnings.into_iter().map(JsParseDiagnostic::from).collect();
+    let response = match result {
+        Ok(ast) => JsParseResult::Success(JsParseSuccess {
+            success: true,
+            ast,
+            warnings,
+        }),
         Err(error_infos) => JsParseResult::Failure(JsParseFailure {
             success: false,
+            warnings,
             errors: error_infos
                 .into_iter()
-                .map(|error_info| JsParseError {
-                    code: error_info.error.code.to_string(),
-                    additional_info: error_info.error.additional_info,
-                    position: JsPosition {
-                        line_number: error_info.position.line_number,
-                        column_number: error_info.position.column_number,
-                        length: error_info.position.length,
-                        start_offset: error_info.position.start_offset,
-                        end_offset: error_info.position.end_offset,
-                    },
-                })
+                .map(JsParseDiagnostic::from)
                 .collect(),
         }),
     };
@@ -157,6 +207,11 @@ pub fn format_chord_progression_js(ast: JsValue) -> Result<String, JsValue> {
 ///
 /// Returns all recoverable errors and source ranges when the input does not follow the grammar.
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, Vec<ErrorInfoWithPosition>> {
+    parse_chord_progression_string_with_warnings(input).result
+}
+
+/** Parses a progression and retains notation warnings on both success and failure. */
+pub fn parse_chord_progression_string_with_warnings(input: &str) -> ParseReport {
     parser::parse(input)
 }
 

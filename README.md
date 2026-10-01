@@ -156,7 +156,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
       <h2>parse C</h2>
       <pre id="result"></pre>
       <script type="module">
-        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.9.1/chord_progression_parser.js";
+        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.9.3/chord_progression_parser.js";
 
         (async () => {
           // initialize wasm
@@ -179,6 +179,46 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
     </body>
   </html>
   ```
+
+## Parse warnings
+
+`parseChordProgressionString` always returns `warnings: ParseWarning[]`, on both
+success and failure. An empty array means no warnings were found. Warnings do
+not change `success`, the AST, or the existing `errors` shape and error codes.
+
+For example, `C(9,9)` succeeds and preserves both `9` entries in the AST. Its
+second `9` produces a warning with code `DUPLICATE_EXTENSION` and
+`additionalInfo: "9"`. Each further repetition in the same chord produces its
+own warning. Related spellings such as `9` and `add9` are not duplicates.
+Warnings encountered in malformed chord extension lists can accompany errors;
+extensions on `%`, `_`, or `?`, and opaque slash denominators are not checked.
+
+`ParsePosition`, `ParseError`, `WarningCode`, and `ParseWarning` are exported
+TypeScript types. Warning positions use the original source text: display
+line/column numbers are one-based, and `startOffset`/`endOffset` are zero-based
+UTF-16 offsets with an exclusive end, just like error positions. Formatting
+and reparsing preserves the AST but recomputes positions for the formatted text.
+
+Rust callers can use `parse_chord_progression_string_with_warnings` to obtain
+a `ParseReport` containing `result` and `warnings`. The existing
+`parse_chord_progression_string` still returns `Result<Ast, Vec<ErrorInfoWithPosition>>`.
+Consumers may ignore warnings; displaying them is a separate application concern.
+
+All three npm packages provide localized warning messages through the
+`warning_code_message_map` submodule, alongside the existing error-message module:
+
+```ts
+import { parseChordProgressionString } from "@lainnao/chord-progression-parser-node";
+import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warning_code_message_map";
+
+const result = parseChordProgressionString("C(9,9)");
+for (const warning of result.warnings) {
+  console.log(getWarningMessage({ warningCode: warning.code, lang: "ja" }));
+}
+```
+
+`lang` accepts `"en"` or `"ja"`; `WARNING_CODE_MESSAGE_MAP` is also exported.
+For native browser imports, use the submodule's `.js` filename.
 
 ## Article
 

@@ -1,6 +1,7 @@
 check-not-broken:
 	bun i
 	make generate-error-code-rs
+	make check-types
 	make check-lint
 	make check-build
 	make build-wasm-web
@@ -13,6 +14,7 @@ check-not-broken:
 	make test-generator
 
 check-local:
+	make check-types
 	make check-lint
 	make check-build
 	make test-rust
@@ -82,24 +84,21 @@ generate-error-code-rs:
 # NOTE: depends on build-wasm-web
 generate-ts-declare-file-for-pkg-web:
 	make generate-ts-types
-	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
-	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-web
+	npx tsc resources/error_code_message_map.ts resources/warning_code_message_map.ts resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module ESNext --outDir pkg/pkg-web
 	bun resources/prepare_wasm_package.ts web
 
 # generate additional TypeScript files
 # NOTE: depends on build-wasm-node
 generate-ts-declare-file-for-pkg-node:
 	make generate-ts-types
-	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
-	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
+	npx tsc resources/error_code_message_map.ts resources/warning_code_message_map.ts resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module CommonJS --outDir pkg/pkg-node
 	bun resources/prepare_wasm_package.ts node
 
 # generate additional TypeScript files
 # NOTE: depends on build-wasm-bundler
 generate-ts-declare-file-for-pkg-bundler:
 	make generate-ts-types
-	npx tsc resources/error_code_message_map.ts --ignoreConfig --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
-	npx tsc resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
+	npx tsc resources/error_code_message_map.ts resources/warning_code_message_map.ts resources/generatedTypes.ts --ignoreConfig --declaration --allowJs --module NodeNext --moduleResolution nodenext --outDir pkg/pkg-bundler
 	bun resources/prepare_wasm_package.ts bundler
 
 # generate types
@@ -144,6 +143,10 @@ check-lint:
 # build check
 check-build:
 	cargo check
+
+# Type-check resource scripts and their tests in local checks and CI.
+check-types:
+	bun run typecheck
 
 # unit & integration test
 test-rust:

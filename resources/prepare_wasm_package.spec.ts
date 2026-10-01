@@ -31,6 +31,8 @@ const PACKAGE_TARGET_TEST_CASES: PackageTargetTestCase[] = [
 const ADDITIONAL_PACKAGE_FILES = [
   "error_code_message_map.js",
   "error_code_message_map.d.ts",
+  "warning_code_message_map.js",
+  "warning_code_message_map.d.ts",
   "generatedTypes.js",
   "generatedTypes.d.ts",
 ] as const;
@@ -45,10 +47,7 @@ for (const testCase of PACKAGE_TARGET_TEST_CASES) {
       await writeFile(
         path.join(packageDirectory, "package.json"),
         JSON.stringify({
-          files: [
-            "chord_progression_parser.js",
-            "error_code_message_map.js",
-          ],
+          files: ["chord_progression_parser.js", "error_code_message_map.js"],
           name: "@lainnao/chord-progression-parser",
           type: "legacy-value",
           version: "1.2.3",

@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { testData } from "./main.spec.fixtures";
+import type { ParseWarning } from "@lainnao/chord-progression-parser-bundler";
+import { getWarningMessage } from "@lainnao/chord-progression-parser-bundler/warning_code_message_map.js";
 
 test("success simple usage", async ({ page }) => {
   await page.goto("http://localhost:3034/");
@@ -13,6 +15,25 @@ test("success simple usage", async ({ page }) => {
   // check
   await expect(JSON.parse(resultText)).toStrictEqual(testData.expected);
   await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
+});
+
+/** Resolves localized messages for warnings returned by the bundled parser. */
+test("resolves duplicate-extension warning messages", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  await page.locator("#textarea").fill("C(9,9)");
+
+  const { warnings }: { warnings: ParseWarning[] } = JSON.parse(
+    await page.locator("#result").innerText(),
+  );
+  expect(warnings).toHaveLength(1);
+  expect(getWarningMessage({ warningCode: warnings[0].code, lang: "ja" })).toBe(
+    "同じコード拡張が複数回指定されています",
+  );
+  expect(getWarningMessage({ warningCode: warnings[0].code, lang: "en" })).toBe(
+    "The same chord extension is specified more than once",
+  );
 });
 
 test("renders every parser diagnostic", async ({ page }) => {
@@ -31,9 +52,13 @@ test("highlights UTF-16 ranges without interpreting source as HTML", async ({
 }) => {
   await page.goto("http://localhost:3034/");
 
-  await page.locator("#textarea").fill('😀\n<img src=x onerror="window.injected=1">');
+  await page
+    .locator("#textarea")
+    .fill('😀\n<img src=x onerror="window.injected=1">');
 
   await expect(page.locator("#result mark")).toHaveText(["😀", "<img"]);
   await expect(page.locator("#result img")).toHaveCount(0);
-  expect(await page.evaluate(() => Reflect.has(window, "injected"))).toBe(false);
+  expect(await page.evaluate(() => Reflect.has(window, "injected"))).toBe(
+    false,
+  );
 });

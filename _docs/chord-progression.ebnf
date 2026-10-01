@@ -1,5 +1,4 @@
-document          = blank-line*, section?, blank-line* ;
-section           = section-meta*, chord-line?, { line-break, chord-line } ;
+document          = { line-break | section-meta | (chord-line, line-end) } ;
 section-meta      = "@", section-meta-key, "=", section-meta-value, line-end ;
 section-meta-key  = "section" | "repeat" ;
 
@@ -18,12 +17,15 @@ extension         = "1" | "2" | "3" | "b3" | "4" | "b5" | "5" | "#5" | "b6" | "6
 denominator       = "/", denominator-text ;
 
 line-end          = line-break | end-of-input ;
-blank-line        = line-break, line-break, { line-break } ;
+line-break        = "\r\n" | "\n" | "\r" ;
 
 (*
   Space and tab may surround structural tokens, but may not split a text atom.
+  The document is a sequence of lines; sections are assembled by the rules below.
   A single line break inside a section is preserved as ChordBlock::Br.
-  Two or more consecutive line breaks start a new section.
+  After chord lines, two or more consecutive line breaks start a new section.
+  Section metadata after chord lines starts a new section even with only one
+  intervening line break. A document may contain any number of sections.
   Section metadata remains attached to the following chord lines even when
   blank lines occur between the metadata and the first chord line.
   This is a canonical AST serialization format; extensions require parentheses.
