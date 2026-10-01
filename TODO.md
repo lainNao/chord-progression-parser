@@ -30,6 +30,15 @@
 
 ## 品質・パフォーマンス
 
+- WASM の formatter で、不正な配列値を繰り返し渡すと参照管理用の領域が増え続ける
+  - `make build-wasm-web && node _tools/audit-wasm-references.mjs` で再現できる
+  - この診断コマンドは、ウォームアップ後も参照テーブルが拡大すると終了コード 1 を返す
+  - `null` の AST、section の `metaInfos: null`、bar の `value: null` などが対象
+  - 正常な AST と通常の型エラー `{}` では、同じ負荷で参照枠が再利用される
+  - `wasm-bindgen` 0.2.127 / 0.2.129 と `serde-wasm-bindgen` 0.6.5 で確認済み
+  - parser を除いた `js_sys::Reflect::get(null, ...)` でも、捕捉した例外ごとに参照枠が 1 つ残る
+  - 生成された import shim が例外後の `undefined` に参照枠を割り当て、Rust 側の例外分岐がその戻り値を回収しない
+  - 依存側での修正を確認して回帰テストに組み込む。生成された WASM の書き換えや AST スキーマの二重実装は避ける
 - カバレッジを計測し、不足している重要な分岐へテストを追加する
 - 再現可能なベンチマークを追加し、継続的に性能を比較できるようにする
 - profilerまたはbenchmarkの結果を根拠に、不要なcloneなどを改善する
