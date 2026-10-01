@@ -27,3 +27,20 @@ test("native ESM parses, formats, and resolves localized diagnostics", () => {
     "Invalid chord notation",
   );
 });
+
+/** Rejected extension text must not become a chord or a duplicate warning in WASM. */
+test("native WASM keeps recovery outside rejected chord lists", () => {
+  const source = "H(9,C(9,9))-%-D(11,11)";
+  const result = parseChordProgressionString(source);
+  assert.equal(result.success, false);
+  assert.deepEqual(
+    result.errors.map((error) => error.code),
+    ["CHO-1", "CHB-1"],
+  );
+  assert.equal(result.warnings.length, 1);
+  assert.equal(result.warnings[0].additionalInfo, "11");
+  assert.equal(
+    result.warnings[0].position.startOffset,
+    source.lastIndexOf("11"),
+  );
+});
