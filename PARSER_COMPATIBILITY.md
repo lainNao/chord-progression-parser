@@ -12,6 +12,7 @@
 - syntax error は戻り値として返し、ユーザー入力によって panic または JavaScript throw を発生させない。
 - `lineNumber` と `columnNumber` は 1 始まりとする。
 - syntax error は入力順の配列で返し、安全に再開できるcomma、bar、改行の境界から解析を継続する。
+- extensionの括弧が壊れていてもbar区切りで再開し、後続chordのerrorやwarningを独立して判定する。
 - `startOffset` と `endOffset` は JavaScript の文字列・editor APIに合わせた0始まりのUTF-16 offsetとし、`endOffset`は範囲末尾の次を指す。
 - 空入力は空の AST を返す。
 

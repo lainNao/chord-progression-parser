@@ -472,11 +472,12 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
     }
 
-    /** Skips an invalid extension fragment without leaving its parenthesized list. */
+    /** Stops at a list delimiter or bar boundary so malformed lists cannot swallow later chords. */
     fn skip_to_extension_delimiter(&mut self) {
         while !self.is_at_end()
             && !self.at(TokenKind::Comma)
             && !self.at(TokenKind::RightParen)
+            && !self.at(TokenKind::Dash)
             && !self.at(TokenKind::Newline)
         {
             self.advance();
