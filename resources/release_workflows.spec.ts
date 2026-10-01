@@ -141,7 +141,7 @@ test("old-tag retries retain current publication tooling and cover all npm targe
     );
     expect(checkouts.map((step) => step.with?.ref)).toEqual([
       "${{ github.workflow_sha }}",
-      "${{ inputs.tag-to-release }}",
+      "refs/tags/${{ inputs.tag-to-release }}",
     ]);
     const preserveIndex = job.steps.findIndex(
       (step) => step.name === "Preserve publication check",

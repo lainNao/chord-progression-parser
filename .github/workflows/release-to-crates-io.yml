@@ -26,7 +26,7 @@ jobs:
         run: cp _tools/release/is_published.sh "$RUNNER_TEMP/chord-parser-is-published.sh"
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag-to-release }}
+          ref: refs/tags/${{ inputs.tag-to-release }}
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Publish if not already published

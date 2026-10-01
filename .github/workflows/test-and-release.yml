@@ -27,7 +27,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag-to-release || github.sha }}
+          # An unqualified name can select a branch with the same name as the release tag.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag-to-release) || github.sha }}
       - name: Make testing environment
         uses: ./.github/actions/make-environment
       - run: make check-not-broken
@@ -88,13 +89,13 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             git tag "$NEW_TAG"
-            git push origin "$NEW_TAG"
+            git push origin "refs/tags/$NEW_TAG"
           fi
 
           {
             echo "changelog<<EOF"
-            if [ -n "$PREV_TAG" ] && git merge-base "$PREV_TAG" HEAD >/dev/null; then
-              git log "$PREV_TAG"..HEAD --pretty=format:'- %s (%h)'
+            if [ -n "$PREV_TAG" ] && git merge-base "refs/tags/$PREV_TAG" HEAD >/dev/null; then
+              git log "refs/tags/$PREV_TAG"..HEAD --pretty=format:'- %s (%h)'
             else
               git log HEAD --pretty=format:'- %s (%h)'
             fi

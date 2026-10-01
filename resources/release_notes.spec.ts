@@ -47,8 +47,14 @@ async function runScript({
   if (exitCode !== 0) throw new Error(`Release script failed: ${stderr}`);
 }
 
-/** Exercises the real release-note step without a remote or publication credentials. */
-async function createReleaseNotes(previousTag: string): Promise<string> {
+/** Exercises the real release step against an isolated local remote without publication credentials. */
+async function createReleaseNotes({
+  previousTag,
+  eventName,
+}: {
+  previousTag: string;
+  eventName: "push" | "workflow_dispatch";
+}): Promise<string> {
   const directory = await mkdtemp(
     path.join(os.tmpdir(), "chord-parser-notes-"),
   );
@@ -60,12 +66,17 @@ async function createReleaseNotes(previousTag: string): Promise<string> {
 git init --quiet
 git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m 'feat: initial feature'
 git tag v0.9.3
+git branch v0.9.4
+git init --bare --quiet origin.git
+git remote add origin ./origin.git
+git push --quiet origin refs/heads/v0.9.4
 for ((index = 1; index <= CHANGE_COUNT; index++)); do
   git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m "fix: change $index"
 done
 git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m 'docs: explain notation'
 git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m "$FEATURE_SUBJECT"
 git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m 'chore: release 0.9.4'
+git branch v0.9.3
 `,
     });
     const workflow = Bun.YAML.parse(
@@ -83,12 +94,18 @@ git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m 'chore: release 
     await runScript({
       directory,
       previousTag,
-      // A manual retry generates notes without pushing a tag from the test repository.
-      script: step.run.replaceAll(
-        "${{ github.event_name }}",
-        "workflow_dispatch",
-      ),
+      script: step.run.replaceAll("${{ github.event_name }}", eventName),
     });
+    if (eventName === "push") {
+      await runScript({
+        directory,
+        previousTag,
+        script: `
+test "$(git rev-parse HEAD)" = "$(git --git-dir=origin.git rev-parse refs/tags/v0.9.4)"
+test "$(git rev-parse refs/tags/v0.9.3)" = "$(git --git-dir=origin.git rev-parse refs/heads/v0.9.4)"
+`,
+      });
+    }
     expect(
       await Bun.file(path.join(directory, "unexpected-command")).exists(),
     ).toBe(false);
@@ -100,19 +117,35 @@ git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m 'chore: release 
 
 /** An initial release must include the entire history, including changes older than 50 commits. */
 test("first release notes contain every commit", async (): Promise<void> => {
-  const notes = await createReleaseNotes("");
+  const notes = await createReleaseNotes({
+    previousTag: "",
+    eventName: "workflow_dispatch",
+  });
   expect(notes).toContain("feat: initial feature");
   expect(notes.match(/^- /gm)).toHaveLength(51);
 }, 30_000);
 
 /** Later releases include every commit type since the previous tag, with subjects treated as text. */
 test("release notes include features and docs beyond the release commit", async (): Promise<void> => {
-  const notes = await createReleaseNotes("v0.9.3");
+  const notes = await createReleaseNotes({
+    previousTag: "v0.9.3",
+    eventName: "workflow_dispatch",
+  });
   expect(notes).not.toContain("feat: initial feature");
   expect(notes).toContain("docs: explain notation");
   expect(notes).toContain(
     "feat: support $(touch unexpected-command) and backticks `literal`",
   );
+  expect(notes).toContain("chore: release 0.9.4");
+  expect(notes.match(/^- /gm)).toHaveLength(4);
+}, 30_000);
+
+/** A release tag must be pushed successfully even when an older branch has the same name. */
+test("release pushes the tag without changing a same-named branch", async (): Promise<void> => {
+  const notes = await createReleaseNotes({
+    previousTag: "v0.9.3",
+    eventName: "push",
+  });
   expect(notes).toContain("chore: release 0.9.4");
   expect(notes.match(/^- /gm)).toHaveLength(4);
 }, 30_000);
