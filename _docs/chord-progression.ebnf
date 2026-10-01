@@ -14,6 +14,7 @@ base              = "A" | "B" | "C" | "D" | "E" | "F" | "G" ;
 accidental        = "#" | "b" ;
 chord-type        = "m" | "M" | "aug" | "dim" ;
 extensions        = "(", extension, { ",", extension }, ")" ;
+extension         = "1" | "2" | "3" | "b3" | "4" | "b5" | "5" | "#5" | "b6" | "6" | "7" | "b9" | "9" | "#9" | "b11" | "11" | "#11" | "b13" | "13" | "#13" | "M7" | "M9" | "M11" | "M13" | "add9" | "add11" | "add13" | "sus2" | "sus4" | "o" ;
 denominator       = "/", denominator-text ;
 
 line-end          = line-break | end-of-input ;
@@ -25,6 +26,8 @@ blank-line        = line-break, line-break, { line-break } ;
   Two or more consecutive line breaks start a new section.
   Section metadata remains attached to the following chord lines even when
   blank lines occur between the metadata and the first chord line.
-  The concrete values of key, extension, section-meta-value, and
+  This is a canonical AST serialization format; extensions require parentheses.
+  Conventional chord-symbol aliases are not accepted as chord heads.
+  The concrete values of key, section-meta-value, and
   denominator-text are defined by semantic validation.
 *)
