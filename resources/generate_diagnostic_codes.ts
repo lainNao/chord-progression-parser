@@ -78,13 +78,13 @@ pub struct ErrorInfoWithPosition {
 
 /** Displays an error code and its optional context. */
 impl std::fmt::Display for ErrorInfo {
-    /** Writes the existing public error representation. */
+    /** Writes the existing public representation without allocating an intermediate message. */
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let additional_info = match &self.additional_info {
-            Some(info) => format!(": {}", info),
-            None => "".to_string(),
-        };
-        write!(f, "{}{}", self.code, additional_info)
+        write!(f, "{}", self.code)?;
+        if let Some(info) = &self.additional_info {
+            write!(f, ": {info}")?;
+        }
+        Ok(())
     }
 }
 `,
