@@ -8,6 +8,8 @@ description = "a converter from chord progression strings to AST"
 repository = "https://github.com/lainNao/chord-progression-parser"
 readme = "README.md"
 keywords = ["music", "chord-progression", "parser", "AST"]
+# Keep the Rust sources and their regression fixtures in the published crate.
+include = ["/src/**", "/tests/**", "/Cargo.toml", "/LICENSE", "/README.md"]
 
 [dependencies]
 serde = { version = "1.0.229", features = ["derive"] }
