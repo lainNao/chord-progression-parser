@@ -36,6 +36,7 @@
 - chordを構成するbase、accidental、chord typeの途中には空白を許可しない。
 - denominatorは今回も文字列として保持する。ただし空文字列と2個目のslashは拒否する。
 - extensionは定義済み文字列との完全一致だけを許可する。
+- bar末尾のcommaは1個まで受理し、formatterは省略する（`C/D,`、`C,-D`など）。extensionリストの末尾commaは許可しない。
 - 複数のsection metaは、chord lineが始まるまで同じsectionへ属する。
 - section metaと最初のchord lineの間にある空行はsectionを分割しない。
 

@@ -182,6 +182,9 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
 
 ## Parse warnings
 
+The warning API described here was added after v0.9.3. Packages at v0.9.3 and
+earlier do not expose `warnings` or the warning-message submodule.
+
 `parseChordProgressionString` always returns `warnings: ParseWarning[]`, on both
 success and failure. An empty array means no warnings were found. Warnings do
 not change `success`, the AST, or the existing `errors` shape and error codes.

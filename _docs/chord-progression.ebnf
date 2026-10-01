@@ -29,6 +29,9 @@ line-break        = "\r\n" | "\n" | "\r" ;
   Section metadata remains attached to the following chord lines even when
   blank lines occur between the metadata and the first chord line.
   This is a canonical AST serialization format; extensions require parentheses.
+  For compatibility, the parser also accepts one trailing comma after a bar's
+  last chord-info (including before a dash, line break, or end of input).
+  The formatter omits that comma; extension lists do not allow trailing commas.
   Conventional chord-symbol aliases are not accepted as chord heads.
   The concrete values of key, section-meta-value, and
   denominator-text are defined by semantic validation.

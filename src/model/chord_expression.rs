@@ -8,6 +8,6 @@ use typeshare::typeshare;
 pub enum ChordExpression {
     Chord(Chord),
     UnIdentified, // ?
-    NoChord,      // -
+    NoChord,      // _
     Same,         // %
 }
