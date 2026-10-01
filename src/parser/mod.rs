@@ -190,9 +190,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let mut blocks = vec![ChordBlock::Bar(self.parse_bar(has_prior_chord)?)];
 
         while self.at(TokenKind::Dash) {
-            let separator = self
-                .advance()
-                .ok_or_else(|| vec![parse_error(ErrorCode::Cho3, self.eof_span, None)])?;
+            let separator = self.advance().expect("dash was checked above");
             if self.is_at_end() || self.at(TokenKind::Newline) {
                 return Err(vec![parse_error(
                     ErrorCode::Chb3,
@@ -204,10 +202,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
 
         if !self.is_at_end() && !self.at(TokenKind::Newline) {
-            let token = self
-                .peek()
-                .copied()
-                .ok_or_else(|| vec![parse_error(ErrorCode::Tkn1, self.eof_span, None)])?;
+            let token = self.peek().copied().expect("input end was checked above");
             return Err(vec![parse_error(
                 ErrorCode::Tkn1,
                 token.span,
