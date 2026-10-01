@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("success simple usage", async ({ page }) => {
   await page.goto("http://localhost:3498/");
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
 
   // get result
   const resultText = await page.locator("#result").innerText();
@@ -39,7 +40,6 @@ test("success simple usage", async ({ page }) => {
       },
     ],
   });
-  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
 });
 
 /** Imports localized warnings as native browser modules from the generated package. */

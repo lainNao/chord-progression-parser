@@ -23,9 +23,10 @@ export default {
 
   // テスト実行時に起動するサーバーの設定
   webServer: {
-    command: "bun dev",
+    // Verify the production bundle, including its emitted WASM asset.
+    command: "bun run build && bun run __preview --port 3034 --strictPort",
     port: 3034,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
   },
 
   /* Fail the build on CI if you accidentally left test.only in the source code. */

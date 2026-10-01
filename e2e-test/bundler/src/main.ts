@@ -50,7 +50,10 @@ function createErrorElement({
 
   const source = document.createElement("div");
   const line = getLineRange({ source: currentValue, startOffset });
-  const safeStart = Math.min(Math.max(startOffset, line.startOffset), line.endOffset);
+  const safeStart = Math.min(
+    Math.max(startOffset, line.startOffset),
+    line.endOffset,
+  );
   const safeEnd = Math.min(Math.max(endOffset, safeStart), line.endOffset);
   const mark = document.createElement("mark");
   mark.textContent = currentValue.slice(safeStart, safeEnd) || "▏";
@@ -112,6 +115,8 @@ function main(): void {
   };
 
   elms.textarea.addEventListener("input", handleInput);
+  // Module initialization can finish after the user has already entered text.
+  applyValue(elms.textarea.value);
 }
 
 main();

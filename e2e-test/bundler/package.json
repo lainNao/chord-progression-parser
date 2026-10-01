@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --port 3034",
     "build": "tsc && vite build",
-    "test": "bun run test:type && bun run build && bun run test:e2e",
+    "test": "bun run test:e2e",
     "test:type": "tsc --noEmit",
     "test:e2e": "bun playwright test",
     "test:e2e:debug": "bun playwright test --headed --debug",

@@ -1,20 +1,39 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Route } from "@playwright/test";
 import { testData } from "./main.spec.fixtures";
 import type { ParseWarning } from "@lainnao/chord-progression-parser-bundler";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-bundler/warning_code_message_map.js";
+
+/** Keeps text entered during WASM loading instead of waiting for another input event. */
+test("parses input entered before WASM initialization", async ({
+  page,
+}): Promise<void> => {
+  const pendingRequests: Route[] = [];
+  await page.route("**/*.wasm", (route): void => {
+    pendingRequests.push(route);
+  });
+  await page.goto("http://localhost:3034/", { waitUntil: "commit" });
+  await page.locator("#textarea").fill("C(9,9)");
+  await expect.poll((): number => pendingRequests.length).toBeGreaterThan(0);
+  await expect(page.locator("#result")).toBeEmpty();
+  for (const request of pendingRequests) await request.continue();
+  await expect(page.locator("#result")).toHaveAttribute(
+    "data-formatted",
+    "C(9,9)",
+  );
+});
 
 test("success simple usage", async ({ page }) => {
   await page.goto("http://localhost:3034/");
 
   // input
   await page.locator("#textarea").pressSequentially(testData.input);
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
 
   // get result
   const resultText = await page.locator("#result").innerText();
 
   // check
   await expect(JSON.parse(resultText)).toStrictEqual(testData.expected);
-  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
 });
 
 /** Resolves localized messages for warnings returned by the bundled parser. */
@@ -23,6 +42,10 @@ test("resolves duplicate-extension warning messages", async ({
 }): Promise<void> => {
   await page.goto("http://localhost:3034/");
   await page.locator("#textarea").fill("C(9,9)");
+  await expect(page.locator("#result")).toHaveAttribute(
+    "data-formatted",
+    "C(9,9)",
+  );
 
   const { warnings }: { warnings: ParseWarning[] } = JSON.parse(
     await page.locator("#result").innerText(),
@@ -41,6 +64,12 @@ test("renders every parser diagnostic", async ({ page }) => {
 
   const input = page.locator("#textarea");
   await input.fill("H,I-C(111,222)");
+  await expect(page.locator("#result mark")).toHaveText([
+    "H",
+    "I",
+    "111",
+    "222",
+  ]);
 
   const resultText = await page.locator("#result").innerText();
   expect(resultText.match(/CHO-1/g)).toHaveLength(2);
