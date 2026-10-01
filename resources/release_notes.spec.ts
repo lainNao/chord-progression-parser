@@ -13,12 +13,16 @@ async function runScript({
   script: string;
   previousTag: string;
 }): Promise<void> {
+  // Git hooks can export GIT_DIR or GIT_INDEX_FILE for the caller's repository.
+  const environment = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")),
+  );
   const child = Bun.spawn(
     ["bash", "-e", "-u", "-o", "pipefail", "-c", script],
     {
       cwd: directory,
       env: {
-        ...process.env,
+        ...environment,
         GIT_CONFIG_NOSYSTEM: "1",
         GIT_CONFIG_GLOBAL: "/dev/null",
         GIT_AUTHOR_NAME: "Release test",
