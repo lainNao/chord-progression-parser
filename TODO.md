@@ -30,10 +30,11 @@
 
 ## 品質・パフォーマンス
 
-- WASM の formatter で、不正な配列値を繰り返し渡すと参照管理用の領域が増え続ける
+- WASM の formatter で、配列フィールドへ不正な値を繰り返し渡すと参照管理用の領域が増え続ける
   - `make build-wasm-web && node _tools/audit-wasm-references.mjs` で再現できる
   - この診断コマンドは、ウォームアップ後も参照テーブルが拡大すると終了コード 1 を返す
-  - `null` の AST、section の `metaInfos: null`、bar の `value: null` などが対象
+  - section の `metaInfos: null`、bar の `value: null` など、ネストした配列フィールドが対象
+  - `null` など配列以外のトップレベル入力は、API の入口で拒否するよう修正済み
   - 正常な AST と通常の型エラー `{}` では、同じ負荷で参照枠が再利用される
   - `wasm-bindgen` 0.2.127 / 0.2.129 と `serde-wasm-bindgen` 0.6.5 で確認済み
   - parser を除いた `js_sys::Reflect::get(null, ...)` でも、捕捉した例外ごとに参照枠が 1 つ残る

@@ -184,6 +184,13 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
 /** Formats a parser-produced JavaScript AST into stable chord-progression source text. */
 #[wasm_bindgen(js_name = "formatChordProgression", skip_typescript)]
 pub fn format_chord_progression_js(ast: JsValue) -> Result<String, JsValue> {
+    // Ast is a JavaScript array. Reject primitives before serde's iterable lookup:
+    // caught Reflect.get exceptions currently retain slots in wasm-bindgen's table.
+    if !js_sys::Array::is_array(&ast) {
+        return Err(JsValue::from_str(
+            "invalid chord progression AST: expected an array",
+        ));
+    }
     let ast: Ast = serde_wasm_bindgen::from_value(ast)
         .map_err(|error| JsValue::from_str(&format!("invalid chord progression AST: {error}")))?;
 
