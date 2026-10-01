@@ -10,6 +10,28 @@ type RegistryScenario = {
   curlExit: number;
 };
 
+/** Creates correctly shaped registry metadata so identity checks are tested independently. */
+function publicationMetadata({
+  registry,
+  name,
+  version,
+}: {
+  registry: RegistryScenario["registry"];
+  name: string;
+  version: string;
+}): string {
+  switch (registry) {
+    case "npm":
+      return JSON.stringify({ name, version });
+    case "crates-io":
+      return JSON.stringify({ version: { crate: name, num: version } });
+    default: {
+      const exhaustiveCheck: never = registry;
+      throw new Error(`Unexpected registry: ${exhaustiveCheck}`);
+    }
+  }
+}
+
 /** Runs the actual publication check against controlled HTTP and transport outcomes. */
 async function runRegistryProbe({
   registry,
@@ -138,7 +160,19 @@ for (const registry of ["npm", "crates-io"] as const) {
     ["missing fields", "{}"],
     [
       "wrong version",
-      JSON.stringify({ name: "example-package", version: "0.9.3" }),
+      publicationMetadata({
+        registry,
+        name: "example-package",
+        version: "0.9.3",
+      }),
+    ],
+    [
+      "wrong package name",
+      publicationMetadata({
+        registry,
+        name: "another-package",
+        version: "0.9.4",
+      }),
     ],
   ]) {
     /** A successful status cannot hide malformed or mismatched package metadata. */
