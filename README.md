@@ -61,7 +61,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   @section=Intro
   [key=E]E - C#m(7) - Bm(7) - C#(7)
   F#m(7) - Am(7) - F#(7) - B
-  
+
   @section=Verse
   E - C#m(7) - Bm(7) - C#(7)
   F#m(7) - Am(7) - F#(7) - B
@@ -169,10 +169,10 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
             console.log(result.errors);
           }
           console.log(result);
-          document.querySelector("#result").innerHTML = JSON.stringify(
+          document.querySelector("#result").textContent = JSON.stringify(
             result,
             null,
-            2
+            2,
           );
         })();
       </script>
