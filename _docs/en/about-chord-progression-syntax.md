@@ -57,6 +57,16 @@ G - Am - Bm(o) - C
     - Section metadata must occupy its own line
     - Pipe notation such as `|C|` is not supported
 
+## Diagnostic positions
+
+Errors and warnings use one-based line numbers and Unicode scalar columns.
+Tabs count as one scalar. `length` also counts Unicode scalars, while
+`startOffset` and `endOffset` use zero-based UTF-16 offsets with an exclusive end.
+For example, `H😀` has length 2 and covers offsets `[0, 3)`.
+Use JavaScript's `input.slice(startOffset, endOffset)` to extract the source;
+these offsets are not Rust string byte indices. EOF diagnostics have an empty
+range. CRLF is one line break but contains two scalars and two UTF-16 code units.
+
 ## Duplicate-extension warnings
 
 `C(9,9)` remains valid and preserves both extensions in the AST. Each occurrence

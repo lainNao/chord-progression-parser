@@ -107,11 +107,17 @@ import type { ErrorCode } from "./error_code_message_map.js";
 import type { WarningCode } from "./warning_code_message_map.js";
 export type { WarningCode } from "./warning_code_message_map.js";
 
+/** Source coordinates for both errors and warnings; offsets can be passed to String.slice. */
 export type ParsePosition = {
+  /** One-based line number; CRLF counts as one line break. */
   lineNumber: number;
+  /** One-based Unicode scalar column; tabs count as one scalar. */
   columnNumber: number;
+  /** Number of Unicode scalar values in the range; zero at EOF. */
   length: number;
+  /** Zero-based UTF-16 offset into the original input. */
   startOffset: number;
+  /** Exclusive zero-based UTF-16 offset into the original input. */
   endOffset: number;
 };
 

@@ -180,6 +180,25 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   </html>
   ```
 
+## Diagnostic positions
+
+Errors and warnings use the same position units:
+
+- `lineNumber` is one-based; CRLF is one line break.
+- `columnNumber` is a one-based Unicode scalar count within that line. Tabs
+  count as one scalar rather than advancing to a tab stop.
+- `length` counts Unicode scalar values, not UTF-8 bytes, UTF-16 code units,
+  or rendered grapheme clusters.
+- `startOffset` and `endOffset` are zero-based UTF-16 offsets into the original
+  input, with an exclusive end. Use `input.slice(startOffset, endOffset)` in
+  JavaScript to extract the exact diagnostic text.
+
+For example, the invalid chord `H😀` has `length: 2` but occupies the UTF-16
+range `[0, 3)`. An EOF diagnostic has `length: 0` and equal start/end offsets;
+a UI can render a caret at that position. Rust exposes the same values through
+`Position`, using snake-case field names. Rust string slices require byte
+indices, so UTF-16 offsets must not be used directly as Rust slice boundaries.
+
 ## Parse warnings
 
 The warning API described here was added after v0.9.3. Packages at v0.9.3 and
