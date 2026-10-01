@@ -33,8 +33,9 @@ The target checks the same invariants as `tests/source_positions.rs` through
 `tests/support/mod.rs`: diagnostic ranges and order, Unicode display coordinates,
 warning source text, and preservation of the AST and warning values after
 formatting and reparsing. Accepted `ChordDetailed::from_str` inputs must also
-agree with the document parser. The stable regression suite still runs these checks
-against deterministic mutations without installing nightly or cargo-fuzz.
+agree with the document parser. The legacy Rust API's result must match the
+warning-aware API. The stable regression suite runs these checks against
+deterministic mutations without installing nightly or cargo-fuzz.
 
 Crashing inputs are saved under `fuzz/artifacts/parser/`. Replay a saved input
 with `cargo +nightly fuzz run parser <artifact-path>`, minimize it with

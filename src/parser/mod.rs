@@ -11,10 +11,10 @@ use crate::{
     ParseReport, ParseWarning, WarningCode,
 };
 
-/** Parses source text with the context-free lexer and the new parser. */
-pub(crate) fn parse(input: &str) -> ParseReport {
+/** Parses source text, optionally collecting non-blocking warnings. */
+pub(crate) fn parse(input: &str, collect_warnings: bool) -> ParseReport {
     let source = lex(input);
-    Parser::new(&source.tokens, source.eof_span).parse_document()
+    Parser::new(&source.tokens, source.eof_span, collect_warnings).parse_document()
 }
 
 /** Owns the token cursor and converts one grammar production at a time. */
@@ -22,16 +22,18 @@ struct Parser<'tokens, 'src> {
     tokens: &'tokens [Token<'src>],
     cursor: usize,
     eof_span: SourceSpan,
+    collect_warnings: bool,
     warnings: Vec<ParseWarning>,
 }
 
 impl<'tokens, 'src> Parser<'tokens, 'src> {
     /** Creates a parser positioned before the first token. */
-    fn new(tokens: &'tokens [Token<'src>], eof_span: SourceSpan) -> Self {
+    fn new(tokens: &'tokens [Token<'src>], eof_span: SourceSpan, collect_warnings: bool) -> Self {
         Self {
             tokens,
             cursor: 0,
             eof_span,
+            collect_warnings,
             warnings: Vec::new(),
         }
     }
@@ -265,8 +267,9 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         };
 
         if self.at(TokenKind::LeftParen) {
-            let extensions =
-                self.parse_extensions(matches!(chord_expression, ChordExpression::Chord(_)))?;
+            let extensions = self.parse_extensions(
+                self.collect_warnings && matches!(chord_expression, ChordExpression::Chord(_)),
+            )?;
             match &mut chord_expression {
                 ChordExpression::Chord(chord) => {
                     chord.plain.push('(');

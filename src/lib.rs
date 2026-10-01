@@ -209,12 +209,13 @@ pub fn format_chord_progression_js(ast: JsValue) -> Result<String, JsValue> {
 ///
 /// Returns all recoverable errors and source ranges when the input does not follow the grammar.
 pub fn parse_chord_progression_string(input: &str) -> Result<Ast, Vec<ErrorInfoWithPosition>> {
-    parse_chord_progression_string_with_warnings(input).result
+    // Legacy callers and formatter validation have no use for allocated warning messages.
+    parser::parse(input, false).result
 }
 
 /** Parses a progression and retains notation warnings on both success and failure. */
 pub fn parse_chord_progression_string_with_warnings(input: &str) -> ParseReport {
-    parser::parse(input)
+    parser::parse(input, true)
 }
 
 #[cfg(test)]

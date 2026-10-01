@@ -1,6 +1,7 @@
 use chord_progression_parser::{
-    format_chord_progression, parse_chord_progression_string_with_warnings, Chord, ChordBlock,
-    ChordDetailed, ChordExpression, ChordInfo, Position, Section,
+    format_chord_progression, parse_chord_progression_string,
+    parse_chord_progression_string_with_warnings, Chord, ChordBlock, ChordDetailed,
+    ChordExpression, ChordInfo, Position, Section,
 };
 
 /** Checks display coordinates against the exact UTF-16 range exposed to JavaScript. */
@@ -31,6 +32,7 @@ fn assert_source_position(source: &[u16], position: &Position) {
 pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
     let source: Vec<u16> = input.encode_utf16().collect();
     let report = parse_chord_progression_string_with_warnings(input);
+    assert_eq!(report.result, parse_chord_progression_string(input));
     // The standalone chord parser must agree with the document parser on every accepted input.
     if let Ok(detailed) = input.parse::<ChordDetailed>() {
         let expected = vec![Section {
