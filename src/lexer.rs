@@ -14,11 +14,9 @@ pub(crate) enum TokenKind<'src> {
     Text(&'src str),
 }
 
-/** The source range of a token and its one-based display position. */
+/** The UTF-16 range and display position; text tokens already borrow their UTF-8 source. */
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct SourceSpan {
-    pub(crate) start_byte: usize,
-    pub(crate) end_byte: usize,
     pub(crate) start_offset: usize,
     pub(crate) end_offset: usize,
     pub(crate) line: usize,
@@ -90,14 +88,12 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
             '\r' | '\n' => {
                 let start_line = line;
                 let start_column = column;
-                let mut end_byte = start_byte + ch.len_utf8();
                 let mut length = 1;
                 let start_offset = offset;
                 offset += ch.len_utf16();
 
                 if ch == '\r' && chars.peek().is_some_and(|(_, next)| *next == '\n') {
-                    if let Some((next_byte, next)) = chars.next() {
-                        end_byte = next_byte + next.len_utf8();
+                    if let Some((_, next)) = chars.next() {
                         length += 1;
                         offset += next.len_utf16();
                     }
@@ -106,8 +102,6 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
                 tokens.push(Token {
                     kind: TokenKind::Newline,
                     span: SourceSpan {
-                        start_byte,
-                        end_byte,
                         start_offset,
                         end_offset: offset,
                         line: start_line,
@@ -125,8 +119,6 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
                     tokens.push(Token {
                         kind,
                         span: SourceSpan {
-                            start_byte,
-                            end_byte: start_byte + ch.len_utf8(),
                             start_offset,
                             end_offset: offset,
                             line,
@@ -160,8 +152,6 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
                 tokens.push(Token {
                     kind: TokenKind::Text(&input[start_byte..end_byte]),
                     span: SourceSpan {
-                        start_byte,
-                        end_byte,
                         start_offset,
                         end_offset: offset,
                         line,
@@ -176,8 +166,6 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
     LexedSource {
         tokens,
         eof_span: SourceSpan {
-            start_byte: input.len(),
-            end_byte: input.len(),
             start_offset: offset,
             end_offset: offset,
             line,
@@ -224,9 +212,9 @@ mod tests {
         );
     }
 
-    /** Verifies Unicode columns and byte offsets independently. */
+    /** Verifies Unicode display columns and UTF-16 offsets independently. */
     #[test]
-    fn tracks_unicode_text_by_character_and_byte() {
+    fn tracks_unicode_text_by_character_and_utf16() {
         let input = "Cあ\nD";
 
         assert_eq!(
@@ -235,8 +223,6 @@ mod tests {
                 Token {
                     kind: TokenKind::Text("Cあ"),
                     span: SourceSpan {
-                        start_byte: 0,
-                        end_byte: 4,
                         start_offset: 0,
                         end_offset: 2,
                         line: 1,
@@ -247,8 +233,6 @@ mod tests {
                 Token {
                     kind: TokenKind::Newline,
                     span: SourceSpan {
-                        start_byte: 4,
-                        end_byte: 5,
                         start_offset: 2,
                         end_offset: 3,
                         line: 1,
@@ -259,8 +243,6 @@ mod tests {
                 Token {
                     kind: TokenKind::Text("D"),
                     span: SourceSpan {
-                        start_byte: 5,
-                        end_byte: 6,
                         start_offset: 3,
                         end_offset: 4,
                         line: 2,
@@ -290,8 +272,8 @@ mod tests {
         let tokens = lex("C\r\nD").tokens;
 
         assert_eq!(tokens[1].kind, TokenKind::Newline);
-        assert_eq!(tokens[1].span.start_byte, 1);
-        assert_eq!(tokens[1].span.end_byte, 3);
+        assert_eq!(tokens[1].span.start_offset, 1);
+        assert_eq!(tokens[1].span.end_offset, 3);
         assert_eq!(tokens[1].span.length, 2);
         assert_eq!(tokens[2].span.line, 2);
         assert_eq!(tokens[2].span.column, 1);
@@ -300,13 +282,15 @@ mod tests {
     /** Ensures every emitted span points back to the token's original text. */
     #[test]
     fn spans_reference_the_original_input() {
-        let input = "[key=あ] C(9,#11)\r\nD/B";
+        let input = "[key=あ😀] C(9,#11)\r\nD/B";
+        let utf16: Vec<u16> = input.encode_utf16().collect();
 
         for token in lex(input).tokens {
-            let source = &input[token.span.start_byte..token.span.end_byte];
+            let source = String::from_utf16(&utf16[token.span.start_offset..token.span.end_offset])
+                .expect("token ranges must contain whole Unicode characters");
             match token.kind {
                 TokenKind::Text(value) => assert_eq!(source, value),
-                TokenKind::Newline => assert!(matches!(source, "\n" | "\r" | "\r\n")),
+                TokenKind::Newline => assert!(matches!(source.as_str(), "\n" | "\r" | "\r\n")),
                 _ => assert_eq!(source.chars().count(), 1),
             }
         }
@@ -327,8 +311,6 @@ mod tests {
         assert_eq!(
             lex("Cあ \r\nD ").eof_span,
             SourceSpan {
-                start_byte: 9,
-                end_byte: 9,
                 start_offset: 7,
                 end_offset: 7,
                 line: 2,
@@ -352,8 +334,6 @@ mod tests {
             assert_eq!(
                 lex(input).eof_span,
                 SourceSpan {
-                    start_byte: input.len(),
-                    end_byte: input.len(),
                     start_offset: offset,
                     end_offset: offset,
                     line,

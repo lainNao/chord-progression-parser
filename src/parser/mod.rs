@@ -611,8 +611,6 @@ fn empty_section() -> Section {
 /** Joins two same-line spans so a compound invalid value is highlighted together. */
 fn span_through(start: SourceSpan, end: SourceSpan) -> SourceSpan {
     SourceSpan {
-        start_byte: start.start_byte,
-        end_byte: end.end_byte,
         start_offset: start.start_offset,
         end_offset: end.end_offset,
         line: start.line,
