@@ -32,7 +32,8 @@ check-local:
 install:
 	rustup target add wasm32-unknown-unknown
 	rustup component add rustfmt clippy
-	cargo install typeshare-cli
+# Generated declarations include the generator version; keep local and CI output identical.
+	cargo install typeshare-cli --version 1.13.4 --locked
 	cargo install cargo-insta
 	command -v wasm-pack >/dev/null 2>&1 || cargo install wasm-pack --locked
 	bun install --frozen-lockfile

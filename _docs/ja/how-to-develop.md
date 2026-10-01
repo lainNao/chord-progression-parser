@@ -26,6 +26,10 @@ Rust のモデルを変更したら、`make generate-ts-types` で
 生成結果とファイル全体を比較し、ずれがあれば書き換えずに失敗します。
 生成処理が失敗した場合も、既存のファイルは保持します。
 
+ローカルと CI で生成結果を揃えるため、環境構築では `typeshare-cli` を
+`1.13.4` に固定し、公開時のロックファイルで導入します。更新する場合は、
+`Makefile` のバージョン変更と型定義の再生成を同じコミットに含めてください。
+
 ## 診断コード
 
 `resources/error_code_message_map.ts` または `resources/warning_code_message_map.ts`

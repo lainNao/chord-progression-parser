@@ -25,6 +25,10 @@ Rust model changes require `make generate-ts-types` to update
 file with fresh generator output and fail on stale declarations without editing
 them. Generation failures leave the existing file intact.
 
+Setup pins `typeshare-cli` to version `1.13.4` with its published lockfile so
+local and CI generation agree. To upgrade it, change the version in `Makefile`
+and regenerate the declarations in the same commit.
+
 ## Diagnostic codes
 
 Edit `resources/error_code_message_map.ts` or `resources/warning_code_message_map.ts`,

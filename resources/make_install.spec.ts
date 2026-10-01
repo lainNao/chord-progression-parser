@@ -66,6 +66,9 @@ fi
 test("setup installs wasm-pack when it is missing", async (): Promise<void> => {
   const result = await runInstall({ installed: false, installExit: 0 });
   expect(result.exitCode).toBe(0);
+  expect(result.commands).toContain(
+    "cargo install typeshare-cli --version 1.13.4 --locked\n",
+  );
   expect(result.commands).toContain("cargo install wasm-pack --locked\n");
   expect(result.commands).toContain("bun install --frozen-lockfile\n");
 });
