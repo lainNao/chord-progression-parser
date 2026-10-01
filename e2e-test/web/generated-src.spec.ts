@@ -123,3 +123,67 @@ test("rejects non-array ASTs without growing the WASM reference table", async ({
   );
   expect(sizes.after).toBe(sizes.before);
 });
+
+/** Array-like inputs formerly allocated UTF-8 buffers before their encoding failed. */
+test("rejects non-string parser inputs without growing WASM memory", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3498/");
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");
+  const sizes = await page.evaluate(
+    async (): Promise<{ before: number; after: number }> => {
+      const modulePath = "/chord_progression_parser.js";
+      const parser = (await import(
+        modulePath
+      )) as typeof import("@lainnao/chord-progression-parser-web");
+      const wasm = await parser.default();
+      const invalid = [
+        null,
+        undefined,
+        0,
+        true,
+        1n,
+        Symbol("C"),
+        {},
+        [],
+        ["C"],
+        { length: 1 },
+      ];
+
+      /** Deliberately bypasses the string type to check rejection and allocator reuse. */
+      function rejectInputs(iterations: number): void {
+        let rejected = 0;
+        for (let iteration = 0; iteration < iterations; iteration += 1) {
+          for (const input of invalid) {
+            try {
+              Reflect.apply(parser.parseChordProgressionString, undefined, [
+                input,
+              ]);
+            } catch (error) {
+              if (
+                String(error) !==
+                "invalid chord progression input: expected a string"
+              )
+                throw error;
+              rejected += 1;
+            }
+          }
+        }
+        if (rejected !== iterations * invalid.length) {
+          throw new Error("The parser accepted a non-string input");
+        }
+      }
+
+      rejectInputs(100);
+      const before = wasm.memory.buffer.byteLength;
+      rejectInputs(2_000);
+      if (!parser.parseChordProgressionString("C").success) {
+        throw new Error(
+          "Parsing must still work after rejecting invalid arguments",
+        );
+      }
+      return { before, after: wasm.memory.buffer.byteLength };
+    },
+  );
+  expect(sizes.after).toBe(sizes.before);
+});

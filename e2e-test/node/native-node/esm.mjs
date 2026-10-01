@@ -28,6 +28,30 @@ test("native ESM parses, formats, and resolves localized diagnostics", () => {
   );
 });
 
+/** Wrong JavaScript argument types must fail at the API boundary without coercion. */
+test("native WASM rejects non-string parser arguments", () => {
+  for (const input of [
+    null,
+    undefined,
+    0,
+    true,
+    1n,
+    Symbol("C"),
+    {},
+    [],
+    ["C"],
+    { length: 1 },
+    new String("C"),
+  ]) {
+    assert.throws(
+      () => parseChordProgressionString(input),
+      /^invalid chord progression input: expected a string$/,
+    );
+  }
+  assert.equal(parseChordProgressionString("C").success, true);
+  assert.equal(parseChordProgressionString("H").success, false);
+});
+
 /** Rejected extension text must not become a chord or a duplicate warning in WASM. */
 test("native WASM keeps recovery outside rejected chord lists", () => {
   const source = "H(9,C(9,9))-%-D(11,11)";

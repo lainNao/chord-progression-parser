@@ -150,13 +150,25 @@ export function formatChordProgression(ast: Ast): string;
 "#;
 
 #[doc(hidden)]
-/// @param {string} input - The chord progression string to parse.
-/// @returns {ParsedResult} - The parsed result.
+/** Validates JavaScript arguments before allocating their UTF-8 representation. */
 #[wasm_bindgen(
     js_name = "parseChordProgressionString",
     skip_jsdoc,
     unchecked_return_type = "ParsedResult"
 )]
+pub fn parse_chord_progression_string_export(
+    #[wasm_bindgen(unchecked_param_type = "string")] input: JsValue,
+) -> Result<JsValue, JsValue> {
+    // The generated &str argument encoder can allocate before discovering that
+    // an array-like argument is not a string, leaving that allocation unclaimed.
+    let input = input
+        .as_string()
+        .ok_or_else(|| JsValue::from_str("invalid chord progression input: expected a string"))?;
+    Ok(parse_chord_progression_string_js(&input))
+}
+
+#[doc(hidden)]
+/** Parses a Rust string into the JavaScript response shape. */
 pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
     let ParseReport { result, warnings } = parse_chord_progression_string_with_warnings(input);
     let warnings = warnings.into_iter().map(JsParseDiagnostic::from).collect();

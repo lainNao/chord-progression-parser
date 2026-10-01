@@ -208,6 +208,11 @@ earlier do not expose `warnings` or the warning-message submodule.
 success and failure. An empty array means no warnings were found. Warnings do
 not change `success`, the AST, or the existing `errors` shape and error codes.
 
+The JavaScript parser requires a primitive string. Passing another type throws
+`invalid chord progression input: expected a string`; it does not coerce values
+to strings. Invalid chord syntax in a string still returns `success: false`
+with diagnostics.
+
 For example, `C(9,9)` succeeds and preserves both `9` entries in the AST. Its
 second `9` produces a warning with code `DUPLICATE_EXTENSION` and
 `additionalInfo: "9"`. Each further repetition in the same chord produces its
