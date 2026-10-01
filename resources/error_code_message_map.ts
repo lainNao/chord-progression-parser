@@ -1,4 +1,4 @@
-// to use this file: make generate-error-code-rs
+// to use this file: make generate-diagnostic-codes
 const ErrorGenreSummary = {
   SMIK: "SectionMetaInfo key",
   SMIV: "SectionMetaInfo value",
@@ -172,6 +172,14 @@ export type ErrorCode = ExtractKeys<
   (typeof ERROR_CODE_MESSAGE_MAP)[keyof typeof ERROR_CODE_MESSAGE_MAP]
 >;
 
+const ERROR_MESSAGES: Partial<Record<ErrorCode, { en: string; ja: string }>> =
+  Object.fromEntries(
+    Object.values(ERROR_CODE_MESSAGE_MAP).flatMap((group) =>
+      Object.entries(group),
+    ),
+  );
+
+/** Returns a localized message, or undefined for an unsupported runtime error code. */
 export function getErrorMessage({
   errorCode,
   lang,
@@ -179,6 +187,5 @@ export function getErrorMessage({
   errorCode: ErrorCode;
   lang: "en" | "ja";
 }): string | undefined {
-  const [genreName, _] = errorCode.split("-") as [ShortErrorGenre, string];
-  return (ERROR_CODE_MESSAGE_MAP[genreName] as any)?.[errorCode]?.[lang];
+  return ERROR_MESSAGES[errorCode]?.[lang];
 }

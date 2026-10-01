@@ -11,6 +11,12 @@
 make install
 ```
 
+## 診断コード
+
+`resources/error_code_message_map.ts` または `resources/warning_code_message_map.ts`
+を編集し、`make generate-diagnostic-codes` を実行してください。Rust のエラーコードと
+warning コードは、このメッセージ表から生成します。`make check-local` で生成結果との一致を確認します。
+
 ## プルリクエスト
 
 現在はルールはありません。

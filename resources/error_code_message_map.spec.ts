@@ -6,16 +6,25 @@ import {
 } from "./error_code_message_map";
 
 describe("ERROR_CODE_MESSAGE_MAP", () => {
+  /** Keeps runtime handling of unknown codes compatible with existing JavaScript callers. */
+  it("returns undefined for an unsupported runtime error code", (): void => {
+    expect(
+      getErrorMessage({ errorCode: "UNKNOWN-1" as ErrorCode, lang: "en" }),
+    ).toBeUndefined();
+    expect(
+      getErrorMessage({ errorCode: "CHO-999" as ErrorCode, lang: "ja" }),
+    ).toBeUndefined();
+  });
   it("has unique error messages", () => {
     const englishErrorMessages = Object.values(ERROR_CODE_MESSAGE_MAP)
       .map((errorCodes) =>
-        Object.values(errorCodes).map((errorMessage) => errorMessage.en)
+        Object.values(errorCodes).map((errorMessage) => errorMessage.en),
       )
       .flat(Infinity);
 
     const japaneseErrorMessages = Object.values(ERROR_CODE_MESSAGE_MAP)
       .map((errorCodes) =>
-        Object.values(errorCodes).map((errorMessage) => errorMessage.ja)
+        Object.values(errorCodes).map((errorMessage) => errorMessage.ja),
       )
       .flat(Infinity);
 
@@ -41,12 +50,12 @@ describe("ERROR_CODE_MESSAGE_MAP", () => {
   it("resolves every declared error code in both languages", () => {
     for (const errorCodes of Object.values(ERROR_CODE_MESSAGE_MAP)) {
       for (const [errorCode, messages] of Object.entries(errorCodes)) {
-        expect(getErrorMessage({ errorCode: errorCode as ErrorCode, lang: "en" })).toBe(
-          messages.en
-        );
-        expect(getErrorMessage({ errorCode: errorCode as ErrorCode, lang: "ja" })).toBe(
-          messages.ja
-        );
+        expect(
+          getErrorMessage({ errorCode: errorCode as ErrorCode, lang: "en" }),
+        ).toBe(messages.en);
+        expect(
+          getErrorMessage({ errorCode: errorCode as ErrorCode, lang: "ja" }),
+        ).toBe(messages.ja);
         expect(messages.en.length).toBeGreaterThan(0);
         expect(messages.ja.length).toBeGreaterThan(0);
       }

@@ -11,6 +11,12 @@ and please run these commands for local CI
 make install
 ```
 
+## Diagnostic codes
+
+Edit `resources/error_code_message_map.ts` or `resources/warning_code_message_map.ts`,
+then run `make generate-diagnostic-codes`. Both Rust enums are generated from these
+localized message maps. `make check-local` verifies that the generated sources match.
+
 ## Pull Request
 
 currently no rules.

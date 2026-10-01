@@ -1,6 +1,7 @@
 check-not-broken:
 	bun i
-	make generate-error-code-rs
+# Verify committed generated sources instead of silently repairing them before testing.
+	make test-resources
 	make check-types
 	make check-lint
 	make check-build
@@ -9,7 +10,6 @@ check-not-broken:
 	make build-wasm-bundler
 	make install-e2e-dependencies
 	make test-rust
-	make test-resources
 	make test-e2e
 	make test-generator
 
@@ -76,9 +76,9 @@ build-wasm-bundler:
 ################################################################ generator 
 ################################################################
 
-# generate src/error_code.rs
-generate-error-code-rs:
-	bun resources/error_code_message_map.util.ts
+# Generate Rust diagnostic codes from the localized message maps.
+generate-diagnostic-codes:
+	bun resources/generate_diagnostic_codes.ts
 
 # generate additional TypeScript files
 # NOTE: depends on build-wasm-web

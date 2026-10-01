@@ -5,6 +5,7 @@ mod model;
 mod parse_report;
 mod parser;
 mod util;
+mod warning_code;
 use serde::Serialize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
@@ -16,8 +17,9 @@ pub use model::{
     chord_info_meta::ChordInfoMeta, chord_type::ChordType, extension::Extension, key::Key,
     section::Section, section_meta::SectionMeta,
 };
-pub use parse_report::{ParseReport, ParseWarning, WarningCode};
+pub use parse_report::{ParseReport, ParseWarning};
 pub use util::position::Position;
+pub use warning_code::WarningCode;
 
 /** Successful JavaScript response serialized as a plain object. */
 #[derive(Serialize)]

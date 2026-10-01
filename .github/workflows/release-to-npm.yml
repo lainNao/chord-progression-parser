@@ -31,7 +31,7 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-bundler
+        run: bun i && make generate-diagnostic-codes && make build-wasm-bundler
       - name: publish if not already published
         working-directory: pkg/pkg-bundler
         run: |
@@ -59,7 +59,7 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-web
+        run: bun i && make generate-diagnostic-codes && make build-wasm-web
       - name: publish if not already published
         working-directory: pkg/pkg-web
         run: |
@@ -87,7 +87,7 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-error-code-rs && make build-wasm-node
+        run: bun i && make generate-diagnostic-codes && make build-wasm-node
       - name: publish if not already published
         working-directory: pkg/pkg-node
         run: |
