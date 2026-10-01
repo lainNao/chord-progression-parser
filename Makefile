@@ -187,6 +187,5 @@ doc:
 see-coverage:
 	cargo llvm-cov --show-missing-lines --open
 
-# needs: "chmod +x _tools/find_files_include_multibyte_characters.sh"
 find-multibyte:
 	./_tools/find_files_include_multibyte_characters.sh
