@@ -41,6 +41,8 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let mut sections = Vec::new();
         let mut current_section = empty_section();
         let mut has_prior_chord = false;
+        // Section boundaries follow source lines, including lines rejected during recovery.
+        let mut section_has_chord_lines = false;
         let mut errors = Vec::new();
 
         loop {
@@ -50,12 +52,11 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
 
             let starts_section_meta = self.at(TokenKind::At);
-            if !current_section.chord_blocks.is_empty()
-                && (newline_count >= 2 || starts_section_meta)
-            {
+            if section_has_chord_lines && (newline_count >= 2 || starts_section_meta) {
                 sections.push(current_section);
                 current_section = empty_section();
                 has_prior_chord = false;
+                section_has_chord_lines = false;
             } else if newline_count == 1 && !current_section.chord_blocks.is_empty() {
                 current_section.chord_blocks.push(ChordBlock::Br);
             }
@@ -69,6 +70,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                     }
                 }
             } else {
+                section_has_chord_lines = true;
                 loop {
                     match self.parse_chord_line(&mut has_prior_chord) {
                         Ok(blocks) => {

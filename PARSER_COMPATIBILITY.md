@@ -59,6 +59,7 @@ panic、入力の黙殺、入力範囲外のerror positionは互換対象にし�
 - chord後方のmeta情報は許可しない。meta情報は必ず対象chordの直前に置く。
 - section metaは専用行に置き、値の後には改行またはEOFが必要である。
 - `%` は同一section内に先行chordがない場合は許可しない。
+- 先行するchord lineに構文エラーがあっても、空行やsection metaによるsection境界で `%` の参照状態をリセットする。
 
 ## 今回追加しない機能
 
