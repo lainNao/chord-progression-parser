@@ -1,4 +1,4 @@
-use std::{collections::HashSet, str::FromStr};
+use std::{collections::HashSet, fmt::Write, str::FromStr};
 
 use crate::{
     error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition},
@@ -270,13 +270,14 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             match &mut chord_expression {
                 ChordExpression::Chord(chord) => {
                     chord.plain.push('(');
-                    chord.plain.push_str(
-                        &extensions
-                            .iter()
-                            .map(ToString::to_string)
-                            .collect::<Vec<_>>()
-                            .join(","),
-                    );
+                    // Write directly into the chord spelling without allocating per extension.
+                    for (index, extension) in extensions.iter().enumerate() {
+                        if index > 0 {
+                            chord.plain.push(',');
+                        }
+                        write!(chord.plain, "{extension}")
+                            .expect("writing into a String cannot fail");
+                    }
                     chord.plain.push(')');
                     chord.detailed.extensions = extensions;
                 }
