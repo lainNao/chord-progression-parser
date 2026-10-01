@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString, VariantNames};
+use strum_macros::{Display, EnumCount, EnumString, VariantNames};
 use typeshare::typeshare;
 
 #[typeshare]
-#[derive(Debug, PartialEq, Clone, Display, EnumString, VariantNames, Serialize, Deserialize)]
+#[derive(
+    Debug, PartialEq, Clone, Display, EnumCount, EnumString, VariantNames, Serialize, Deserialize,
+)]
 pub enum Extension {
     /// Preserves a root-only notation without deriving its sounding pitches.
     #[strum(serialize = "1")]

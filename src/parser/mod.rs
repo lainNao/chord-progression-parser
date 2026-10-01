@@ -1,4 +1,6 @@
-use std::{collections::HashSet, fmt::Write, str::FromStr};
+use std::{fmt::Write, str::FromStr};
+
+use strum::EnumCount;
 
 use crate::{
     error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition},
@@ -337,8 +339,8 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             .expect_symbol(TokenKind::LeftParen, ErrorCode::Ext3)
             .map_err(|error| vec![error])?;
         let mut extensions = Vec::new();
-        // Track distinct valid spellings separately so long duplicate lists stay linear.
-        let mut seen = HashSet::new();
+        // EnumCount keeps the stack-allocated lookup aligned with all supported extensions.
+        let mut seen = [false; Extension::COUNT];
         let mut errors = Vec::new();
         let mut is_first_value = true;
 
@@ -360,12 +362,17 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             match self.expect_text(ErrorCode::Ext2) {
                 Ok((value, span)) => match Extension::from_str(value) {
                     Ok(extension) => {
-                        if warn_on_duplicates && !seen.insert(value) {
-                            self.warnings.push(ParseWarning {
-                                code: WarningCode::DuplicateExtension,
-                                additional_info: Some(value.to_string()),
-                                position: span.into(),
-                            });
+                        if warn_on_duplicates {
+                            // This fieldless enum has contiguous, zero-based discriminants.
+                            let was_seen = &mut seen[extension.clone() as usize];
+                            if *was_seen {
+                                self.warnings.push(ParseWarning {
+                                    code: WarningCode::DuplicateExtension,
+                                    additional_info: Some(value.to_string()),
+                                    position: span.into(),
+                                });
+                            }
+                            *was_seen = true;
                         }
                         extensions.push(extension);
                     }
