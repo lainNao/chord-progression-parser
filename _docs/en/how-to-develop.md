@@ -24,3 +24,5 @@ When the `Cargo.toml` `version` is raised and pushed to the `main` branch, it wi
 The npm packages use Trusted Publishing. In each package's npm settings, configure `lainNao/chord-progression-parser` as the GitHub repository and `test-and-release.yml` as the workflow.
 
 If a release partially fails, run `test-and-release` manually in GitHub Actions with the existing tag in `tag-to-release`. Artifacts that are already published will be skipped.
+
+The GitHub Release is created after all three npm packages and the crates.io publication jobs succeed.

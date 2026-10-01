@@ -73,7 +73,7 @@ denominators are not checked.
 
 Each npm package provides `getWarningMessage({ warningCode: warning.code, lang: "en" })`
 through its `warning_code_message_map` submodule. `lang` accepts `"en"` or `"ja"`.
-Use the `.js` filename when importing directly in a browser.
+Use the `.js` filename for native Node.js ESM or direct browser imports.
 
 ## Extensions
 

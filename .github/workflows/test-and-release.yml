@@ -73,11 +73,14 @@ jobs:
           echo "new-tag=${new_tag}" >> "$GITHUB_OUTPUT"
           echo "should-release=${should_release}" >> "$GITHUB_OUTPUT"
       - name: Echo prev-tag and new-version
+        env:
+          PREV_TAG: ${{ steps.get-versions.outputs.prev-tag }}
+          NEW_VERSION: ${{ steps.get-versions.outputs.new-version }}
+          NEW_TAG: ${{ steps.get-versions.outputs.new-tag }}
+          SHOULD_RELEASE: ${{ steps.get-versions.outputs.should-release }}
         run: |
-          echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
-          echo "new-version=${{ steps.get-versions.outputs.new-version }}"
-          echo "new-tag=${{ steps.get-versions.outputs.new-tag }}"
-          echo "should-release=${{ steps.get-versions.outputs.should-release }}"
+          printf 'prev-tag=%s\nnew-version=%s\nnew-tag=%s\nshould-release=%s\n' \
+            "$PREV_TAG" "$NEW_VERSION" "$NEW_TAG" "$SHOULD_RELEASE"
       - name: Prepare release
         if: steps.get-versions.outputs.should-release == 'true'
         id: prepare-release
@@ -101,10 +104,13 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - name: Echo output
+        env:
+          PREV_TAG: ${{ steps.get-versions.outputs.prev-tag }}
+          NEW_TAG: ${{ steps.get-versions.outputs.new-tag }}
+          CHANGELOG: ${{ steps.prepare-release.outputs.changelog }}
         run: |
-          echo "prev-tag=${{ steps.get-versions.outputs.prev-tag }}"
-          echo "new-tag=${{ steps.get-versions.outputs.new-tag }}"
-          echo "changelog=${{ steps.prepare-release.outputs.changelog }}"
+          printf 'prev-tag=%s\nnew-tag=%s\nchangelog=%s\n' \
+            "$PREV_TAG" "$NEW_TAG" "$CHANGELOG"
   release-to-crates-io:
     needs: [test-and-release]
     uses: ./.github/workflows/release-to-crates-io.yml
@@ -119,7 +125,8 @@ jobs:
     with:
       tag-to-release: ${{ needs.test-and-release.outputs.new-tag }}
   release-to-github:
-    needs: [test-and-release]
+    # Announce a release only after every package publication has succeeded.
+    needs: [test-and-release, release-to-crates-io, release-to-npm]
     uses: ./.github/workflows/release-to-github.yml
     secrets: inherit
     if: needs.test-and-release.outputs.should-release == 'true'

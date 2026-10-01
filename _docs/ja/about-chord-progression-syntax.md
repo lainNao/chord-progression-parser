@@ -70,7 +70,7 @@ JavaScript API は成功・失敗のどちらにも `warnings` 配列を返し�
 各 npm パッケージの `warning_code_message_map` サブモジュールから
 `getWarningMessage({ warningCode: warning.code, lang: "ja" })` を使って
 表示用メッセージを取得できます。`lang` は `"ja"` または `"en"` です。
-ブラウザから直接 import する場合は `.js` を付けます。
+Node.js の ESM またはブラウザから直接 import する場合は `.js` を付けます。
 
 ## Extension の有効値
 

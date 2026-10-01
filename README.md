@@ -128,7 +128,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   import {
     formatChordProgression,
     parseChordProgressionString,
-  } from "@lainnao/chord-progression-parser-node/chord_progression_parser";
+  } from "@lainnao/chord-progression-parser-node";
 
   const result = parseChordProgressionString("C");
   if (result.success) {
@@ -209,7 +209,7 @@ All three npm packages provide localized warning messages through the
 
 ```ts
 import { parseChordProgressionString } from "@lainnao/chord-progression-parser-node";
-import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warning_code_message_map";
+import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warning_code_message_map.js";
 
 const result = parseChordProgressionString("C(9,9)");
 for (const warning of result.warnings) {
@@ -218,7 +218,7 @@ for (const warning of result.warnings) {
 ```
 
 `lang` accepts `"en"` or `"ja"`; `WARNING_CODE_MESSAGE_MAP` is also exported.
-For native browser imports, use the submodule's `.js` filename.
+For native Node.js ESM and browser imports, use the submodule's `.js` filename.
 
 ## Article
 
