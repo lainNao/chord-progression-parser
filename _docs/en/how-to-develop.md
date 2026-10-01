@@ -31,4 +31,8 @@ The npm packages use Trusted Publishing. In each package's npm settings, configu
 
 If a release partially fails, run `test-and-release` manually in GitHub Actions with the existing tag in `tag-to-release`. Artifacts that are already published will be skipped.
 
+Publication checks query npm or crates.io directly. Registry and network errors stop
+the job; only HTTP 404 means the requested version has not been published. When
+retrying an older source tag, the checks use the workflow revision's release tooling.
+
 The GitHub Release is created after all three npm packages and the crates.io publication jobs succeed.

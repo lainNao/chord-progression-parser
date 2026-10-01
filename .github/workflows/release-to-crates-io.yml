@@ -18,9 +18,15 @@ jobs:
   release-to-crates-io:
     runs-on: ubuntu-latest
     steps:
+      # Keep release tooling from the workflow revision when retrying an older source tag.
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag-to-release}}
+          ref: ${{ github.workflow_sha }}
+      - name: Preserve publication check
+        run: cp _tools/release/is_published.sh "$RUNNER_TEMP/chord-parser-is-published.sh"
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag-to-release }}
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Publish if not already published
@@ -30,7 +36,8 @@ jobs:
           crate_name="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "chord-progression-parser") | .name')"
           crate_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "chord-progression-parser") | .version')"
 
-          if cargo info "${crate_name}@${crate_version}" >/dev/null 2>&1; then
+          published="$(bash "$RUNNER_TEMP/chord-parser-is-published.sh" crates-io "$crate_name" "$crate_version")"
+          if [ "$published" = true ]; then
             echo "${crate_name}@${crate_version} is already published; skipping"
             exit 0
           fi

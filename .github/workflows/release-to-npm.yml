@@ -17,9 +17,19 @@ permissions:
   id-token: write
 
 jobs:
-  bundler:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [bundler, web, node]
     runs-on: ubuntu-latest
     steps:
+      # Keep release tooling from the workflow revision when retrying an older source tag.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.workflow_sha }}
+      - name: Preserve publication check
+        run: cp _tools/release/is_published.sh "$RUNNER_TEMP/chord-parser-is-published.sh"
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.tag-to-release }}
@@ -31,71 +41,18 @@ jobs:
       - name: make environment
         uses: ./.github/actions/make-environment
       - name: build
-        run: bun i && make generate-diagnostic-codes && make build-wasm-bundler
+        env:
+          PACKAGE_TARGET: ${{ matrix.target }}
+        run: bun i && make "build-wasm-${PACKAGE_TARGET}"
       - name: publish if not already published
-        working-directory: pkg/pkg-bundler
+        working-directory: pkg/pkg-${{ matrix.target }}
         run: |
           package_name="$(npm pkg get name | tr -d '"')"
           package_version="$(npm pkg get version | tr -d '"')"
           package_spec="${package_name}@${package_version}"
 
-          if npm view "$package_spec" version >/dev/null 2>&1; then
-            echo "${package_spec} is already published; skipping"
-            exit 0
-          fi
-
-          npm publish --access public
-  web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.tag-to-release }}
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24.x"
-          registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
-      - name: make environment
-        uses: ./.github/actions/make-environment
-      - name: build
-        run: bun i && make generate-diagnostic-codes && make build-wasm-web
-      - name: publish if not already published
-        working-directory: pkg/pkg-web
-        run: |
-          package_name="$(npm pkg get name | tr -d '"')"
-          package_version="$(npm pkg get version | tr -d '"')"
-          package_spec="${package_name}@${package_version}"
-
-          if npm view "$package_spec" version >/dev/null 2>&1; then
-            echo "${package_spec} is already published; skipping"
-            exit 0
-          fi
-
-          npm publish --access public
-  node:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.tag-to-release }}
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24.x"
-          registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
-      - name: make environment
-        uses: ./.github/actions/make-environment
-      - name: build
-        run: bun i && make generate-diagnostic-codes && make build-wasm-node
-      - name: publish if not already published
-        working-directory: pkg/pkg-node
-        run: |
-          package_name="$(npm pkg get name | tr -d '"')"
-          package_version="$(npm pkg get version | tr -d '"')"
-          package_spec="${package_name}@${package_version}"
-
-          if npm view "$package_spec" version >/dev/null 2>&1; then
+          published="$(bash "$RUNNER_TEMP/chord-parser-is-published.sh" npm "$package_name" "$package_version")"
+          if [ "$published" = true ]; then
             echo "${package_spec} is already published; skipping"
             exit 0
           fi
