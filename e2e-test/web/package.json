@@ -5,7 +5,8 @@
   "main": "vite.config.js",
   "scripts": {
     "dev": "python3 -m http.server 3498 --directory generated-src",
-    "test": "bun run test:e2e",
+    "test": "bun run test:type && bun run test:e2e",
+    "test:type": "tsc --noEmit",
     "test:e2e": "bun playwright test",
     "__install:playwright": "npx playwright install"
   },
