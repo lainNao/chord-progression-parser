@@ -44,3 +44,25 @@ test("native WASM keeps recovery outside rejected chord lists", () => {
     source.lastIndexOf("11"),
   );
 });
+
+/** Metadata and nested extension recovery retain only warnings from outer values. */
+test("native WASM respects bracket and parenthesis boundaries during recovery", () => {
+  const metadata = parseChordProgressionString("[key=C,D(9,9)]E-%");
+  assert.equal(metadata.success, false);
+  assert.deepEqual(
+    metadata.errors.map((error) => error.code),
+    ["CIMV-3", "CHB-1"],
+  );
+  assert.deepEqual(metadata.warnings, []);
+
+  const nested = parseChordProgressionString("C(9,(11,9),9)-D(11,11)");
+  assert.equal(nested.success, false);
+  assert.deepEqual(
+    nested.errors.map((error) => error.code),
+    ["EXT-2"],
+  );
+  assert.deepEqual(
+    nested.warnings.map((warning) => warning.position.startOffset),
+    [11, 19],
+  );
+});

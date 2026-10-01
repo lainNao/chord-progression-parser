@@ -461,24 +461,18 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
 
     /** Recovers at outer commas or bar/line boundaries, not inside rejected extension lists. */
     fn skip_to_bar_or_line_end(&mut self, recovery_start: usize) {
-        // Parsing may have consumed an opening parenthesis before returning an error.
-        let mut depth = self.tokens[recovery_start..self.cursor].iter().fold(
-            0_usize,
-            |depth, token| match token.kind {
-                TokenKind::LeftParen => depth + 1,
-                TokenKind::RightParen => depth.saturating_sub(1),
-                _ => depth,
-            },
-        );
+        // Parsing may have consumed an opening delimiter before returning an error.
+        let mut depth = DelimiterDepth::default();
+        for token in &self.tokens[recovery_start..self.cursor] {
+            depth.observe(token.kind);
+        }
 
         while let Some(token) = self.peek() {
             match token.kind {
                 // Even unclosed lists must not swallow later bars or lines.
                 TokenKind::Dash | TokenKind::Newline => break,
-                TokenKind::Comma if depth == 0 => break,
-                TokenKind::LeftParen => depth += 1,
-                TokenKind::RightParen => depth = depth.saturating_sub(1),
-                _ => {}
+                TokenKind::Comma if depth.is_top_level() => break,
+                kind => depth.observe(kind),
             }
             self.advance();
         }
@@ -493,12 +487,13 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
 
     /** Stops at a list delimiter or bar boundary so malformed lists cannot swallow later chords. */
     fn skip_to_extension_delimiter(&mut self) {
-        while !self.is_at_end()
-            && !self.at(TokenKind::Comma)
-            && !self.at(TokenKind::RightParen)
-            && !self.at(TokenKind::Dash)
-            && !self.at(TokenKind::Newline)
-        {
+        let mut depth = DelimiterDepth::default();
+        while let Some(token) = self.peek() {
+            match token.kind {
+                TokenKind::Dash | TokenKind::Newline => break,
+                TokenKind::Comma | TokenKind::RightParen if depth.is_top_level() => break,
+                kind => depth.observe(kind),
+            }
             self.advance();
         }
     }
@@ -566,6 +561,35 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     /** Returns the current token span or a zero-length EOF span. */
     fn current_span(&self) -> SourceSpan {
         self.peek().map_or(self.eof_span, |token| token.span)
+    }
+}
+
+/** Tracks rejected nested values without interpreting their contents as grammar. */
+#[derive(Default)]
+struct DelimiterDepth {
+    parentheses: usize,
+    brackets: usize,
+}
+
+impl DelimiterDepth {
+    /** Updates nesting while tolerating unmatched closing delimiters during recovery. */
+    fn observe(&mut self, kind: TokenKind<'_>) {
+        match kind {
+            TokenKind::LeftParen => self.parentheses += 1,
+            TokenKind::RightParen => self.parentheses = self.parentheses.saturating_sub(1),
+            // Parenthesized slash denominators are opaque and may contain unmatched brackets.
+            // Their parentheses already protect inner commas during recovery.
+            TokenKind::LeftBracket if self.parentheses == 0 => self.brackets += 1,
+            TokenKind::RightBracket if self.parentheses == 0 => {
+                self.brackets = self.brackets.saturating_sub(1);
+            }
+            _ => {}
+        }
+    }
+
+    /** Reports whether a comma belongs to the surrounding grammar. */
+    fn is_top_level(&self) -> bool {
+        self.parentheses == 0 && self.brackets == 0
     }
 }
 

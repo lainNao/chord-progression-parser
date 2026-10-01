@@ -120,3 +120,104 @@ fn rejected_chord_lists_do_not_emit_spurious_warnings_or_hide_later_errors() {
         );
     }
 }
+
+/** Invalid metadata contents cannot become chords, even through nested delimiters. */
+#[test]
+fn rejected_metadata_does_not_establish_repetition_or_warn() {
+    for prefix in [
+        "[key=C,D]E",
+        "[key=C,D(9,9)]E",
+        "[key=C,[D(9,9)]]E",
+        "[key=C,D(9,9)",
+    ] {
+        let source = format!("{prefix}-%-D(11,11)");
+        let report = parse_chord_progression_string_with_warnings(&source);
+        let errors = report.result.expect_err("metadata is malformed");
+        assert_eq!(
+            errors
+                .iter()
+                .map(|error| error.error.code.to_string())
+                .collect::<Vec<_>>(),
+            ["CIMV-3", "CHB-1"],
+            "unexpected recovery for {source:?}"
+        );
+        assert_eq!(report.warnings.len(), 1, "false warning for {source:?}");
+        assert_eq!(
+            report.warnings[0].position.start_offset,
+            source.rfind("11").unwrap()
+        );
+    }
+}
+
+/** Nested invalid values are skipped whole before resuming the outer extension list. */
+#[test]
+fn nested_invalid_extensions_do_not_generate_duplicate_warnings() {
+    for nested in ["(11,9)", "((11,9),9)", "[11,9]", "([11,9])"] {
+        let source = format!("C(9,{nested},9)-D(11,11)");
+        let report = parse_chord_progression_string_with_warnings(&source);
+        let errors = report.result.expect_err("nested lists are invalid");
+        assert_eq!(errors.len(), 1, "unexpected errors for {source:?}");
+        assert_eq!(errors[0].error.code.to_string(), "EXT-2");
+        assert_eq!(
+            report
+                .warnings
+                .iter()
+                .map(|warning| warning.position.start_offset)
+                .collect::<Vec<_>>(),
+            [source.find(")-D").unwrap() - 1, source.rfind("11").unwrap()],
+            "warnings must refer to outer list values for {source:?}"
+        );
+    }
+}
+
+/** Opaque denominator brackets must not hide later independent chord errors. */
+#[test]
+fn denominator_text_does_not_leak_bracket_depth_into_recovery() {
+    for denominator in ["(x[y)", "(x]y)", "([x[y)"] {
+        for separator in [",", "-"] {
+            let source = format!("C/{denominator}{separator}H,I-D(11,11)");
+            let report = parse_chord_progression_string_with_warnings(&source);
+            let errors = report.result.expect_err("H and I are invalid");
+            assert_eq!(
+                errors
+                    .iter()
+                    .map(|error| error.error.code.to_string())
+                    .collect::<Vec<_>>(),
+                ["CHO-1", "CHO-1"],
+                "opaque denominator changed recovery for {source:?}"
+            );
+            assert_eq!(report.warnings.len(), 1);
+            assert_eq!(
+                report.warnings[0].position.start_offset,
+                source.rfind("11").unwrap()
+            );
+        }
+    }
+}
+
+/** Deep malformed nesting still recovers at bars and all supported line endings. */
+#[test]
+fn nested_recovery_preserves_hard_boundaries() {
+    for depth in [1, 2, 8, 64, 512] {
+        for opening in ["(", "[", "(["] {
+            for boundary in ["-", "\n", "\r", "\r\n"] {
+                let source = format!("C(9,{}9,9{boundary}%-D(11,11)", opening.repeat(depth));
+                let report = parse_chord_progression_string_with_warnings(&source);
+                let errors = report.result.expect_err("unclosed nested extension");
+                assert_eq!(
+                    errors
+                        .iter()
+                        .map(|error| error.error.code.to_string())
+                        .collect::<Vec<_>>(),
+                    ["EXT-2", "EXT-3", "CHB-1"],
+                    "lost hard boundary for depth {depth}, {opening:?}, {boundary:?}"
+                );
+                assert_eq!(report.warnings.len(), 1);
+                assert_eq!(
+                    report.warnings[0].position.start_offset,
+                    source.rfind("11").unwrap()
+                );
+            }
+        }
+    }
+}
