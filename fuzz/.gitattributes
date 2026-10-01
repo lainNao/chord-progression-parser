@@ -1,0 +1,2 @@
+# Preserve line-ending fixtures exactly, including CRLF and bare CR bytes.
+seeds/* -text whitespace=cr-at-eol

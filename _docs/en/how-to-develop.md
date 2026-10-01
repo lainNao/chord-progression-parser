@@ -17,6 +17,12 @@ Edit `resources/error_code_message_map.ts` or `resources/warning_code_message_ma
 then run `make generate-diagnostic-codes`. Both Rust enums are generated from these
 localized message maps. `make check-local` verifies that the generated sources match.
 
+## Fuzzing
+
+The optional [fuzz workspace](../../fuzz/README.md) checks parser diagnostics and
+AST round trips with coverage-guided input generation. It uses an explicit nightly
+toolchain; normal development and deterministic regression tests remain on stable.
+
 ## Pull Request
 
 currently no rules.

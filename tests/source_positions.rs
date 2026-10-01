@@ -1,6 +1,6 @@
-use chord_progression_parser::{
-    format_chord_progression, parse_chord_progression_string_with_warnings, Position,
-};
+mod support;
+
+use support::assert_parse_invariants;
 
 /** Advances a deterministic state so failing mutations can be reproduced. */
 fn next_random(state: &mut u64) -> usize {
@@ -8,30 +8,6 @@ fn next_random(state: &mut u64) -> usize {
     *state ^= *state >> 7;
     *state ^= *state << 17;
     *state as usize
-}
-
-/** Checks display coordinates against the exact UTF-16 range exposed to JavaScript. */
-fn assert_source_position(source: &[u16], position: &Position) {
-    assert!(position.start_offset <= position.end_offset);
-    assert!(position.end_offset <= source.len());
-    let before = String::from_utf16(&source[..position.start_offset])
-        .expect("diagnostic start must not split a surrogate pair");
-    let fragment = String::from_utf16(&source[position.start_offset..position.end_offset])
-        .expect("diagnostic end must not split a surrogate pair");
-    let line_number = before.matches('\r').count() + before.matches('\n').count()
-        - before.matches("\r\n").count()
-        + 1;
-    let column_number = before
-        .rsplit(['\r', '\n'])
-        .next()
-        .expect("split always contains a line")
-        .chars()
-        .count()
-        + 1;
-
-    assert_eq!(position.line_number, line_number);
-    assert_eq!(position.column_number, column_number);
-    assert_eq!(position.length, fragment.chars().count());
 }
 
 /** Exercises diagnostic ranges and successful round trips after mutating Unicode documents. */
@@ -70,37 +46,9 @@ fn mutated_documents_keep_diagnostics_aligned_with_the_original_source() {
         }
 
         let input: String = characters.into_iter().collect();
-        let source: Vec<u16> = input.encode_utf16().collect();
-        let report = parse_chord_progression_string_with_warnings(&input);
-        let mut previous_offset = 0;
-        for warning in report.warnings {
-            assert_source_position(&source, &warning.position);
-            assert!(previous_offset <= warning.position.start_offset);
-            previous_offset = warning.position.start_offset;
-            warnings += 1;
-        }
-
-        match report.result {
-            Ok(ast) => {
-                let formatted = format_chord_progression(&ast)
-                    .unwrap_or_else(|error| panic!("formatter rejected {input:?}: {error}"));
-                assert_eq!(
-                    parse_chord_progression_string_with_warnings(&formatted).result,
-                    Ok(ast),
-                    "round trip changed {input:?}"
-                );
-                valid_documents += 1;
-            }
-            Err(errors) => {
-                assert!(!errors.is_empty());
-                let mut previous_offset = 0;
-                for error in errors {
-                    assert_source_position(&source, &error.position);
-                    assert!(previous_offset <= error.position.start_offset);
-                    previous_offset = error.position.start_offset;
-                }
-            }
-        }
+        let (valid, warning_count) = assert_parse_invariants(&input);
+        valid_documents += usize::from(valid);
+        warnings += warning_count;
     }
 
     assert!(
