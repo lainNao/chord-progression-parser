@@ -13,6 +13,11 @@ const fixtureParser = await import(moduleUrl.href);
 fixtureParser.initSync({ module: wasmBytes });
 const fixture = fixtureParser.parseChordProgressionString("C(9,9)-Dm(7)-G/B");
 assert.equal(fixture.success, true);
+const nullChordMetadata = structuredClone(fixture.ast);
+nullChordMetadata[0].chordBlocks[0].value[0].metaInfos = null;
+const nullExtensions = structuredClone(fixture.ast);
+nullExtensions[0].chordBlocks[0].value[0].chordExpression.value.detailed.extensions =
+  null;
 const scenarios = [
   { name: "valid AST", input: [], rejects: false },
   { name: "valid chord AST", input: fixture.ast, rejects: false },
@@ -24,10 +29,17 @@ const scenarios = [
     rejects: true,
   },
   {
+    name: "null section blocks",
+    input: [{ metaInfos: [], chordBlocks: null }],
+    rejects: true,
+  },
+  {
     name: "null bar contents",
     input: [{ metaInfos: [], chordBlocks: [{ type: "bar", value: null }] }],
     rejects: true,
   },
+  { name: "null chord metadata", input: nullChordMetadata, rejects: true },
+  { name: "null extensions", input: nullExtensions, rejects: true },
 ];
 
 for (const [index, scenario] of scenarios.entries()) {
