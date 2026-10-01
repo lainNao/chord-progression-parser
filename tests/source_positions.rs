@@ -60,3 +60,13 @@ fn mutated_documents_keep_diagnostics_aligned_with_the_original_source() {
         "corpus must exercise warning source ranges"
     );
 }
+
+/** Checks every diagnostic in large inputs rather than sampling a few positions. */
+#[test]
+fn long_documents_keep_all_warning_and_error_positions_aligned() {
+    let repeated = format!("@section=😀あ\r\nC({})", vec!["9"; 20_000].join(","));
+    assert_eq!(assert_parse_invariants(&repeated), (true, 19_999));
+
+    let invalid = vec!["H😀"; 20_000].join("\r\n");
+    assert_eq!(assert_parse_invariants(&invalid), (false, 0));
+}

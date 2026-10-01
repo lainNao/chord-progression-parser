@@ -4,33 +4,71 @@ use chord_progression_parser::{
     ChordExpression, ChordInfo, Position, Section,
 };
 
-/** Checks display coordinates against the exact UTF-16 range exposed to JavaScript. */
-fn assert_source_position(source: &[u16], position: &Position) {
-    assert!(position.start_offset <= position.end_offset);
-    assert!(position.end_offset <= source.len());
-    let before = String::from_utf16(&source[..position.start_offset])
-        .expect("diagnostic start must not split a surrogate pair");
-    let fragment = String::from_utf16(&source[position.start_offset..position.end_offset])
-        .expect("diagnostic end must not split a surrogate pair");
-    let line_number = before.matches('\r').count() + before.matches('\n').count()
-        - before.matches("\r\n").count()
-        + 1;
-    let column_number = before
-        .rsplit(['\r', '\n'])
-        .next()
-        .expect("split always contains a line")
-        .chars()
-        .count()
-        + 1;
+/** Describes one Unicode scalar boundary in the original source. */
+struct SourceCoordinate {
+    line: usize,
+    column: usize,
+    scalar_index: usize,
+}
 
-    assert_eq!(position.line_number, line_number);
-    assert_eq!(position.column_number, column_number);
-    assert_eq!(position.length, fragment.chars().count());
+/** Indexes UTF-16 boundaries once so checking many diagnostics stays linear. */
+fn source_coordinates(input: &str) -> Vec<Option<SourceCoordinate>> {
+    let mut coordinates = Vec::with_capacity(input.encode_utf16().count() + 1);
+    let mut line = 1;
+    let mut column = 1;
+    let mut previous_was_cr = false;
+    coordinates.push(Some(SourceCoordinate {
+        line,
+        column,
+        scalar_index: 0,
+    }));
+
+    for (index, character) in input.chars().enumerate() {
+        if character.len_utf16() == 2 {
+            // No diagnostic boundary may split an astral character's surrogate pair.
+            coordinates.push(None);
+        }
+        match character {
+            '\r' => {
+                line += 1;
+                column = 1;
+            }
+            '\n' => {
+                line += usize::from(!previous_was_cr);
+                column = 1;
+            }
+            _ => column += 1,
+        }
+        previous_was_cr = character == '\r';
+        coordinates.push(Some(SourceCoordinate {
+            line,
+            column,
+            scalar_index: index + 1,
+        }));
+    }
+    coordinates
+}
+
+/** Checks display coordinates and scalar length at exact UTF-16 source boundaries. */
+fn assert_source_position(coordinates: &[Option<SourceCoordinate>], position: &Position) {
+    assert!(position.start_offset <= position.end_offset);
+    let start = coordinates
+        .get(position.start_offset)
+        .and_then(Option::as_ref)
+        .expect("diagnostic start must be a Unicode boundary inside the source");
+    let end = coordinates
+        .get(position.end_offset)
+        .and_then(Option::as_ref)
+        .expect("diagnostic end must be a Unicode boundary inside the source");
+    assert_eq!(position.line_number, start.line);
+    assert_eq!(position.column_number, start.column);
+    assert_eq!(position.length, end.scalar_index - start.scalar_index);
 }
 
 /** Checks source ranges and AST round trips for both mutation tests and guided fuzzing. */
 pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
     let source: Vec<u16> = input.encode_utf16().collect();
+    let coordinates = source_coordinates(input);
     let report = parse_chord_progression_string_with_warnings(input);
     assert_eq!(report.result, parse_chord_progression_string(input));
     // The standalone chord parser must agree with the document parser on every accepted input.
@@ -50,7 +88,7 @@ pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
     }
     let mut previous_offset = 0;
     for warning in &report.warnings {
-        assert_source_position(&source, &warning.position);
+        assert_source_position(&coordinates, &warning.position);
         assert!(previous_offset <= warning.position.start_offset);
         previous_offset = warning.position.start_offset;
         let fragment =
@@ -85,7 +123,7 @@ pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
             assert!(!errors.is_empty());
             let mut previous_offset = 0;
             for error in errors {
-                assert_source_position(&source, &error.position);
+                assert_source_position(&coordinates, &error.position);
                 assert!(previous_offset <= error.position.start_offset);
                 previous_offset = error.position.start_offset;
             }
