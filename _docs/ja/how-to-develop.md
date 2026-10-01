@@ -11,6 +11,10 @@
 make install
 ```
 
+環境構築・チェック・生成ツールのテスト・npm ビルドでは、
+`bun install --frozen-lockfile` を使います。JavaScript の依存関係を変更したら、
+対応する `bun.lock` も更新し、`package.json` と一緒にコミットしてください。
+
 ## TypeScript の型定義
 
 Rust のモデルを変更したら、`make generate-ts-types` で

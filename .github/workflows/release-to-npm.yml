@@ -43,7 +43,7 @@ jobs:
       - name: build
         env:
           PACKAGE_TARGET: ${{ matrix.target }}
-        run: bun i && make "build-wasm-${PACKAGE_TARGET}"
+        run: bun install --frozen-lockfile && make "build-wasm-${PACKAGE_TARGET}"
       - name: publish if not already published
         working-directory: pkg/pkg-${{ matrix.target }}
         run: |

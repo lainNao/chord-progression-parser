@@ -11,6 +11,10 @@ and please run these commands for local CI
 make install
 ```
 
+Dependency installation uses `bun install --frozen-lockfile` in setup, checks,
+generator tests, and npm builds. When changing JavaScript dependencies, update
+and commit the corresponding `bun.lock` together with `package.json`.
+
 ## Generated TypeScript declarations
 
 Rust model changes require `make generate-ts-types` to update

@@ -1,7 +1,7 @@
 .PHONY: generate-ts-types check-generated-types
 
 check-not-broken:
-	bun i
+	bun install --frozen-lockfile
 # Verify committed generated sources instead of silently repairing them before testing.
 	make test-resources
 	make check-generated-types
@@ -34,7 +34,7 @@ install:
 	rustup component add rustfmt clippy
 	cargo install typeshare-cli
 	cargo install cargo-insta
-	bun i
+	bun install --frozen-lockfile
 	bun lefthook install
 
 # run
@@ -165,7 +165,7 @@ test-e2e:
 
 # generator test
 test-generator:
-	cd _tools/chord-progression-generator && bun i && bun run test
+	cd _tools/chord-progression-generator && bun install --frozen-lockfile && bun run test
 
 # e2e test of web
 run-web-e2e:
