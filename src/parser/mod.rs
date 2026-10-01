@@ -206,7 +206,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             return Err(vec![parse_error(
                 ErrorCode::Tkn1,
                 token.span,
-                Some(token_label(token.kind)),
+                Some(token_label(token.kind).to_string()),
             )]);
         }
 
@@ -424,7 +424,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                     value.push(')');
                 }
                 TokenKind::RightParen => break,
-                kind => value.push_str(&token_label(kind)),
+                kind => value.push_str(token_label(kind)),
             }
             last_span = token.span;
             self.advance();
@@ -589,8 +589,8 @@ fn parse_error(
     }
 }
 
-/** Returns the source spelling of a context-free token for errors and denominators. */
-fn token_label(kind: TokenKind<'_>) -> String {
+/** Borrows a token's spelling so collecting a denominator does not allocate per token. */
+fn token_label(kind: TokenKind<'_>) -> &str {
     match kind {
         TokenKind::At => "@",
         TokenKind::LeftBracket => "[",
@@ -604,7 +604,6 @@ fn token_label(kind: TokenKind<'_>) -> String {
         TokenKind::Newline => "\n",
         TokenKind::Text(value) => value,
     }
-    .to_string()
 }
 
 #[cfg(test)]
