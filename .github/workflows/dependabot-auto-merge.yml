@@ -8,7 +8,6 @@ on:
 permissions:
   pull-requests: write # for approve/merge
   contents: write # for merge
-  issues: write # for adding label
 
 jobs:
   dependabot-auto-merge:
@@ -25,9 +24,7 @@ jobs:
         if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
         run: |
           gh pr review --approve "$PR_URL"
-          gh pr edit "$PR_URL" --add-label "auto-merge"
           gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
