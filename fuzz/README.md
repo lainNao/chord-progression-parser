@@ -25,8 +25,8 @@ cargo +nightly fuzz run parser fuzz/corpus/parser fuzz/seeds -- \
 ```
 
 The first corpus directory receives generated inputs. The checked-in seeds
-exercise extensions, duplicate warnings, Unicode, CRLF, section boundaries,
-and recovery from malformed notation. The parser accepts UTF-8 strings, so
+exercise all four chord types, extensions, duplicate warnings, Unicode, CRLF,
+section boundaries, and recovery from malformed notation. The parser accepts UTF-8 strings, so
 invalid UTF-8 bytes are discarded before calling its API.
 
 The target checks the same invariants as `tests/source_positions.rs` through
