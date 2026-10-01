@@ -11,6 +11,13 @@
 make install
 ```
 
+## TypeScript の型定義
+
+Rust のモデルを変更したら、`make generate-ts-types` で
+`resources/generatedTypes.ts` を更新してください。`make check-local` と CI は
+生成結果とファイル全体を比較し、ずれがあれば書き換えずに失敗します。
+生成処理が失敗した場合も、既存のファイルは保持します。
+
 ## 診断コード
 
 `resources/error_code_message_map.ts` または `resources/warning_code_message_map.ts`

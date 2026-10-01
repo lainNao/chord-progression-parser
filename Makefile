@@ -1,7 +1,10 @@
+.PHONY: generate-ts-types check-generated-types
+
 check-not-broken:
 	bun i
 # Verify committed generated sources instead of silently repairing them before testing.
 	make test-resources
+	make check-generated-types
 	make check-types
 	make check-lint
 	make check-build
@@ -14,6 +17,7 @@ check-not-broken:
 	make test-generator
 
 check-local:
+	make check-generated-types
 	make check-types
 	make check-lint
 	make check-build
@@ -103,10 +107,11 @@ generate-ts-declare-file-for-pkg-bundler:
 
 # generate types
 generate-ts-types:
-	typeshare ./src \
-		--lang=typescript \
-		--output-file=resources/generatedTypes.ts
-	bun resources/fix_generated_types.ts
+	bun resources/generate_types.ts
+
+# Compare the full Rust-derived declaration file without repairing stale committed types.
+check-generated-types:
+	bun resources/generate_types.ts --check
 
 ################################################################
 ################################################################ fixer 

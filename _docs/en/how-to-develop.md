@@ -11,6 +11,13 @@ and please run these commands for local CI
 make install
 ```
 
+## Generated TypeScript declarations
+
+Rust model changes require `make generate-ts-types` to update
+`resources/generatedTypes.ts`. `make check-local` and CI compare the complete
+file with fresh generator output and fail on stale declarations without editing
+them. Generation failures leave the existing file intact.
+
 ## Diagnostic codes
 
 Edit `resources/error_code_message_map.ts` or `resources/warning_code_message_map.ts`,
