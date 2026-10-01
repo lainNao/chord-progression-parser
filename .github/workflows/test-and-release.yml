@@ -68,10 +68,8 @@ jobs:
             fi
           done < <(git tag --sort=-version:refname --merged HEAD)
 
-          echo "prev-tag=${prev_tag}" >> "$GITHUB_OUTPUT"
-          echo "new-version=${new_version}" >> "$GITHUB_OUTPUT"
-          echo "new-tag=${new_tag}" >> "$GITHUB_OUTPUT"
-          echo "should-release=${should_release}" >> "$GITHUB_OUTPUT"
+          printf 'prev-tag=%s\nnew-version=%s\nnew-tag=%s\nshould-release=%s\n' \
+            "$prev_tag" "$new_version" "$new_tag" "$should_release" >> "$GITHUB_OUTPUT"
       - name: Echo prev-tag and new-version
         env:
           PREV_TAG: ${{ steps.get-versions.outputs.prev-tag }}

@@ -79,27 +79,23 @@ exit "$REGISTRY_EXIT"
 }
 
 /** Local workspace metadata must never replace verified registry publication status. */
-test("recognizes published npm and crates.io versions from registry metadata", async (): Promise<void> => {
-  for (const [registry, body] of [
-    ["npm", JSON.stringify({ name: "example-package", version: "0.9.4" })],
-    [
-      "crates-io",
-      JSON.stringify({ version: { crate: "example-package", num: "0.9.4" } }),
-    ],
-  ] as const) {
-    const result = await runRegistryProbe({
-      registry,
-      status: "200",
-      body,
-      curlExit: 0,
-    });
-    expect(result).toEqual({ exitCode: 0, stdout: "true\n", stderr: "" });
-  }
-});
+for (const [registry, body] of [
+  ["npm", JSON.stringify({ name: "example-package", version: "0.9.4" })],
+  [
+    "crates-io",
+    JSON.stringify({ version: { crate: "example-package", num: "0.9.4" } }),
+  ],
+] as const) {
+  test(`recognizes a published ${registry} version`, async (): Promise<void> => {
+    expect(
+      await runRegistryProbe({ registry, status: "200", body, curlExit: 0 }),
+    ).toEqual({ exitCode: 0, stdout: "true\n", stderr: "" });
+  });
+}
 
-/** A genuine 404 is the only failed HTTP response that means publication is still needed. */
-test("distinguishes unpublished versions from registry and transport failures", async (): Promise<void> => {
-  for (const registry of ["npm", "crates-io"] as const) {
+for (const registry of ["npm", "crates-io"] as const) {
+  /** A genuine 404 is the only failed HTTP response that means publication is still needed. */
+  test(`recognizes an unpublished ${registry} version`, async (): Promise<void> => {
     expect(
       await runRegistryProbe({
         registry,
@@ -108,7 +104,11 @@ test("distinguishes unpublished versions from registry and transport failures", 
         curlExit: 0,
       }),
     ).toEqual({ exitCode: 0, stdout: "false\n", stderr: "" });
-    for (const status of ["401", "429", "503"]) {
+  });
+
+  for (const status of ["401", "429", "503"]) {
+    /** Registry errors must stop release processing rather than trigger publication. */
+    test(`stops ${registry} checks on HTTP ${status}`, async (): Promise<void> => {
       const result = await runRegistryProbe({
         registry,
         status,
@@ -118,26 +118,31 @@ test("distinguishes unpublished versions from registry and transport failures", 
       expect(result.exitCode).not.toBe(0);
       expect(result.stdout).toBe("");
       expect(result.stderr).toContain(`HTTP ${status}`);
-    }
-    const transportFailure = await runRegistryProbe({
+    });
+  }
+
+  /** Transport failures must not be mistaken for an unpublished package. */
+  test(`stops ${registry} checks on transport failure`, async (): Promise<void> => {
+    const result = await runRegistryProbe({
       registry,
       status: "000",
       body: "",
       curlExit: 7,
     });
-    expect(transportFailure.exitCode).toBe(7);
-    expect(transportFailure.stdout).toBe("");
-  }
-});
+    expect(result.exitCode).toBe(7);
+    expect(result.stdout).toBe("");
+  });
 
-/** A successful HTTP status cannot hide a malformed or mismatched package response. */
-test("rejects invalid metadata rather than silently skipping publication", async (): Promise<void> => {
-  for (const registry of ["npm", "crates-io"] as const) {
-    for (const body of [
-      "not JSON",
-      "{}",
+  for (const [label, body] of [
+    ["non-JSON", "not JSON"],
+    ["missing fields", "{}"],
+    [
+      "wrong version",
       JSON.stringify({ name: "example-package", version: "0.9.3" }),
-    ]) {
+    ],
+  ]) {
+    /** A successful status cannot hide malformed or mismatched package metadata. */
+    test(`rejects ${registry} metadata with ${label}`, async (): Promise<void> => {
       const result = await runRegistryProbe({
         registry,
         status: "200",
@@ -147,6 +152,6 @@ test("rejects invalid metadata rather than silently skipping publication", async
       expect(result.exitCode).not.toBe(0);
       expect(result.stdout).toBe("");
       expect(result.stderr).toContain("invalid metadata");
-    }
+    });
   }
-});
+}

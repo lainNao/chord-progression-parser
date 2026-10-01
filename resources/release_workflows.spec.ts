@@ -117,20 +117,20 @@ esac
   }
 }
 
-/** Verifies skip, publish, and stop behavior without invoking a real package publication. */
-test("publication steps respect verified registry status and stop on check failures", async (): Promise<void> => {
-  for (const registry of ["npm", "crates-io"] as const) {
-    expect(
-      await runPublicationStep({ registry, published: true, checkExit: 0 }),
-    ).toEqual({ exitCode: 0, publications: "" });
-    expect(
-      await runPublicationStep({ registry, published: false, checkExit: 0 }),
-    ).toEqual({ exitCode: 0, publications: "publish\n" });
-    expect(
-      await runPublicationStep({ registry, published: false, checkExit: 7 }),
-    ).toEqual({ exitCode: 7, publications: "" });
+for (const registry of ["npm", "crates-io"] as const) {
+  for (const [label, published, checkExit, publications] of [
+    ["skips published versions", true, 0, ""],
+    ["publishes unpublished versions", false, 0, "publish\n"],
+    ["stops on check failure", false, 7, ""],
+  ] as const) {
+    /** Verifies the actual workflow commands without invoking a real publication. */
+    test(`${registry} publication ${label}`, async (): Promise<void> => {
+      expect(
+        await runPublicationStep({ registry, published, checkExit }),
+      ).toEqual({ exitCode: checkExit, publications });
+    });
   }
-});
+}
 
 /** Preserves current release tooling before checkout removes files absent from an older tag. */
 test("old-tag retries retain current publication tooling and cover all npm targets", async (): Promise<void> => {

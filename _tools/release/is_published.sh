@@ -15,10 +15,14 @@ case "$registry" in
   npm)
     # Encode the slash in scoped npm package names.
     url="https://registry.npmjs.org/${package_name//\//%2F}/${package_version}"
+    # These variables are expanded by jq rather than the shell.
+    # shellcheck disable=SC2016
     selector='.name == $name and .version == $version'
     ;;
   crates-io)
     url="https://crates.io/api/v1/crates/${package_name}/${package_version}"
+    # These variables are expanded by jq rather than the shell.
+    # shellcheck disable=SC2016
     selector='.version.crate == $name and .version.num == $version'
     ;;
   *)
