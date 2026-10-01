@@ -148,9 +148,9 @@ check-build:
 check-types:
 	bun run typecheck
 
-# unit & integration test
+# Unit, integration, and documentation examples (explicit --all-targets skips doctests).
 test-rust:
-	cargo test --all-targets --all-features
+	cargo test --all-features
 
 # e2e test
 test-e2e:
