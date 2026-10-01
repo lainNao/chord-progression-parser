@@ -42,3 +42,27 @@ with `cargo +nightly fuzz run parser <artifact-path>`, minimize it with
 `cargo +nightly fuzz tmin parser <artifact-path>`, and add the reproducer to the
 regular regression tests before fixing the bug. Generated corpora, artifacts,
 lockfiles, and build outputs are ignored by Git.
+
+## Valid-document grammar target
+
+The `grammar` target interprets bytes as bounded choices for complete valid
+progressions. It builds the expected AST independently of both the document
+parser and formatter, then checks parsing, duplicate-warning counts, source
+positions, and formatting round trips. Choices cover all chord types and
+extensions, special expressions, key and section metadata, opaque denominators,
+optional horizontal whitespace, trailing bar commas, and all newline forms.
+It also appends malformed chords to otherwise valid progressions and checks
+that earlier warnings are preserved, later chords are inspected, and repetition
+context resets at section boundaries. The same generator runs deterministically
+in `tests/generated_documents.rs`.
+
+```sh
+cargo +nightly fuzz run grammar -- \
+  -max_total_time=300 -max_len=1024 -timeout=10 -rss_limit_mb=2048
+```
+
+Each input produces at most four sections, five bars per section, four chords
+per bar, and five extensions per chord. Unlike `parser`, its bytes are grammar
+choices rather than source text and need not be valid UTF-8. Crashes are saved
+under `fuzz/artifacts/grammar/`; replay and minimize them with the `grammar`
+target in place of `parser`.

@@ -9,6 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+strum = "0.28"
 
 [dependencies.chord-progression-parser]
 path = ".."
@@ -20,6 +21,13 @@ members = ["."]
 [[bin]]
 name = "parser"
 path = "fuzz_targets/parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "grammar"
+path = "fuzz_targets/grammar.rs"
 test = false
 doc = false
 bench = false
