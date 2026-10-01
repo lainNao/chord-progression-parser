@@ -74,3 +74,49 @@ fn recovered_bar_warnings_use_their_own_extension_context() {
     assert_eq!(report.warnings[0].position.start_offset, 9);
     assert_eq!(report.warnings[0].additional_info.as_deref(), Some("9"));
 }
+
+/** Commas inside rejected chords must not establish repetition context. */
+#[test]
+fn rejected_parenthesized_values_are_not_recovered_as_chords() {
+    for (source, first_code) in [
+        ("H(9,C)-%", "CHO-1"),
+        ("[bad=C]D(9,C)-%", "CIMK-3"),
+        ("C(7)(9,C)-%", "EXT-4"),
+        ("C(9 9,C)-%", "EXT-3"),
+    ] {
+        let errors = parse_chord_progression_string(source).expect_err("invalid chord");
+        assert_eq!(
+            errors
+                .iter()
+                .map(|error| error.error.code.to_string())
+                .collect::<Vec<_>>(),
+            [first_code, "CHB-1"],
+            "parenthesized text became a chord in {source:?}"
+        );
+        assert_eq!(errors[1].position.start_offset, source.len() - 1);
+    }
+}
+
+/** Recovery skips nested list commas, but resumes at real chord and bar separators. */
+#[test]
+fn rejected_chord_lists_do_not_emit_spurious_warnings_or_hide_later_errors() {
+    for source in ["H(9,C(9,9)),I-D(11,11)", "H(9,C(9,9)-I-D(11,11)"] {
+        let report = parse_chord_progression_string_with_warnings(source);
+        let errors = report.result.expect_err("H and I are invalid");
+        assert_eq!(
+            errors
+                .iter()
+                .map(|error| error.error.code.to_string())
+                .collect::<Vec<_>>(),
+            ["CHO-1", "CHO-1"],
+            "unexpected recovery for {source:?}"
+        );
+        assert_eq!(errors[1].position.start_offset, source.find('I').unwrap());
+        assert_eq!(report.warnings.len(), 1, "false warning for {source:?}");
+        assert_eq!(report.warnings[0].additional_info.as_deref(), Some("11"));
+        assert_eq!(
+            report.warnings[0].position.start_offset,
+            source.rfind("11").unwrap()
+        );
+    }
+}

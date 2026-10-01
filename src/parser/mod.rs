@@ -72,6 +72,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             } else {
                 section_has_chord_lines = true;
                 loop {
+                    let recovery_start = self.cursor;
                     match self.parse_chord_line(&mut has_prior_chord) {
                         Ok(blocks) => {
                             current_section.chord_blocks.extend(blocks);
@@ -80,7 +81,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                         Err(line_errors) => errors.extend(line_errors),
                     }
 
-                    self.skip_to_bar_or_line_end();
+                    self.skip_to_bar_or_line_end(recovery_start);
                     if !self.at(TokenKind::Dash) && !self.at(TokenKind::Comma) {
                         break;
                     }
@@ -454,13 +455,27 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         count
     }
 
-    /** Skips invalid input until another chord or bar can be parsed, or the line ends. */
-    fn skip_to_bar_or_line_end(&mut self) {
-        while !self.is_at_end()
-            && !self.at(TokenKind::Comma)
-            && !self.at(TokenKind::Dash)
-            && !self.at(TokenKind::Newline)
-        {
+    /** Recovers at outer commas or bar/line boundaries, not inside rejected extension lists. */
+    fn skip_to_bar_or_line_end(&mut self, recovery_start: usize) {
+        // Parsing may have consumed an opening parenthesis before returning an error.
+        let mut depth = self.tokens[recovery_start..self.cursor].iter().fold(
+            0_usize,
+            |depth, token| match token.kind {
+                TokenKind::LeftParen => depth + 1,
+                TokenKind::RightParen => depth.saturating_sub(1),
+                _ => depth,
+            },
+        );
+
+        while let Some(token) = self.peek() {
+            match token.kind {
+                // Even unclosed lists must not swallow later bars or lines.
+                TokenKind::Dash | TokenKind::Newline => break,
+                TokenKind::Comma if depth == 0 => break,
+                TokenKind::LeftParen => depth += 1,
+                TokenKind::RightParen => depth = depth.saturating_sub(1),
+                _ => {}
+            }
             self.advance();
         }
     }
