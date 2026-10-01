@@ -2,7 +2,7 @@ use std::{collections::HashSet, str::FromStr};
 
 use crate::{
     error_code::{ErrorCode, ErrorInfo, ErrorInfoWithPosition},
-    lexer::{eof_span, lex, SourceSpan, Token, TokenKind},
+    lexer::{lex, SourceSpan, Token, TokenKind},
     model::{
         bar::Bar, chord::Chord, chord_block::ChordBlock, chord_detailed::ChordDetailed,
         chord_expression::ChordExpression, chord_info::ChordInfo, chord_info_meta::ChordInfoMeta,
@@ -13,8 +13,8 @@ use crate::{
 
 /** Parses source text with the context-free lexer and the new parser. */
 pub(crate) fn parse(input: &str) -> ParseReport {
-    let tokens = lex(input);
-    Parser::new(&tokens, eof_span(input)).parse_document()
+    let source = lex(input);
+    Parser::new(&source.tokens, source.eof_span).parse_document()
 }
 
 /** Owns the token cursor and converts one grammar production at a time. */

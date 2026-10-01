@@ -46,6 +46,12 @@ pub(crate) struct Token<'src> {
     pub(crate) span: SourceSpan,
 }
 
+/** Retains the final lexer coordinates so EOF does not require another source scan. */
+pub(crate) struct LexedSource<'src> {
+    pub(crate) tokens: Vec<Token<'src>>,
+    pub(crate) eof_span: SourceSpan,
+}
+
 /** Converts a structural character into its context-free token kind. */
 fn structural_kind(ch: char) -> Option<TokenKind<'static>> {
     match ch {
@@ -68,7 +74,7 @@ fn ends_text(ch: char) -> bool {
 }
 
 /** Splits source text into context-free tokens while retaining exact spans. */
-pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
+pub(crate) fn lex(input: &str) -> LexedSource<'_> {
     let mut tokens = Vec::new();
     let mut chars = input.char_indices().peekable();
     let mut line = 1;
@@ -167,52 +173,29 @@ pub(crate) fn lex(input: &str) -> Vec<Token<'_>> {
         }
     }
 
-    tokens
-}
-
-/** Computes a zero-length span at the end of the source text. */
-pub(crate) fn eof_span(input: &str) -> SourceSpan {
-    let mut chars = input.chars().peekable();
-    let mut line = 1;
-    let mut column = 1;
-
-    while let Some(ch) = chars.next() {
-        match ch {
-            '\r' => {
-                if chars.peek().is_some_and(|next| *next == '\n') {
-                    chars.next();
-                }
-                line += 1;
-                column = 1;
-            }
-            '\n' => {
-                line += 1;
-                column = 1;
-            }
-            _ => column += 1,
-        }
-    }
-
-    SourceSpan {
-        start_byte: input.len(),
-        end_byte: input.len(),
-        start_offset: input.encode_utf16().count(),
-        end_offset: input.encode_utf16().count(),
-        line,
-        column,
-        length: 0,
+    LexedSource {
+        tokens,
+        eof_span: SourceSpan {
+            start_byte: input.len(),
+            end_byte: input.len(),
+            start_offset: offset,
+            end_offset: offset,
+            line,
+            column,
+            length: 0,
+        },
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{eof_span, lex, SourceSpan, Token, TokenKind};
+    use super::{lex, SourceSpan, Token, TokenKind};
 
     /** Verifies structural tokens, text tokens, and skipped horizontal space. */
     #[test]
     fn lexes_structure_without_assigning_context() {
         let input = " @section = Verse\n[key=C]C(M9),G/B-D ";
-        let kinds: Vec<TokenKind<'_>> = lex(input).iter().map(|token| token.kind).collect();
+        let kinds: Vec<TokenKind<'_>> = lex(input).tokens.iter().map(|token| token.kind).collect();
 
         assert_eq!(
             kinds,
@@ -247,7 +230,7 @@ mod tests {
         let input = "Cあ\nD";
 
         assert_eq!(
-            lex(input),
+            lex(input).tokens,
             vec![
                 Token {
                     kind: TokenKind::Text("Cあ"),
@@ -292,7 +275,7 @@ mod tests {
     /** Counts skipped horizontal whitespace in JavaScript editor offsets. */
     #[test]
     fn tracks_offsets_across_horizontal_whitespace() {
-        let tokens = lex("C - G\t- Fあ");
+        let tokens = lex("C - G\t- Fあ").tokens;
         let last = tokens.last().expect("the final text token must exist");
 
         assert_eq!(last.kind, TokenKind::Text("Fあ"));
@@ -304,7 +287,7 @@ mod tests {
     /** Treats CRLF as one newline while retaining both source characters. */
     #[test]
     fn treats_crlf_as_one_line_break() {
-        let tokens = lex("C\r\nD");
+        let tokens = lex("C\r\nD").tokens;
 
         assert_eq!(tokens[1].kind, TokenKind::Newline);
         assert_eq!(tokens[1].span.start_byte, 1);
@@ -319,7 +302,7 @@ mod tests {
     fn spans_reference_the_original_input() {
         let input = "[key=あ] C(9,#11)\r\nD/B";
 
-        for token in lex(input) {
+        for token in lex(input).tokens {
             let source = &input[token.span.start_byte..token.span.end_byte];
             match token.kind {
                 TokenKind::Text(value) => assert_eq!(source, value),
@@ -342,7 +325,7 @@ mod tests {
     #[test]
     fn tracks_the_end_of_the_source() {
         assert_eq!(
-            eof_span("Cあ \r\nD "),
+            lex("Cあ \r\nD ").eof_span,
             SourceSpan {
                 start_byte: 9,
                 end_byte: 9,
@@ -353,5 +336,32 @@ mod tests {
                 length: 0,
             }
         );
+    }
+
+    /** Preserves EOF display coordinates and UTF-16 offsets after all newline forms. */
+    #[test]
+    fn tracks_eof_after_unicode_and_trailing_whitespace() {
+        for (input, line, column, offset) in [
+            ("", 1, 1, 0),
+            (" \t", 1, 3, 2),
+            ("😀 ", 1, 3, 3),
+            ("C\r", 2, 1, 2),
+            ("C\r\n😀\t", 2, 3, 6),
+            ("\r\n\r\n", 3, 1, 4),
+        ] {
+            assert_eq!(
+                lex(input).eof_span,
+                SourceSpan {
+                    start_byte: input.len(),
+                    end_byte: input.len(),
+                    start_offset: offset,
+                    end_offset: offset,
+                    line,
+                    column,
+                    length: 0,
+                },
+                "incorrect EOF position for {input:?}"
+            );
+        }
     }
 }
