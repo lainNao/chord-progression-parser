@@ -2,7 +2,7 @@
   "name": "chord-progression-ast-parser",
   "type": "module",
   "devDependencies": {
-    "bun-types": "1.4.0",
+    "bun-types": "1.4.2",
     "lefthook": "2.1.12",
     "typescript": "7.0.2"
   },
