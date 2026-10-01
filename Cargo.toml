@@ -8,8 +8,8 @@ description = "a converter from chord progression strings to AST"
 repository = "https://github.com/lainNao/chord-progression-parser"
 readme = "README.md"
 keywords = ["music", "chord-progression", "parser", "AST"]
-# Keep the Rust sources and their regression fixtures in the published crate.
-include = ["/src/**", "/tests/**", "/Cargo.toml", "/LICENSE", "/README.md"]
+# Keep Rust sources, regression fixtures, and the declared benchmark target in the crate.
+include = ["/src/**", "/tests/**", "/benches/**", "/Cargo.toml", "/LICENSE", "/README.md"]
 
 [dependencies]
 serde = { version = "1.0.229", features = ["derive"] }
@@ -25,6 +25,11 @@ insta = "1.48.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[bench]]
+name = "parser"
+harness = false
+test = false
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

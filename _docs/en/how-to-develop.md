@@ -41,6 +41,19 @@ The optional [fuzz workspace](../../fuzz/README.md) checks parser diagnostics an
 AST round trips with coverage-guided input generation. It uses an explicit nightly
 toolchain; normal development and deterministic regression tests remain on stable.
 
+## Performance measurements
+
+Run `cargo bench --bench parser` for deterministic native Rust workloads: short
+and long progressions, duplicate warnings, the legacy API without warnings,
+independent syntax errors, Unicode, single chords, and AST/diagnostic formatting. The benchmark
+validates its fixtures, calibrates each workload, and prints CSV with the median,
+minimum, and maximum microseconds per operation across seven samples. Each sample
+targets at least 100 ms; the timings include dropping returned ASTs and diagnostics.
+
+Compare revisions with the same Rust toolchain, hardware, and quiet background
+workload. These are native API timings, not JavaScript/WASM conversion or browser
+rendering timings. CI compiles the benchmark but does not enforce timing thresholds.
+
 ## Pull Request
 
 currently no rules.
