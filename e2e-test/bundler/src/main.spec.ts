@@ -76,6 +76,30 @@ test("renders every parser diagnostic", async ({ page }) => {
   expect(resultText.match(/EXT-1/g)).toHaveLength(2);
 });
 
+/** Large result arrays must not become a single call with too many arguments. */
+test("renders large diagnostic lists without exceeding argument limits", async ({
+  page,
+}): Promise<void> => {
+  test.skip(
+    test.info().project.name !== "chromium",
+    "Run the large DOM stress case once",
+  );
+  test.setTimeout(60_000);
+  await page.goto("http://localhost:3034/");
+  await expect(page.locator("#result")).toContainText('"success": true');
+
+  // Isolate diagnostic construction from textarea editing and large-page layout costs.
+  await page.addStyleTag({ content: "#textarea, #result { display: none; }" });
+  await page
+    .locator("#textarea")
+    .evaluate((textarea: HTMLTextAreaElement): void => {
+      textarea.value = "H\n".repeat(150_000);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  await expect(page.locator("#result > div")).toHaveCount(150_000);
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "");
+});
+
 test("highlights UTF-16 ranges without interpreting source as HTML", async ({
   page,
 }) => {

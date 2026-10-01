@@ -84,24 +84,34 @@ function main(): void {
       console.info(result);
 
       elms.time.textContent = `${((end - start) * 0.001).toFixed(5)}sec`;
-      if (result.success) {
-        elms.result.textContent = JSON.stringify(result, null, 2);
-        elms.result.dataset.formatted = formatChordProgression(result.ast);
-        return;
+      switch (result.success) {
+        case true:
+          elms.result.textContent = JSON.stringify(result, null, 2);
+          elms.result.dataset.formatted = formatChordProgression(result.ast);
+          return;
+        case false: {
+          // A fragment avoids expanding large diagnostic arrays into function arguments.
+          const diagnostics = document.createDocumentFragment();
+          for (const error of result.errors) {
+            diagnostics.appendChild(
+              createErrorElement({
+                currentValue: value,
+                endOffset: error.position.endOffset,
+                errorCode: error.code,
+                lineNumber: error.position.lineNumber,
+                startOffset: error.position.startOffset,
+              }),
+            );
+          }
+          elms.result.replaceChildren(diagnostics);
+          elms.result.dataset.formatted = "";
+          return;
+        }
+        default: {
+          const exhaustiveCheck: never = result;
+          throw new Error(`Unexpected parser result: ${exhaustiveCheck}`);
+        }
       }
-
-      elms.result.replaceChildren(
-        ...result.errors.map((error) =>
-          createErrorElement({
-            currentValue: value,
-            endOffset: error.position.endOffset,
-            errorCode: error.code as ErrorCode,
-            lineNumber: error.position.lineNumber,
-            startOffset: error.position.startOffset,
-          }),
-        ),
-      );
-      elms.result.dataset.formatted = "";
     } catch (error: unknown) {
       console.error(error);
       elms.result.textContent = JSON.stringify(error, null, 2);
