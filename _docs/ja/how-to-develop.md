@@ -54,6 +54,13 @@ warning コードは、このメッセージ表から生成します。`make che
 これはネイティブ Rust API の計測であり、JavaScript/WASM 間の変換やブラウザ描画は
 含みません。CI ではコンパイルを確認しますが、時間による合否判定は行いません。
 
+JS/WASM の変換を含む性能は、`make build-wasm-web` の後に
+`node _tools/benchmark-wasm.mjs` で計測します。短い・長い入力、warning、構文エラー、
+Unicode、整形、不正なネスト配列の拒否を 7 回ずつ計測し、CSV で出力します。
+Node.js の GC と JavaScript の例外処理も計測に含み、ブラウザ描画は含みません。
+別のリビジョンの web package directory を引数に指定して比較できます。
+重い並行処理を止め、Node.js と WASM のビルド条件を揃えてください。
+
 ## プルリクエスト
 
 現在はルールはありません。
@@ -81,6 +88,9 @@ WASM 専用の単体テストの必要性を再検討します。
 ### JavaScript の例外と対応環境
 
 通常の AST と JSON の値では、配列フィールドに不正な値を渡しても参照枠を回収します。
+AST の配列フィールドは JavaScript の Array を受け取ります。Uint8Array や ArrayBuffer は
+拒否しますが、依存の変換処理が拒否前に内容を一時コピーするため、大きな値では
+その分のメモリを使います。同じサイズを繰り返してもコピー領域は再利用されます。
 ただし、例外を投げる getter や revoked Proxy を AST に含めると、依存内の JavaScript
 呼び出しが Rust の解放処理を飛ばし、参照が残ります。`make build-wasm-web` の後に
 `node _tools/audit-wasm-references.mjs --js-exceptions` で再現できます。この任意の診断は

@@ -54,6 +54,14 @@ Compare revisions with the same Rust toolchain, hardware, and quiet background
 workload. These are native API timings, not JavaScript/WASM conversion or browser
 rendering timings. CI compiles the benchmark but does not enforce timing thresholds.
 
+After `make build-wasm-web`, run `node _tools/benchmark-wasm.mjs` to include the
+JS/WASM boundary. It reports CSV across seven samples for short and long inputs,
+warnings, syntax errors, Unicode, formatting, and rejection of malformed nested
+arrays. Node.js GC and JavaScript exception handling are included; browser rendering
+is excluded. Pass another revision's web package directory as the argument to
+compare builds. Use the same Node.js version and WASM build settings with heavy
+background workloads stopped.
+
 ## Pull Request
 
 currently no rules.
@@ -80,7 +88,12 @@ Reconsider WASM-specific unit tests if Rust starts using more DOM or JavaScript 
 ### JavaScript exceptions and runtime support
 
 Ordinary ASTs and JSON values release their reference slots even when array fields
-have invalid values. Throwing getters and revoked Proxies can still skip Rust
+have invalid values. AST array fields accept JavaScript Arrays. Uint8Arrays and
+ArrayBuffers are rejected, but dependency conversion temporarily copies their
+contents before rejection, requiring memory proportional to their size. Repeated
+inputs of the same size reuse that allocation.
+
+Throwing getters and revoked Proxies can still skip Rust
 cleanup through dependency-internal JavaScript calls. After `make build-wasm-web`,
 run `node _tools/audit-wasm-references.mjs --js-exceptions` to reproduce this.
 This optional diagnostic exits with code 1 when the reference table grows and is
