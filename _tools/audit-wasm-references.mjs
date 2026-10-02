@@ -102,6 +102,7 @@ if (args[0] === "--js-exceptions") {
       rejects: true,
       jsException: true,
       errorPattern: /revoked/,
+      iterations: 2_000,
     },
     {
       name: "throwing section getter",
@@ -109,6 +110,7 @@ if (args[0] === "--js-exceptions") {
       rejects: true,
       jsException: true,
       errorPattern: /^Error: section getter$/,
+      iterations: 2_000,
     },
     {
       name: "throwing toStringTag getter",
@@ -116,6 +118,7 @@ if (args[0] === "--js-exceptions") {
       rejects: true,
       jsException: true,
       errorPattern: /^Error: tag getter$/,
+      iterations: 300,
     },
   );
 }
@@ -146,7 +149,9 @@ for (const [index, scenario] of scenarios.entries()) {
   // Warm the allocator first; a fixed workload should then reuse its slots.
   runBatch(scenario.jsException ? 100 : 1_000);
   const before = table.length;
-  runBatch(scenario.jsException ? 2_000 : 20_000);
+  // Bound unexpected-JS-exception probes so escaping exceptions do not turn into
+  // a memory trap before we can check their reference retention.
+  runBatch(scenario.jsException ? scenario.iterations : 20_000);
   const after = table.length;
   assert.equal(parser.formatChordProgression([]), "");
   console.log(JSON.stringify({ scenario: scenario.name, before, after }));
