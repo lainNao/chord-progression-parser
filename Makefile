@@ -11,6 +11,7 @@ check-not-broken:
 	make build-wasm-web
 	make build-wasm-node
 	make build-wasm-bundler
+	make test-wasm-references
 	make install-e2e-dependencies
 	make test-rust
 	make test-e2e
@@ -164,6 +165,10 @@ test-e2e:
 	cd e2e-test/node && bun run test
 	cd e2e-test/bundler && npx playwright install --with-deps && bun run test
 	make run-web-e2e
+
+# Exercise generated JS/WASM together; build-wasm-web must run first.
+test-wasm-references:
+	node _tools/audit-wasm-references.mjs
 
 # generator test
 test-generator:

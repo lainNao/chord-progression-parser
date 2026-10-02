@@ -14,6 +14,10 @@ pub struct ChordDetailed {
     pub base: Base,
     pub accidental: Option<Accidental>,
     pub chord_type: ChordType,
+    #[cfg_attr(
+        target_arch = "wasm32",
+        serde(deserialize_with = "crate::wasm_ast::deserialize_array")
+    )]
     pub extensions: Vec<Extension>,
 }
 

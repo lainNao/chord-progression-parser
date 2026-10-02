@@ -13,34 +13,58 @@ const fixtureParser = await import(moduleUrl.href);
 fixtureParser.initSync({ module: wasmBytes });
 const fixture = fixtureParser.parseChordProgressionString("C(9,9)-Dm(7)-G/B");
 assert.equal(fixture.success, true);
-const nullChordMetadata = structuredClone(fixture.ast);
-nullChordMetadata[0].chordBlocks[0].value[0].metaInfos = null;
-const nullExtensions = structuredClone(fixture.ast);
-nullExtensions[0].chordBlocks[0].value[0].chordExpression.value.detailed.extensions =
-  null;
 const scenarios = [
   { name: "valid AST", input: [], rejects: false },
   { name: "valid chord AST", input: fixture.ast, rejects: false },
   { name: "invalid object", input: {}, rejects: true },
   { name: "null AST", input: null, rejects: true },
-  {
-    name: "null section metadata",
-    input: [{ metaInfos: null, chordBlocks: [] }],
-    rejects: true,
-  },
-  {
-    name: "null section blocks",
-    input: [{ metaInfos: [], chordBlocks: null }],
-    rejects: true,
-  },
-  {
-    name: "null bar contents",
-    input: [{ metaInfos: [], chordBlocks: [{ type: "bar", value: null }] }],
-    rejects: true,
-  },
-  { name: "null chord metadata", input: nullChordMetadata, rejects: true },
-  { name: "null extensions", input: nullExtensions, rejects: true },
 ];
+const arrayFields = [
+  { name: "section metadata", path: [0, "metaInfos"] },
+  { name: "section blocks", path: [0, "chordBlocks"] },
+  { name: "bar contents", path: [0, "chordBlocks", 0, "value"] },
+  {
+    name: "chord metadata",
+    path: [0, "chordBlocks", 0, "value", 0, "metaInfos"],
+  },
+  {
+    name: "extensions",
+    path: [
+      0,
+      "chordBlocks",
+      0,
+      "value",
+      0,
+      "chordExpression",
+      "value",
+      "detailed",
+      "extensions",
+    ],
+  },
+];
+const invalidValues = [
+  { name: "null", value: null },
+  { name: "undefined", value: undefined },
+  { name: "boolean", value: true },
+  { name: "number", value: 0 },
+  { name: "string", value: "bad" },
+  { name: "object", value: {} },
+  { name: "function", value: () => {} },
+];
+for (const field of arrayFields) {
+  for (const invalid of invalidValues) {
+    const input = structuredClone(fixture.ast);
+    let parent = input;
+    for (const key of field.path.slice(0, -1))
+      parent = Reflect.get(parent, key);
+    Reflect.set(parent, field.path.at(-1), invalid.value);
+    scenarios.push({
+      name: `${invalid.name} ${field.name}`,
+      input,
+      rejects: true,
+    });
+  }
+}
 
 for (const [index, scenario] of scenarios.entries()) {
   moduleUrl.searchParams.set("scenario", String(index));
