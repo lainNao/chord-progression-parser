@@ -78,6 +78,20 @@ web package を直接読み込むブラウザの E2E で検証します。生成
 含まれます。Rust から DOM や JavaScript API を操作する処理が増えた場合は、
 WASM 専用の単体テストの必要性を再検討します。
 
+### JavaScript の例外と対応環境
+
+通常の AST と JSON の値では、配列フィールドに不正な値を渡しても参照枠を回収します。
+ただし、例外を投げる getter や revoked Proxy を AST に含めると、依存内の JavaScript
+呼び出しが Rust の解放処理を飛ばし、参照が残ります。`make build-wasm-web` の後に
+`node _tools/audit-wasm-references.mjs --js-exceptions` で再現できます。この任意の診断は
+参照テーブルの増加を検出して終了コード 1 を返し、通常の CI には含めません。
+
+[`wasm-bindgen` の推奨する `panic=unwind`](https://wasm-bindgen.github.io/wasm-bindgen/reference/attributes/on-js-imports/catch.html)
+で、getter・Proxy の例外でも解放されることを隔離したビルドで確認しました。
+ただし、[要件](https://wasm-bindgen.github.io/wasm-bindgen/reference/catch-unwind.html#requirements)は
+Rust nightly、標準ライブラリの再ビルド、WASM exception handling 対応ランタイムです。
+現在の stable ビルドと対応環境を変えるため、自動では採用せず判断を保留します。
+
 公開されている `chord_progression_parser.js` などのファイル名は維持します。
 camelCase へ変えると、既存の import と CDN の URL が壊れるため、変更する場合は
 破壊的変更として別途判断します。

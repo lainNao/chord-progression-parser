@@ -77,6 +77,22 @@ After `make build-wasm-web`, run `make test-wasm-references` to verify that repe
 malformed ASTs reuse reference slots. This is also part of `make check-not-broken`.
 Reconsider WASM-specific unit tests if Rust starts using more DOM or JavaScript APIs.
 
+### JavaScript exceptions and runtime support
+
+Ordinary ASTs and JSON values release their reference slots even when array fields
+have invalid values. Throwing getters and revoked Proxies can still skip Rust
+cleanup through dependency-internal JavaScript calls. After `make build-wasm-web`,
+run `node _tools/audit-wasm-references.mjs --js-exceptions` to reproduce this.
+This optional diagnostic exits with code 1 when the reference table grows and is
+excluded from the regular CI check.
+
+The [`wasm-bindgen` recommendation of `panic=unwind`](https://wasm-bindgen.github.io/wasm-bindgen/reference/attributes/on-js-imports/catch.html)
+released references for getter and Proxy exceptions in an isolated build. Its
+[requirements](https://wasm-bindgen.github.io/wasm-bindgen/reference/catch-unwind.html#requirements)
+include Rust nightly, rebuilding the standard library, and a runtime supporting
+WASM exception handling. Adoption is deferred because it changes the stable build
+and supported runtime requirements.
+
 Published filenames such as `chord_progression_parser.js` stay unchanged. Renaming
 them to camelCase would break existing imports and CDN URLs and requires a separate
 decision about a breaking change.

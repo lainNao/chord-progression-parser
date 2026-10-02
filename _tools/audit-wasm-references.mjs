@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 // Run after `make build-wasm-web`. Each workload gets its own WASM instance.
+const args = process.argv.slice(2);
+if (args.length > 1 || (args.length === 1 && args[0] !== "--js-exceptions")) {
+  throw new Error(
+    "Usage: node _tools/audit-wasm-references.mjs [--js-exceptions]",
+  );
+}
 const moduleUrl = new URL(
   "../pkg/pkg-web/chord_progression_parser.js",
   import.meta.url,
@@ -66,6 +72,54 @@ for (const field of arrayFields) {
   }
 }
 
+// Opt-in diagnostics for unexpected JS exceptions: these need a separate decision
+// about WASM exception handling and currently fail in the published build strategy.
+if (args[0] === "--js-exceptions") {
+  const { proxy, revoke } = Proxy.revocable([], {});
+  revoke();
+  const sectionGetter = structuredClone(fixture.ast);
+  Object.defineProperty(sectionGetter[0], "metaInfos", {
+    get() {
+      throw new Error("section getter");
+    },
+  });
+  const tagGetter = structuredClone(fixture.ast);
+  tagGetter[0].chordBlocks[0].value[0].denominator = Object.defineProperty(
+    {},
+    Symbol.toStringTag,
+    {
+      get() {
+        throw new Error("tag getter");
+      },
+    },
+  );
+  scenarios.splice(
+    0,
+    scenarios.length,
+    {
+      name: "revoked root Proxy",
+      input: proxy,
+      rejects: true,
+      jsException: true,
+      errorPattern: /revoked/,
+    },
+    {
+      name: "throwing section getter",
+      input: sectionGetter,
+      rejects: true,
+      jsException: true,
+      errorPattern: /^Error: section getter$/,
+    },
+    {
+      name: "throwing toStringTag getter",
+      input: tagGetter,
+      rejects: true,
+      jsException: true,
+      errorPattern: /^Error: tag getter$/,
+    },
+  );
+}
+
 for (const [index, scenario] of scenarios.entries()) {
   moduleUrl.searchParams.set("scenario", String(index));
   const parser = await import(moduleUrl.href);
@@ -80,7 +134,9 @@ for (const [index, scenario] of scenarios.entries()) {
       try {
         parser.formatChordProgression(scenario.input);
       } catch (error) {
-        assert.match(String(error), /^invalid chord progression AST:/);
+        if (scenario.jsException)
+          assert.match(String(error), scenario.errorPattern);
+        else assert.match(String(error), /^invalid chord progression AST:/);
         rejected += 1;
       }
     }
@@ -88,10 +144,11 @@ for (const [index, scenario] of scenarios.entries()) {
   }
 
   // Warm the allocator first; a fixed workload should then reuse its slots.
-  runBatch(1_000);
+  runBatch(scenario.jsException ? 100 : 1_000);
   const before = table.length;
-  runBatch(20_000);
+  runBatch(scenario.jsException ? 2_000 : 20_000);
   const after = table.length;
+  assert.equal(parser.formatChordProgression([]), "");
   console.log(JSON.stringify({ scenario: scenario.name, before, after }));
   if (after !== before) process.exitCode = 1;
 }
