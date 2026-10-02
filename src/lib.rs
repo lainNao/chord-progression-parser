@@ -6,7 +6,7 @@ mod parse_report;
 mod parser;
 mod util;
 mod warning_code;
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", test))]
 mod wasm_ast;
 use serde::Serialize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
