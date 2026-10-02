@@ -1,10 +1,11 @@
-.PHONY: generate-ts-types check-generated-types
+.PHONY: generate-ts-types check-generated-types prepare-release check-readme-version
 
 check-not-broken:
 	bun install --frozen-lockfile
 # Verify committed generated sources instead of silently repairing them before testing.
 	make test-resources
 	make check-generated-types
+	make check-readme-version
 	make check-types
 	make check-lint
 	make check-build
@@ -19,6 +20,7 @@ check-not-broken:
 
 check-local:
 	make check-generated-types
+	make check-readme-version
 	make check-types
 	make check-lint
 	make check-build
@@ -116,6 +118,14 @@ generate-ts-types:
 check-generated-types:
 	bun resources/generate_types.ts --check
 
+# Generate the versioned CDN example before committing a Cargo version bump.
+prepare-release:
+	bun resources/update_readme_version.ts
+
+# A version bump must include its generated README example, without rewriting it in CI.
+check-readme-version:
+	bun resources/update_readme_version.ts --check
+
 ################################################################
 ################################################################ fixer 
 ################################################################
@@ -146,6 +156,7 @@ review-snapshot:
 # lint check
 check-lint:
 	cargo clippy --all-targets --all-features -- -D warnings
+	cargo clippy --target wasm32-unknown-unknown --lib --all-features -- -D warnings
 	cargo fmt --all -- --check
 
 # build check

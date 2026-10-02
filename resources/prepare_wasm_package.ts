@@ -1,10 +1,12 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { updateReadmeVersion } from "./update_readme_version";
 
 type PackageTarget = "web" | "node" | "bundler";
 
 type PackageJson = Record<string, unknown> & {
   files: string[];
+  version: string;
 };
 
 type PrepareWasmPackageArgs = {
@@ -68,6 +70,9 @@ function parsePackageJson(source: string): PackageJson {
       'Generated package.json must contain a string array in "files"',
     );
   }
+  if (typeof packageJson.version !== "string") {
+    throw new Error('Generated package.json must contain a string "version"');
+  }
 
   return packageJson as PackageJson;
 }
@@ -90,6 +95,11 @@ export async function prepareWasmPackage({
   const packageJson = parsePackageJson(await readFile(packageJsonPath, "utf8"));
 
   await verifyAdditionalFiles(packageDirectory);
+  const readmePath = path.join(packageDirectory, "README.md");
+  const readme = updateReadmeVersion({
+    source: await readFile(readmePath, "utf8"),
+    version: packageJson.version,
+  });
 
   packageJson.name = getPackageName(target);
   packageJson.files = [
@@ -110,6 +120,7 @@ export async function prepareWasmPackage({
     }
   }
 
+  await writeFile(readmePath, readme);
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
 }
 
