@@ -60,11 +60,39 @@ currently no rules.
 every PR is welcome.
 branch rule is not decided yet.
 
+## Commit messages
+
+CI and hooks do not enforce a commit-message format. Releases are detected from
+the `Cargo.toml` version and Git tags, and release notes include every commit
+subject regardless of its prefix. Use a concise subject that describes the change.
+
+## WASM tests
+
+The WASM boundary is tested through Bun and Node.js ESM/CommonJS, Vite production
+bundles, and browser E2E tests loading the web package directly. These exercise
+the generated JavaScript, declarations, and WASM together, so there is currently
+no separate `wasm-bindgen-test` suite. Clippy also checks WASM-specific Rust code.
+
+After `make build-wasm-web`, run `make test-wasm-references` to verify that repeated
+malformed ASTs reuse reference slots. This is also part of `make check-not-broken`.
+Reconsider WASM-specific unit tests if Rust starts using more DOM or JavaScript APIs.
+
+Published filenames such as `chord_progression_parser.js` stay unchanged. Renaming
+them to camelCase would break existing imports and CDN URLs and requires a separate
+decision about a breaking change.
+
 ## Release
 
 When the `Cargo.toml` `version` is raised and pushed to the `main` branch, it will be automatically tagged and released.
 
+After raising the version, run `make prepare-release` to update the README's CDN
+version automatically. Commit `Cargo.toml` and the README together. CI and the
+commit hook detect drift without rewriting files. Generated npm package READMEs
+are also updated to their package version during the build.
+
 The npm packages use Trusted Publishing. In each package's npm settings, configure `lainNao/chord-progression-parser` as the GitHub repository and `test-and-release.yml` as the workflow.
+Under Allowed actions, also allow direct publication with `npm publish`. See the
+[npm configuration guide](https://docs.npmjs.com/trusted-publishers/) for these settings.
 
 If a release partially fails, run `test-and-release` manually in GitHub Actions with the existing tag in `tag-to-release`. Artifacts that are already published will be skipped.
 

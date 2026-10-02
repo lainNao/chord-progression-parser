@@ -17,6 +17,9 @@
 - `f9de553`: Rust/WASM公開APIを新Parserへ切替
 - `aea37a6`: 旧実装を削除し、Parserと公開モデルを一本化
 
+構文エラーは安全に再開できるcomma、bar、改行の境界から解析を継続し、
+複数の診断を入力順で返す。公開契約は [PARSER_COMPATIBILITY.md](./PARSER_COMPATIBILITY.md) を参照すること。
+
 AST/API v2候補は本リファクタへ混ぜず、既存JSON契約を維持している。
 
 ## 結論
@@ -34,7 +37,6 @@ crate 全体を捨てて作り直すのではなく、外部契約を維持し�
   - `unwrap` を前提とした構文エラー処理
 - 別の判断として後回しにするもの
   - AST への位置情報追加
-  - 複数エラーの同時返却
   - denominator の型変更
   - エラーコード体系の全面変更
 
@@ -204,7 +206,8 @@ chord 本体の解釈は token の走査から分離する。
 
 - Phase 0 の成功 corpus をすべて AST に変換できる
 - Phase 0 の失敗 corpus が panic せずエラーになる
-- production code の入力依存経路に `unwrap` / `expect` がない
+- EOF や構文エラーを `Result` で返し、ユーザー入力によって panic しない
+- 直前に確認した token の存在や `String` への書き込みなど、内部の不変条件は `expect` で表明できる
 
 ### Phase 3: 敵対的検証と差分テスト
 

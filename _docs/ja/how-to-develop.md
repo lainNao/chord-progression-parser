@@ -60,11 +60,40 @@ warning コードは、このメッセージ表から生成します。`make che
 どんなプルリクエストでも歓迎です。
 ブランチルールはまだ決まっていません。
 
+## コミットメッセージ
+
+メッセージの形式は CI や hook では強制しません。リリースの判定は
+`Cargo.toml` の version とタグを使い、リリースノートには種別にかかわらず
+すべてのコミットの件名を載せます。変更内容が分かる簡潔な件名を付けてください。
+
+## WASM のテスト
+
+WASM 境界は、Bun と Node.js の ESM/CommonJS、Vite の production bundle、
+web package を直接読み込むブラウザの E2E で検証します。生成された JavaScript、
+型定義、WASM の組み合わせを確認するため、現状は `wasm-bindgen-test` による
+別の単体テスト群は追加しません。Rust 側の WASM 固有コードには Clippy をかけます。
+
+不正な AST を繰り返し渡したときの参照枠の再利用は、`make build-wasm-web` の後に
+`make test-wasm-references` で確認できます。この検証は `make check-not-broken` にも
+含まれます。Rust から DOM や JavaScript API を操作する処理が増えた場合は、
+WASM 専用の単体テストの必要性を再検討します。
+
+公開されている `chord_progression_parser.js` などのファイル名は維持します。
+camelCase へ変えると、既存の import と CDN の URL が壊れるため、変更する場合は
+破壊的変更として別途判断します。
+
 ## リリース
 
 `Cargo.toml`の`version`を上げて`main`ブランチにプッシュされると、自動でタグがつけられてリリースされます。
 
+version を上げた後は `make prepare-release` を実行し、README の CDN の
+バージョンを自動更新してください。`Cargo.toml` と README を同じコミットへ含めます。
+CI と commit hook は不一致を検出しますが、ファイルを書き換えません。
+生成する npm パッケージの README も、ビルド時にその package version へ合わせます。
+
 npmパッケージはTrusted Publishingを使います。各パッケージのnpm設定では、GitHubリポジトリを`lainNao/chord-progression-parser`、workflowを`test-and-release.yml`として登録してください。
+Allowed actions では、`npm publish` による直接公開も許可してください。
+設定項目は [npm の説明](https://docs.npmjs.com/trusted-publishers/)を参照してください。
 
 リリースが一部だけ失敗した場合は、GitHub Actionsから`test-and-release`を開き、既存タグを`tag-to-release`に指定して再実行します。公開済みの成果物はスキップされます。
 

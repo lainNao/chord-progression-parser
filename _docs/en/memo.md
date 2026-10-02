@@ -1,17 +1,16 @@
 # MEMO
 
-- I tried to do the following for github actions releases, skipping the job if it has already been released with that tag, but the code was too long, so I decided not to do it. Even if I don't do this, the error will occur on its own, and it's not a functional problem. If the code is made into a separate action so that it is only one line, it might be more beneficial to do it.
+The release workflows support retries after a partial publication failure.
 
-  ```yml
-      # if already released, exit
-      - name: Check the version does not released
-        run: |
-          AVAILABLE_VERSIONS=$(npm view @lainnao/chord-progression-parser-bundler versions --json)
-          TARGET_VERSION=$(echo ${{ inputs.tag-to-release }} | sed -e 's/^v//')
-          if [[ $(echo $AVAILABLE_VERSIONS | jq 'index("'$TARGET_VERSION'")') == null ]]; then
-            echo "Version $TARGET_VERSION does not exist"
-          else
-            echo "Version $TARGET_VERSION already exists"
-            exit 1
-          fi
-  ```
+- npm and crates.io publication check the exact package version through the shared
+  [registry check](../../_tools/release/is_published.sh). Published versions are
+  skipped successfully.
+- Registry and network errors stop the publication job. Only HTTP 404 means the
+  requested version has not been published.
+- The GitHub Release is created after all package publication jobs succeed.
+  An existing GitHub Release is retained when retrying the same tag.
+
+To retry, run [test-and-release](../../.github/workflows/test-and-release.yml)
+manually in GitHub Actions and specify the existing tag in `tag-to-release`.
+The tag must match the version in that tag's `Cargo.toml`. See the
+[development guide](./how-to-develop.md#release) for release setup.
