@@ -36,6 +36,9 @@ G - Am - Bm(o) - C
 - Details
   - `SectionMeta`
     - format: `@key=value`
+    - `@section=Name`: section name
+    - `@repeat=2`: repetition count
+    - `@same=Name`: reference to the chord progression of the named section
   - `ChordInfo`
     - format: `[key=value]Chord(Extension)`
     - capture:
@@ -58,6 +61,34 @@ G - Am - Bm(o) - C
     - Chord metadata must precede its chord; postfix forms such as `C[key=A]` are invalid
     - Section metadata must occupy its own line
     - Pipe notation such as `|C|` is not supported
+
+## Named-section references (`@same`)
+
+```txt
+@section=Verse
+C - G - Am - F
+
+@section=Reprise
+@same=Verse
+@repeat=2
+```
+
+An optional `@section` before `@same` names the referencing section. The AST stores
+the reference as `SectionMeta` `{ "type": "same", "value": "Verse" }` without
+expanding the target's chords. A reference-only section has an empty `chordBlocks`
+array. Reference names follow the same single-value syntax as section names and
+retain their exact Unicode spelling and case.
+
+Following `@repeat` metadata belongs to the referencing section. Following
+`@section` or `@same` metadata starts a new section even without any chord lines.
+
+`@same` references the entire section. Combining it with chord lines in that
+section is a syntax error (`SMIV-4`). Start a new section with `@section` before
+writing another chord progression.
+
+Applications decide target existence, forward/self/cyclic references, and which
+definition to choose when duplicate names have different contents. The parser
+retains references and definitions in source order without choosing a definition.
 
 ## Diagnostic positions
 

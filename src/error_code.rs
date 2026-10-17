@@ -40,6 +40,13 @@ pub enum ErrorCode {
      */
     Smiv3,
 
+    #[strum(serialize = "SMIV-4")]
+    /**
+     * en: A section with 'same' metadata must not contain chord lines
+     * ja: 「same」を指定したセクションにコード本文は記述できません
+     */
+    Smiv4,
+
     #[strum(serialize = "CIMK-1")]
     /**
      * en: Chord metadata key must be followed by '='

@@ -1,4 +1,58 @@
 import { test, expect } from "@playwright/test";
+import type { Ast } from "@lainnao/chord-progression-parser-web/generatedTypes";
+
+/** The direct browser package exports the same reference tag and localized syntax error. */
+test("native browser WASM preserves references without allowing chord bodies", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3498/");
+  const result = await page.evaluate(
+    async (): Promise<{
+      readonly ast: Ast;
+      readonly formatted: string;
+      readonly codes: readonly string[];
+      readonly message: string | undefined;
+    }> => {
+      const modulePath = "/chord_progression_parser.js";
+      const parser = (await import(
+        modulePath
+      )) as typeof import("@lainnao/chord-progression-parser-web");
+      await parser.default();
+      const parsed = parser.parseChordProgressionString(
+        "@same=サビ😀\n@repeat=2\n@section=Other\nC",
+      );
+      if (!parsed.success) throw new Error("unresolved references must parse");
+      const invalid = parser.parseChordProgressionString("@same=サビ😀\nC");
+      if (invalid.success) throw new Error("mixed chord bodies must fail");
+      const messagesPath = "/error_code_message_map.js";
+      const messages = (await import(
+        messagesPath
+      )) as typeof import("@lainnao/chord-progression-parser-web/error_code_message_map");
+      return {
+        ast: parsed.ast,
+        formatted: parser.formatChordProgression(parsed.ast),
+        codes: invalid.errors.map((error): string => error.code),
+        message: messages.getErrorMessage({
+          errorCode: invalid.errors[0].code,
+          lang: "ja",
+        }),
+      };
+    },
+  );
+  expect(result.ast).toHaveLength(2);
+  expect(result.ast[0]).toEqual({
+    metaInfos: [
+      { type: "same", value: "サビ😀" },
+      { type: "repeat", value: 2 },
+    ],
+    chordBlocks: [],
+  });
+  expect(result.formatted).toBe("@same=サビ😀\n@repeat=2\n\n@section=Other\nC");
+  expect(result.codes).toEqual(["SMIV-4"]);
+  expect(result.message).toBe(
+    "「same」を指定したセクションにコード本文は記述できません",
+  );
+});
 
 /** Direct browser imports retain blank lines without splitting the named section. */
 test("native browser WASM keeps one blank line inside the current section", async ({

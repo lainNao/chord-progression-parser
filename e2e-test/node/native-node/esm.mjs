@@ -8,6 +8,34 @@ import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warnin
 import { getErrorMessage } from "@lainnao/chord-progression-parser-node/error_code_message_map.js";
 import { Extension } from "@lainnao/chord-progression-parser-node/generatedTypes.js";
 
+/** A new metadata tag must survive native JS/WASM serialization without resolving its target. */
+test("native WASM preserves same-section metadata and rejects mixed chord lines", () => {
+  const source = "@same=サビ😀\n@repeat=2\n@section=Other\nC";
+  const result = parseChordProgressionString(source);
+  assert.equal(result.success, true);
+  assert.equal(result.ast.length, 2);
+  assert.deepEqual(result.ast[0], {
+    metaInfos: [
+      { type: "same", value: "サビ😀" },
+      { type: "repeat", value: 2 },
+    ],
+    chordBlocks: [],
+  });
+  const formatted = formatChordProgression(result.ast);
+  assert.equal(formatted, "@same=サビ😀\n@repeat=2\n\n@section=Other\nC");
+  assert.deepEqual(parseChordProgressionString(formatted).ast, result.ast);
+  const failure = parseChordProgressionString("@same=サビ😀\nC");
+  assert.equal(failure.success, false);
+  assert.deepEqual(
+    failure.errors.map((error) => error.code),
+    ["SMIV-4"],
+  );
+  assert.equal(
+    getErrorMessage({ errorCode: failure.errors[0].code, lang: "en" }),
+    "A section with 'same' metadata must not contain chord lines",
+  );
+});
+
 /** Keeps one blank line without creating an anonymous section or resetting repetition. */
 test("native WASM preserves blank lines inside the preceding section", () => {
   const source = "@section=Verse\n[key=C]C\n\n\n%\n@section=Chorus\nG";

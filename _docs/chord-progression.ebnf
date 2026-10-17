@@ -1,6 +1,6 @@
 document          = { line-break | section-meta | (chord-line, line-end) } ;
 section-meta      = "@", section-meta-key, "=", section-meta-value, line-end ;
-section-meta-key  = "section" | "repeat" ;
+section-meta-key  = "section" | "repeat" | "same" ;
 
 chord-line        = bar, { "-", bar } ;
 bar               = chord-info, { ",", chord-info } ;
@@ -28,10 +28,14 @@ line-break        = "\r\n" | "\n" | "\r" ;
   Blank lines do not reset section metadata or the previous-chord reference.
   Section metadata after chord lines starts a new section even with only one
   intervening line break. A document may contain any number of sections.
-  Section metadata remains attached to the following chord lines even when
+  In chord-based sections, metadata remains attached to the following chord lines even when
   blank lines occur between the metadata and the first chord line.
   Leading/trailing line breaks and blank lines before the first chord line
   are omitted; section boundaries are formatted with one blank line.
+  Same metadata stores a named-section reference without resolving or expanding
+  it. A reference-only section is complete: subsequent section or same metadata
+  starts a new section, while repeat metadata still belongs to the reference.
+  A section with same metadata must not contain chord lines (SMIV-4).
   This is a canonical AST serialization format; extensions require parentheses.
   For compatibility, the parser also accepts one trailing comma after a bar's
   last chord-info (including before a dash, line break, or end of input).

@@ -5,12 +5,35 @@ import {
   Accidental,
   ChordType,
   Extension,
+  type SectionMeta,
 } from "@lainnao/chord-progression-parser-node/generatedTypes";
 import {
   ERROR_CODE_MESSAGE_MAP,
   getErrorMessage,
 } from "@lainnao/chord-progression-parser-node/error_code_message_map";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warning_code_message_map";
+
+/** The generated metadata union and the WASM API keep named references without expansion. */
+test("preserves same-section references in generated TypeScript types and WASM", (): void => {
+  const reference: SectionMeta = { type: "same", value: "サビ😀" };
+  const result = parser.parseChordProgressionString(
+    "@same=サビ😀\n@repeat=2\n@section=Other\nC",
+  );
+  if (!result.success) throw new Error("unresolved references must parse");
+  expect(result.ast).toHaveLength(2);
+  expect(result.ast[0].metaInfos).toEqual([
+    reference,
+    { type: "repeat", value: 2 },
+  ]);
+  expect(result.ast[0].chordBlocks).toEqual([]);
+  expect(parser.formatChordProgression(result.ast)).toBe(
+    "@same=サビ😀\n@repeat=2\n\n@section=Other\nC",
+  );
+  const invalid = parser.parseChordProgressionString("@same=サビ😀\nC");
+  if (invalid.success)
+    throw new Error("reference sections must reject chord lines");
+  expect(invalid.errors.map((error): string => error.code)).toEqual(["SMIV-4"]);
+});
 
 test("can import", () => {
   expect(Accidental.Flat).toBeDefined();

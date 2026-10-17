@@ -20,6 +20,7 @@ fn mutated_documents_keep_diagnostics_aligned_with_the_original_source() {
         "C-H\n\n%",
         "@section=😀\n\nC(9,9)",
         "C/D(9,11)-C(7,7)\n[key=Bb]C(1)-%",
+        "@section=Reprise\n@same=曲😀\n@repeat=2\n@section=曲😀\nC(9,9)",
     ];
     let alphabet: Vec<char> = "ACm79@[]()=,/-?%_ \t\n\rあ♭😀\0\u{2028}\u{200b}"
         .chars()

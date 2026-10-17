@@ -51,6 +51,10 @@ export const ERROR_CODE_MESSAGE_MAP = {
       en: "The repeat section metadata value must be a non-negative integer",
       ja: "セクションメタ情報「repeat」の値は0以上の整数である必要があります",
     },
+    "SMIV-4": {
+      en: "A section with 'same' metadata must not contain chord lines",
+      ja: "「same」を指定したセクションにコード本文は記述できません",
+    },
   },
   CIMK: {
     "CIMK-1": {

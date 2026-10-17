@@ -47,7 +47,9 @@
     "C(add9)",
     "C(sus4)",
     "Cm(o)",
-    "C(7)/E"
+    "C(7)/E",
+    "@same=Verse",
+    "@section=Reprise\n@same=サビ😀\n@repeat=2"
   ],
   "invalid": [
     "C1",
@@ -70,6 +72,10 @@
     "Cadd9",
     "Csus4",
     "Cm7b5",
-    "C7/E"
+    "C7/E",
+    "@same",
+    "@same=",
+    "@same=Verse extra",
+    "@same=Verse\nC - G"
   ]
 }

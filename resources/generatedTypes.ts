@@ -4,7 +4,9 @@
 
 export type SectionMeta = 
 	| { type: "section", value: string }
-	| { type: "repeat", value: number };
+	| { type: "repeat", value: number }
+	/** Keeps a named-section reference without selecting or expanding its target. */
+	| { type: "same", value: string };
 
 export type ChordBlock = 
 	| { type: "bar", value: Bar }

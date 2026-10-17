@@ -47,6 +47,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let mut has_prior_chord = false;
         // Explicit metadata starts a section even after a line rejected during recovery.
         let mut section_has_chord_lines = false;
+        let mut section_has_reference = false;
         let mut errors = Vec::new();
 
         loop {
@@ -56,11 +57,21 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
 
             let starts_section_meta = self.at(TokenKind::At);
-            if section_has_chord_lines && starts_section_meta {
+            // A reference is a complete section even without chord lines. Repeat
+            // metadata may still qualify it; other metadata starts the next section.
+            let extends_reference_metadata = matches!(
+                self.tokens.get(self.cursor + 1).map(|token| token.kind),
+                Some(TokenKind::Text("repeat"))
+            );
+            if starts_section_meta
+                && (section_has_chord_lines
+                    || (section_has_reference && !extends_reference_metadata))
+            {
                 sections.push(current_section);
                 current_section = empty_section();
                 has_prior_chord = false;
                 section_has_chord_lines = false;
+                section_has_reference = false;
             } else if !current_section.chord_blocks.is_empty() {
                 // One Br preserves a newline; two preserve one blank line without
                 // discarding section metadata or the preceding chord reference.
@@ -71,13 +82,21 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
 
             if starts_section_meta {
                 match self.parse_section_meta() {
-                    Ok(meta) => current_section.meta_infos.push(meta),
+                    Ok(meta) => {
+                        section_has_reference |= matches!(&meta, SectionMeta::Same(_));
+                        current_section.meta_infos.push(meta);
+                    }
                     Err(meta_errors) => {
                         errors.extend(meta_errors);
                         self.skip_to_line_end();
                     }
                 }
             } else {
+                if section_has_reference {
+                    errors.push(parse_error(ErrorCode::Smiv4, self.current_span(), None));
+                    self.skip_to_line_end();
+                    continue;
+                }
                 section_has_chord_lines = true;
                 loop {
                     let recovery_start = self.cursor;
@@ -134,7 +153,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             .map_err(|error| vec![error])?;
 
         let mut errors = Vec::new();
-        if !matches!(key, "section" | "repeat") {
+        if !matches!(key, "section" | "repeat" | "same") {
             errors.push(parse_error(
                 ErrorCode::Smik1,
                 key_span,
@@ -165,6 +184,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
 
         let meta = match (key, value) {
             ("section", Some((value, _))) => Some(SectionMeta::Section(value.to_string())),
+            ("same", Some((value, _))) => Some(SectionMeta::Same(value.to_string())),
             ("repeat", Some((value, value_span))) => match value.parse::<u32>() {
                 Ok(repeat) => Some(SectionMeta::Repeat(repeat)),
                 Err(_) => {
@@ -806,6 +826,7 @@ mod tests {
             ("@section=", "SMIV-1"),
             ("@section=A extra", "SMIV-2"),
             ("@repeat=nope", "SMIV-3"),
+            ("@same=Verse\nC", "SMIV-4"),
             ("[key C]C", "CIMK-1"),
             ("[]C", "CIMK-2"),
             ("[bad=C]C", "CIMK-3"),

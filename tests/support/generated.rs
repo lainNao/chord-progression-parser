@@ -160,7 +160,8 @@ fn document(bytes: &[u8]) -> (String, Ast) {
     let newline = ["\n", "\r", "\r\n"][choices.index(3)];
     let mut source = String::new();
     let mut ast = Vec::new();
-    for section_index in 0..1 + choices.index(4) {
+    let section_count = 1 + choices.index(4);
+    for section_index in 0..section_count {
         if section_index > 0 {
             source.push_str(&newline.repeat(1 + choices.index(3)));
         }
@@ -184,6 +185,14 @@ fn document(bytes: &[u8]) -> (String, Ast) {
             let count = [0, 1, 2, u32::MAX][choices.index(4)];
             write!(source, "@repeat={count}{newline}").unwrap();
             section.meta_infos.push(SectionMeta::Repeat(count));
+        }
+        // Keep the final section chord-based so the recovery suffix still has
+        // preceding chord context; earlier reference-only sections may refer to themselves.
+        if section_index + 1 < section_count && choices.index(3) == 0 {
+            write!(source, "@same={name}{newline}").unwrap();
+            section.meta_infos.push(SectionMeta::Same(name.to_owned()));
+            ast.push(section);
+            continue;
         }
         // Blank lines before the first chord keep the metadata in the same section.
         if choices.index(2) == 0 {

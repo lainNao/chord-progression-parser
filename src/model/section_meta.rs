@@ -7,5 +7,6 @@ use typeshare::typeshare;
 pub enum SectionMeta {
     Section(String),
     Repeat(u32),
-    // or more
+    /** Keeps a named-section reference without selecting or expanding its target. */
+    Same(String),
 }

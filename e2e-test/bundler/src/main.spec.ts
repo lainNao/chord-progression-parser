@@ -3,6 +3,32 @@ import { testData } from "./main.spec.fixtures";
 import type { ParseWarning } from "@lainnao/chord-progression-parser-bundler";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-bundler/warning_code_message_map.js";
 
+/** Bundled WASM retains reference metadata and reports forbidden chord bodies as parser errors. */
+test("keeps same-section references and reports mixed chord lines", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  const source = "@same=サビ😀\n@repeat=2\n@section=Other\nC";
+  await page.locator("#textarea").fill(source);
+  await expect(page.locator("#result")).toHaveAttribute(
+    "data-formatted",
+    "@same=サビ😀\n@repeat=2\n\n@section=Other\nC",
+  );
+  const result = JSON.parse(await page.locator("#result").innerText());
+  expect(result.ast).toHaveLength(2);
+  expect(result.ast[0]).toEqual({
+    metaInfos: [
+      { type: "same", value: "サビ😀" },
+      { type: "repeat", value: 2 },
+    ],
+    chordBlocks: [],
+  });
+  await page.locator("#textarea").fill("@same=サビ😀\nC");
+  await expect(page.locator("#result")).toContainText("SMIV-4");
+  await expect(page.locator("#result mark")).toHaveText("C");
+  await expect(page.locator("#result")).toHaveAttribute("data-formatted", "");
+});
+
 /** Runs the actual bundled WASM parser and formatter over an intentional blank line. */
 test("retains the current section and one blank line in the browser", async ({
   page,

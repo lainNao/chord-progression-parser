@@ -8,7 +8,7 @@
 
 - Rust API は `parse_chord_progression_string(&str)` を提供する。
 - JavaScript API は `parseChordProgressionString(string)` を提供する。
-- 成功時のAST JSONの型・フィールドは維持する。空行によるsection構成の変更は、後述の「空行の契約変更」に従う。
+- 既存のAST JSONの型・フィールドは維持する。空行によるsection構成の変更と参照用の新しいtagの追加は、後述の契約変更に従う。
 - syntax error は戻り値として返し、ユーザー入力によって panic または JavaScript throw を発生させない。
 - `lineNumber` と `columnNumber` は 1 始まりとする。
 - syntax error は入力順の配列で返し、安全に再開できるcomma、bar、改行の境界から解析を継続する。
@@ -22,6 +22,7 @@
 | --- | --- |
 | `@section=Verse` | section名 |
 | `@repeat=2` | sectionの繰り返し回数 |
+| `@same=Verse` | 名前で指定したsectionのコード進行への未解決の参照 |
 | `[key=C]C` | 後続chordに属するkey情報 |
 | `C-D` | 2個のbar |
 | `C,D` | 1個のbar内の2個のchord |
@@ -37,7 +38,7 @@
 - denominatorは今回も文字列として保持する。ただし空文字列と2個目のslashは拒否する。
 - extensionは定義済み文字列との完全一致だけを許可する。
 - bar末尾のcommaは1個まで受理し、formatterは省略する（`C/D,`、`C,-D`など）。extensionリストの末尾commaは許可しない。
-- 複数のsection metaは、chord lineが始まるまで同じsectionへ属する。
+- 複数のsection metaは、通常はchord lineが始まるまで同じsectionへ属する。`@same`で参照が完成した後の境界は「セクション参照の追加」に従う。
 - section metaと最初のchord lineの間にある空行はsectionを分割しない。
 - 文書の先頭・末尾とsectionの最初のchord lineより前の改行・空行は省略する。
 
@@ -45,9 +46,19 @@
 
 - 空行だけではsectionを分割せず、section名・key・`%`の先行chord参照を継続する。
 - chord line間の空行は既存の`ChordBlock::Br`を2個並べて保持し、複数の空行は1行へまとめる。ASTの型・JSONフィールドは増やさない。
-- chord lineの後にsection metaが現れたときだけ、新しいsectionを開始する。明示した新sectionでは`%`の参照をリセットする。
+- chord lineの後にsection metaが現れると、新しいsectionを開始する。明示した新sectionでは`%`の参照をリセットする。参照だけのsectionの境界は「セクション参照の追加」に従う。
 - formatterも同一section内の空行を1行保持する。編集中の入力原文を自動的に書き換える契約ではない。
 - 0.9.4以前のASTで空行から作られた匿名sectionは、新しいparserの同一sectionと一致しない。利用側の更新時は原文からAST・section別の派生データ・検索索引を再生成する。旧ASTを新formatterへ渡すと、同じ構造へ往復できないため拒否される場合がある。
+
+## セクション参照の追加（次回公開から）
+
+- `@same=名前`を`SectionMeta::Same(String)`、JSONでは`{ "type": "same", "value": "名前" }`として保持する。
+- 参照先の存在確認・コード進行への展開・重複名からの候補選択は行わない。未定義・前方・自己・循環参照もそのまま保持し、解決方法は利用側に委ねる。
+- `@section`で参照側の名前を付ける場合は`@same`より前へ置く。`@repeat`は`@same`の前後に置ける。
+- 参照だけのsectionも独立したsectionとして返す。`@same`の後の`@section`・`@same`は新sectionを開始し、`@repeat`だけは同じ参照側へ付く。
+- `@same`と同じsectionへのコード本文の併記は構文エラー`SMIV-4`とする。拒否した本文は参照へ混ぜず、後続sectionの解析を継続する。
+- 値の必須性・単一値の読み取り・専用行・診断位置は既存のsection metaと同じ契約を使う。formatterは参照の指定をそのまま出力してASTを往復させる。
+- 利用側は`SectionMeta`の判別可能unionへ追加された`same`を扱う必要がある。アプリケーションへの取り込みは別作業とし、この変更では行わない。
 
 ## 意図して修正する挙動
 

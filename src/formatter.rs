@@ -63,6 +63,7 @@ fn write_section_meta(source: &mut String, meta: &SectionMeta) {
     match meta {
         SectionMeta::Section(value) => write!(source, "@section={value}"),
         SectionMeta::Repeat(value) => write!(source, "@repeat={value}"),
+        SectionMeta::Same(value) => write!(source, "@same={value}"),
     }
     .expect("writing into a String cannot fail");
 }
