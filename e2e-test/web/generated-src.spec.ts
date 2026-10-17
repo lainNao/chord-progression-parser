@@ -1,5 +1,39 @@
 import { test, expect } from "@playwright/test";
 
+/** Direct browser imports retain blank lines without splitting the named section. */
+test("native browser WASM keeps one blank line inside the current section", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3498/");
+  const result = await page.evaluate(async () => {
+    const modulePath = "/chord_progression_parser.js";
+    const parser = (await import(
+      modulePath
+    )) as typeof import("@lainnao/chord-progression-parser-web");
+    await parser.default();
+    const parsed = parser.parseChordProgressionString(
+      "@section=Verse\n[key=C]C\n\n\n%",
+    );
+    if (!parsed.success)
+      throw new Error("blank lines must not reset the previous chord");
+    return {
+      ast: parsed.ast,
+      formatted: parser.formatChordProgression(parsed.ast),
+    };
+  });
+  expect(result.ast).toHaveLength(1);
+  expect(result.ast[0].metaInfos).toEqual([
+    { type: "section", value: "Verse" },
+  ]);
+  expect(result.ast[0].chordBlocks.map((block): string => block.type)).toEqual([
+    "bar",
+    "br",
+    "br",
+    "bar",
+  ]);
+  expect(result.formatted).toBe("@section=Verse\n[key=C]C\n\n%");
+});
+
 test("success simple usage", async ({ page }) => {
   await page.goto("http://localhost:3498/");
   await expect(page.locator("#result")).toHaveAttribute("data-formatted", "C");

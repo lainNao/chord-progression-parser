@@ -49,9 +49,11 @@ G - Am - Bm(o) - C
     - `C-D` treats `C` and `D` as separate bars
     - `C,D` treats `C` and `D` as chords in the same bar
     - One line break is preserved inside the same section
-    - Two or more consecutive line breaks after chord lines start a new section
+    - Blank lines between chord lines stay inside the same section; multiple blank lines collapse to one (two consecutive `br` blocks in the AST)
+    - Blank lines do not reset the section name, key, or `%` reference to the preceding chord
     - Section metadata after chord lines also starts a new section, even with one line break
     - Blank lines before the first chord line retain preceding section metadata in the same section
+    - Line breaks at document edges and before a section's first chord line are omitted
   - Constraints
     - Chord metadata must precede its chord; postfix forms such as `C[key=A]` are invalid
     - Section metadata must occupy its own line

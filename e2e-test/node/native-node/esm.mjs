@@ -8,6 +8,27 @@ import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warnin
 import { getErrorMessage } from "@lainnao/chord-progression-parser-node/error_code_message_map.js";
 import { Extension } from "@lainnao/chord-progression-parser-node/generatedTypes.js";
 
+/** Keeps one blank line without creating an anonymous section or resetting repetition. */
+test("native WASM preserves blank lines inside the preceding section", () => {
+  const source = "@section=Verse\n[key=C]C\n\n\n%\n@section=Chorus\nG";
+  const result = parseChordProgressionString(source);
+  assert.equal(result.success, true);
+  assert.equal(result.ast.length, 2);
+  assert.deepEqual(result.ast[0].metaInfos, [
+    { type: "section", value: "Verse" },
+  ]);
+  assert.deepEqual(
+    result.ast[0].chordBlocks.map((block) => block.type),
+    ["bar", "br", "br", "bar"],
+  );
+  const formatted = formatChordProgression(result.ast);
+  assert.equal(
+    formatted,
+    "@section=Verse\n[key=C]C\n\n%\n\n@section=Chorus\nG",
+  );
+  assert.deepEqual(parseChordProgressionString(formatted).ast, result.ast);
+});
+
 /** Exercises the documented imports and WASM API under native Node.js ESM. */
 test("native ESM parses, formats, and resolves localized diagnostics", () => {
   const result = parseChordProgressionString("C(9,9)");

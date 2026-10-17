@@ -45,7 +45,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let mut sections = Vec::new();
         let mut current_section = empty_section();
         let mut has_prior_chord = false;
-        // Section boundaries follow source lines, including lines rejected during recovery.
+        // Explicit metadata starts a section even after a line rejected during recovery.
         let mut section_has_chord_lines = false;
         let mut errors = Vec::new();
 
@@ -56,13 +56,17 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
 
             let starts_section_meta = self.at(TokenKind::At);
-            if section_has_chord_lines && (newline_count >= 2 || starts_section_meta) {
+            if section_has_chord_lines && starts_section_meta {
                 sections.push(current_section);
                 current_section = empty_section();
                 has_prior_chord = false;
                 section_has_chord_lines = false;
-            } else if newline_count == 1 && !current_section.chord_blocks.is_empty() {
-                current_section.chord_blocks.push(ChordBlock::Br);
+            } else if !current_section.chord_blocks.is_empty() {
+                // One Br preserves a newline; two preserve one blank line without
+                // discarding section metadata or the preceding chord reference.
+                for _ in 0..newline_count.min(2) {
+                    current_section.chord_blocks.push(ChordBlock::Br);
+                }
             }
 
             if starts_section_meta {
@@ -761,12 +765,13 @@ mod tests {
         );
     }
 
-    /** Accepts extra blank lines as a section boundary instead of BL-1. */
+    /** Keeps one blank line inside the section instead of splitting it or reporting BL-1. */
     #[test]
-    fn accepts_multiple_blank_lines_between_sections() {
+    fn accepts_multiple_blank_lines_inside_sections() {
         let ast = parse("C\n\n\n\nD").expect("extra blank lines must be harmless");
 
-        assert_eq!(ast.len(), 2);
+        assert_eq!(ast.len(), 1);
+        assert_eq!(ast[0].chord_blocks.len(), 4);
     }
 
     /** Rejects metadata placed after the chord it would otherwise be detached from. */
@@ -1201,10 +1206,10 @@ mod tests {
         );
     }
 
-    /** Keeps reporting after multiple blank lines that create a section boundary. */
+    /** Keeps diagnostic positions in the original source despite collapsing blank lines. */
     #[test]
-    fn reports_errors_across_blank_section_boundaries() {
-        let errors = parse("H\n\n\nI").expect_err("both invalid sections must be reported");
+    fn reports_errors_across_blank_lines() {
+        let errors = parse("H\n\n\nI").expect_err("both invalid chord lines must be reported");
 
         assert_eq!(errors.len(), 2);
         assert_eq!(errors[0].position.line_number, 1);

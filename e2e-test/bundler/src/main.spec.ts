@@ -3,6 +3,30 @@ import { testData } from "./main.spec.fixtures";
 import type { ParseWarning } from "@lainnao/chord-progression-parser-bundler";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-bundler/warning_code_message_map.js";
 
+/** Runs the actual bundled WASM parser and formatter over an intentional blank line. */
+test("retains the current section and one blank line in the browser", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  const source = "@section=Verse\n[key=C]C\n\n\n%\n@section=Chorus\nG";
+  await page.locator("#textarea").fill(source);
+  await expect(page.locator("#result")).toHaveAttribute(
+    "data-formatted",
+    "@section=Verse\n[key=C]C\n\n%\n\n@section=Chorus\nG",
+  );
+  const result = JSON.parse(await page.locator("#result").innerText());
+  expect(result.ast).toHaveLength(2);
+  expect(result.ast[0].metaInfos).toEqual([
+    { type: "section", value: "Verse" },
+  ]);
+  expect(
+    result.ast[0].chordBlocks.map(
+      (block: { type: string }): string => block.type,
+    ),
+  ).toEqual(["bar", "br", "br", "bar"]);
+  await expect(page.locator("#textarea")).toHaveValue(source);
+});
+
 /** Keeps text entered during WASM loading instead of waiting for another input event. */
 test("parses input entered before WASM initialization", async ({
   page,

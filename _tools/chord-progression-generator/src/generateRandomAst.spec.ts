@@ -47,6 +47,8 @@ test("generates valid repetition context and duplicate extension warnings", (): 
   const random = spyOn(Math, "random").mockReturnValue(0.125);
   try {
     const ast = generateRandomAst(countRanges);
+    expect(ast[0].metaInfos).toEqual([]);
+    expect(ast[1].metaInfos).toEqual([{ type: "section", value: "Section2" }]);
     const result = parseChordProgressionString(formatChordProgression(ast));
     expect(result.success).toBe(true);
     switch (result.success) {
@@ -66,6 +68,9 @@ test("generates valid repetition context and duplicate extension warnings", (): 
       for (const [index, block] of section.chordBlocks.entries()) {
         switch (block.type) {
           case "bar":
+            expect(
+              block.value.every((info): boolean => info.metaInfos.length === 0),
+            ).toBe(true);
             expect(block.value[0].chordExpression.type).toBe(
               index === 0 ? "chord" : "same",
             );

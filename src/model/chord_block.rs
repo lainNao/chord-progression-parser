@@ -13,5 +13,6 @@ pub enum ChordBlock {
         )]
         Bar,
     ),
-    Br, // break of line
+    // One line break; two consecutive blocks preserve one blank line in the same section.
+    Br,
 }

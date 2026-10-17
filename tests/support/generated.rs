@@ -193,8 +193,11 @@ fn document(bytes: &[u8]) -> (String, Ast) {
         for bar_index in 0..1 + choices.index(5) {
             if bar_index > 0 {
                 if choices.index(2) == 0 {
-                    source.push_str(newline);
-                    section.chord_blocks.push(ChordBlock::Br);
+                    let newline_count = 1 + choices.index(4);
+                    source.push_str(&newline.repeat(newline_count));
+                    for _ in 0..newline_count.min(2) {
+                        section.chord_blocks.push(ChordBlock::Br);
+                    }
                 } else {
                     source.push('-');
                 }
@@ -234,7 +237,7 @@ fn assert_recovery(source: &str, warnings: &[ParseWarning], bytes: &[u8]) {
         ("-", false),
         ("\n", false),
         ("\r\n", false),
-        ("\n\n", true),
+        ("\n\n", false),
         ("\n@section=Next\n", true),
     ][usize::from(bytes[bytes.len() - 1]) % 5];
     let prefix = source.trim_end_matches(['\r', '\n']);

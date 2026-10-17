@@ -5,7 +5,7 @@ use chord_progression_parser::{
 /** Resets repetition context at section boundaries even when an earlier line failed. */
 #[test]
 fn failed_chord_lines_do_not_leak_repetition_context_into_new_sections() {
-    for boundary in ["\n\n", "\r\n\r\n", "\n@section=Next\n", "\n@repeat=2\n"] {
+    for boundary in ["\n@section=Next\n", "\n@repeat=2\n", "\n\n@section=Next\n"] {
         let source = format!("C-H{boundary}%");
         let errors = parse_chord_progression_string(&source).expect_err("H is invalid");
         assert_eq!(
@@ -25,13 +25,15 @@ fn failed_chord_lines_do_not_leak_repetition_context_into_new_sections() {
     }
 }
 
-/** Retains valid preceding expressions across one line break within the same section. */
+/** Retains preceding expressions across newlines and blank lines in the same section. */
 #[test]
 fn failed_lines_keep_repetition_context_inside_their_own_section() {
-    let errors = parse_chord_progression_string("C-H\n%")
-        .expect_err("an invalid chord must remain an error");
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].error.code.to_string(), "CHO-1");
+    for boundary in ["\n", "\n\n", "\r\n\r\n", "\n\n\n"] {
+        let errors = parse_chord_progression_string(&format!("C-H{boundary}%"))
+            .expect_err("an invalid chord must remain an error");
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].error.code.to_string(), "CHO-1");
+    }
 }
 
 /** Recovers at bar separators instead of interpreting the next chord as an extension. */

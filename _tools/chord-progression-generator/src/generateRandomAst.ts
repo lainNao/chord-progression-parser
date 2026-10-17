@@ -161,13 +161,21 @@ function generateRandomSectionInfoMeta(): types.SectionMeta {
   }
 }
 
-/** Generates section metadata and at least one non-empty bar. */
-function generateRandomSection(args: GenerateRandomSectionArgs): types.Section {
+/** Generates non-empty bars and an explicit boundary for every section after the first. */
+function generateRandomSection({
+  sectionIndex,
+  ...args
+}: GenerateRandomSectionArgs & { sectionIndex: number }): types.Section {
+  const metaInfos = Array.from(
+    { length: randomBetween(args.chordMetaInfoCountRange) },
+    () => generateRandomSectionInfoMeta(),
+  );
+  // Blank lines remain inside a section; later sections need their own metadata line.
+  if (sectionIndex > 0 && metaInfos.length === 0) {
+    metaInfos.push({ type: "section", value: `Section${sectionIndex + 1}` });
+  }
   return {
-    metaInfos: Array.from(
-      { length: randomBetween(args.chordMetaInfoCountRange) },
-      () => generateRandomSectionInfoMeta(),
-    ),
+    metaInfos,
     chordBlocks: Array.from(
       { length: randomBetween(args.chordBlockCountRange) },
       (_, index) =>
@@ -186,7 +194,8 @@ export function generateRandomAst(args: GenerateRandomAstArgs): types.Ast {
       throw new RangeError(`${name} must start at ${minimum} or greater`);
     }
   }
-  return Array.from({ length: randomBetween(args.sectionCountRange) }, () =>
-    generateRandomSection(args),
+  return Array.from(
+    { length: randomBetween(args.sectionCountRange) },
+    (_, sectionIndex) => generateRandomSection({ ...args, sectionIndex }),
   );
 }

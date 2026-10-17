@@ -8,7 +8,7 @@
 
 - Rust API は `parse_chord_progression_string(&str)` を提供する。
 - JavaScript API は `parseChordProgressionString(string)` を提供する。
-- 成功時の AST JSON 形式はリファクタ前と一致させる。
+- 成功時のAST JSONの型・フィールドは維持する。空行によるsection構成の変更は、後述の「空行の契約変更」に従う。
 - syntax error は戻り値として返し、ユーザー入力によって panic または JavaScript throw を発生させない。
 - `lineNumber` と `columnNumber` は 1 始まりとする。
 - syntax error は入力順の配列で返し、安全に再開できるcomma、bar、改行の境界から解析を継続する。
@@ -26,7 +26,7 @@
 | `C-D` | 2個のbar |
 | `C,D` | 1個のbar内の2個のchord |
 | 1個の改行 | 同一section内の `ChordBlock::Br` |
-| 2個以上の連続改行 | section境界 |
+| chord line間の2個以上の連続改行 | 同一section内の空行1行（`ChordBlock::Br`を2個） |
 | `C/B` | denominatorが`B`のchord |
 | `?` | 未特定chord |
 | `_` | no chord |
@@ -39,6 +39,15 @@
 - bar末尾のcommaは1個まで受理し、formatterは省略する（`C/D,`、`C,-D`など）。extensionリストの末尾commaは許可しない。
 - 複数のsection metaは、chord lineが始まるまで同じsectionへ属する。
 - section metaと最初のchord lineの間にある空行はsectionを分割しない。
+- 文書の先頭・末尾とsectionの最初のchord lineより前の改行・空行は省略する。
+
+## 空行の契約変更（2026-10-17・次回公開から）
+
+- 空行だけではsectionを分割せず、section名・key・`%`の先行chord参照を継続する。
+- chord line間の空行は既存の`ChordBlock::Br`を2個並べて保持し、複数の空行は1行へまとめる。ASTの型・JSONフィールドは増やさない。
+- chord lineの後にsection metaが現れたときだけ、新しいsectionを開始する。明示した新sectionでは`%`の参照をリセットする。
+- formatterも同一section内の空行を1行保持する。編集中の入力原文を自動的に書き換える契約ではない。
+- 0.9.4以前のASTで空行から作られた匿名sectionは、新しいparserの同一sectionと一致しない。利用側の更新時は原文からAST・section別の派生データ・検索索引を再生成する。旧ASTを新formatterへ渡すと、同じ構造へ往復できないため拒否される場合がある。
 
 ## 意図して修正する挙動
 
@@ -48,7 +57,8 @@
 | `@section` | panic | position付きerror |
 | `[key=C` | panic | position付きerror |
 | `C[key=A]` | metaを黙殺して成功 | token順序error |
-| 3個以上の連続改行 | `BL-1` | 余分な空行として許可 |
+| chord line間の空行 | section境界 | 同じsection内の空行1行として保持 |
+| 3個以上の連続改行 | `BL-1` | 同じsection内の空行1行へまとめて許可 |
 | 未完の括弧・角括弧・slash | 一部でpanicまたは不定なerror | position付きerror |
 | 2個目のslash | `DEN-1` | `DEN-2` |
 | 定義文字列のprefixだけが一致するextension | 経路によって受理可能 | `EXT-1` |
@@ -61,7 +71,7 @@ panic、入力の黙殺、入力範囲外のerror positionは互換対象にし�
 - chord後方のmeta情報は許可しない。meta情報は必ず対象chordの直前に置く。
 - section metaは専用行に置き、値の後には改行またはEOFが必要である。
 - `%` は同一section内に先行chordがない場合は許可しない。
-- 先行するchord lineに構文エラーがあっても、空行やsection metaによるsection境界で `%` の参照状態をリセットする。
+- 先行するchord lineに構文エラーがあっても、section metaによるsection境界で `%` の参照状態をリセットする。空行ではリセットしない。
 
 ## 今回追加しない機能
 

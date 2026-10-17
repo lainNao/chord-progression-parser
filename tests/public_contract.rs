@@ -71,8 +71,9 @@ fn rejects_the_malformed_fixture_without_panicking() {
 #[test]
 fn applies_the_intentional_compatibility_changes() {
     let sections = parse_chord_progression_string("C\n\n\n\nD")
-        .expect("extra blank lines must separate sections");
-    assert_eq!(sections.len(), 2);
+        .expect("extra blank lines must remain inside the same section");
+    assert_eq!(sections.len(), 1);
+    assert_eq!(format_chord_progression(&sections).unwrap(), "C\n\nD");
 
     let postfix_meta_errors =
         parse_chord_progression_string("C[key=A]").expect_err("postfix metadata must be rejected");
