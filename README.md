@@ -9,6 +9,23 @@ A converter from chord progression strings to AST built in Rust that outputs was
 > - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-node>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 
+## Upgrading to 0.10.0
+
+Blank lines now stay within the preceding section, preserving its name, key,
+and `%` context. One blank line is retained; multiple blank lines collapse to one.
+Reparse stored source text and regenerate section-derived data and search indexes
+when upgrading from 0.9.4 or earlier. Older ASTs may no longer round-trip through
+the formatter.
+
+`@same=SectionName` adds an unresolved section reference represented by
+`SectionMeta::Same(String)` in Rust and `{ type: "same", value: string }` in
+JavaScript/TypeScript. Update exhaustive metadata handling for this new variant.
+Reference resolution belongs to the consuming application. Chord lines in a
+reference section are rejected with `SMIV-4`.
+
+See the [compatibility policy](./PARSER_COMPATIBILITY.md) and
+[syntax reference](./_docs/en/about-chord-progression-syntax.md) for details.
+
 ## Canonical syntax
 
 This syntax is a canonical serialization format for chord progression ASTs,
@@ -156,7 +173,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
       <h2>parse C</h2>
       <pre id="result"></pre>
       <script type="module">
-        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.9.4/chord_progression_parser.js";
+        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.10.0/chord_progression_parser.js";
 
         (async () => {
           // initialize wasm
