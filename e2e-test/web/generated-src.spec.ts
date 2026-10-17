@@ -379,7 +379,7 @@ test("formats ASTs whose enum values precede their tags", async ({
         modulePath
       )) as typeof import("@lainnao/chord-progression-parser-web");
       const parsed = parser.parseChordProgressionString(
-        "@section=曲😀\n[key=Eb]C(1,9,9)-Dm(7)-G/B\n% - _ - ?",
+        "@section=曲😀\n[key=Eb]C(1,9,9)-Dm(7)-G/B\n% - _ - ?\n\n@section=Reprise\n@same=曲😀\n@repeat=2",
       );
       if (!parsed.success) throw new Error("The AST fixture must parse");
 

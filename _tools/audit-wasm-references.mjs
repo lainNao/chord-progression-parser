@@ -19,9 +19,19 @@ const fixtureParser = await import(moduleUrl.href);
 fixtureParser.initSync({ module: wasmBytes });
 const fixture = fixtureParser.parseChordProgressionString("C(9,9)-Dm(7)-G/B");
 assert.equal(fixture.success, true);
+const referenceFixture = fixtureParser.parseChordProgressionString(
+  "@section=Reprise\n@same=曲😀\n@repeat=2",
+);
+assert.equal(referenceFixture.success, true);
+const blankLineFixture = fixtureParser.parseChordProgressionString(
+  "@section=Verse\n[key=C]C\n\n\n%",
+);
+assert.equal(blankLineFixture.success, true);
 const scenarios = [
   { name: "valid AST", input: [], rejects: false },
   { name: "valid chord AST", input: fixture.ast, rejects: false },
+  { name: "valid reference AST", input: referenceFixture.ast, rejects: false },
+  { name: "valid blank-line AST", input: blankLineFixture.ast, rejects: false },
   { name: "invalid object", input: {}, rejects: true },
   { name: "null AST", input: null, rejects: true },
 ];
@@ -57,6 +67,32 @@ const invalidValues = [
   { name: "object", value: {} },
   { name: "function", value: () => {} },
 ];
+// Reference values are required strings; reject malformed JSON-like payloads
+// through the same public WASM boundary used for ordinary ASTs.
+const invalidReferenceNames = [
+  ...invalidValues.filter((entry) => typeof entry.value !== "string"),
+  { name: "array", value: [] },
+  { name: "empty string", value: "" },
+];
+for (const invalid of invalidReferenceNames) {
+  scenarios.push({
+    name: `${invalid.name} reference name`,
+    input: [
+      { metaInfos: [{ type: "same", value: invalid.value }], chordBlocks: [] },
+    ],
+    rejects: true,
+  });
+}
+scenarios.push({
+  name: "reference AST with forbidden chord body",
+  input: [
+    {
+      metaInfos: [{ type: "same", value: "Verse" }],
+      chordBlocks: fixture.ast[0].chordBlocks,
+    },
+  ],
+  rejects: true,
+});
 for (const field of arrayFields) {
   for (const invalid of invalidValues) {
     const input = structuredClone(fixture.ast);
