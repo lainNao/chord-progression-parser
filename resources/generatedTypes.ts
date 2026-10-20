@@ -31,6 +31,7 @@ export type ChordExpression =
 export interface ChordInfo {
 	metaInfos: ChordInfoMeta[];
 	chordExpression: ChordExpression;
+	/** A validated chord spelling, or `?` when the bass is unidentified. */
 	denominator: string | null;
 }
 

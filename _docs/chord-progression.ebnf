@@ -14,7 +14,7 @@ accidental        = "#" | "b" ;
 chord-type        = "m" | "M" | "aug" | "dim" ;
 extensions        = "(", extension, { ",", extension }, ")" ;
 extension         = "1" | "2" | "3" | "b3" | "4" | "b5" | "5" | "#5" | "b6" | "6" | "7" | "b9" | "9" | "#9" | "b11" | "11" | "#11" | "b13" | "13" | "#13" | "M7" | "M9" | "M11" | "M13" | "add9" | "add11" | "add13" | "sus2" | "sus4" | "o" ;
-denominator       = "/", denominator-text ;
+denominator       = "/", (chord | "?") ;
 
 line-end          = line-break | end-of-input ;
 line-break        = "\r\n" | "\n" | "\r" ;
@@ -41,6 +41,8 @@ line-break        = "\r\n" | "\n" | "\r" ;
   last chord-info (including before a dash, line break, or end of input).
   The formatter omits that comma; extension lists do not allow trailing commas.
   Conventional chord-symbol aliases are not accepted as chord heads.
-  The concrete values of key, section-meta-value, and
-  denominator-text are defined by semantic validation.
+  A denominator uses the same complete chord syntax as a numerator. The special
+  denominator ? denotes an unidentified bass; numeric degrees and arbitrary text
+  are not accepted. Chord-shaped denominators retain their spelling as strings.
+  The concrete values of key and section-meta-value are defined by semantic validation.
 *)

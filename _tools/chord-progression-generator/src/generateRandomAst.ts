@@ -26,7 +26,7 @@ function generateRandomExtension(): types.Extension {
   return getRandomEnum(types.Extension);
 }
 
-/** Occasionally generates an opaque chord-shaped denominator. */
+/** Occasionally generates a valid chord-shaped denominator. */
 function generateRandomDenominator(): string | null {
   if (randomBetween({ min: 0, max: 10 }) !== 0) {
     return null;

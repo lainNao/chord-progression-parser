@@ -428,12 +428,14 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
     }
 
-    /** Collects a denominator until the enclosing bar or line ends. */
+    /** Accepts a complete chord spelling or an explicitly unidentified bass. */
     fn parse_denominator(&mut self) -> Result<String, ErrorInfoWithPosition> {
         let slash = self.expect_symbol(TokenKind::Slash, ErrorCode::Den1)?;
         let mut value = String::new();
         let mut parenthesis_depth = 0;
         let mut last_span = slash.span;
+        let mut previous_was_text = false;
+        let mut has_split_atom = false;
 
         while let Some(token) = self.peek().copied() {
             match token.kind {
@@ -457,6 +459,10 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 TokenKind::RightParen => break,
                 kind => value.push_str(token_label(kind)),
             }
+            // Whitespace may surround punctuation, but must not turn G m into Gm.
+            let is_text = matches!(token.kind, TokenKind::Text(_));
+            has_split_atom |= previous_was_text && is_text;
+            previous_was_text = is_text;
             last_span = token.span;
             self.advance();
         }
@@ -464,7 +470,10 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         if value.is_empty() {
             return Err(parse_error(ErrorCode::Den1, slash.span, None));
         }
-        if parenthesis_depth != 0 {
+        if parenthesis_depth != 0
+            || has_split_atom
+            || (value != "?" && ChordDetailed::from_str(&value).is_err())
+        {
             return Err(parse_error(
                 ErrorCode::Den1,
                 span_through(slash.span, last_span),
@@ -603,7 +612,7 @@ impl DelimiterDepth {
         match kind {
             TokenKind::LeftParen => self.parentheses += 1,
             TokenKind::RightParen => self.parentheses = self.parentheses.saturating_sub(1),
-            // Parenthesized slash denominators are opaque and may contain unmatched brackets.
+            // Rejected slash denominators may contain unmatched brackets inside parentheses.
             // Their parentheses already protect inner commas during recovery.
             TokenKind::LeftBracket if self.parentheses == 0 => self.brackets += 1,
             TokenKind::RightBracket if self.parentheses == 0 => {
@@ -740,7 +749,7 @@ mod tests {
             "@section=A\n@repeat=3\n\nC-D",
             "C\n\nD",
             "C(9, 11, #13)",
-            "F#m(7,b5)/F#m(7,b5)-Fbm/G7",
+            "F#m(7,b5)/F#m(7,b5)-Fbm/G(7)",
             "?-_-%",
         ];
 

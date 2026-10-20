@@ -172,7 +172,7 @@ fn nested_invalid_extensions_do_not_generate_duplicate_warnings() {
     }
 }
 
-/** Opaque denominator brackets must not hide later independent chord errors. */
+/** Invalid denominator brackets must not hide later independent chord errors. */
 #[test]
 fn denominator_text_does_not_leak_bracket_depth_into_recovery() {
     for denominator in ["(x[y)", "(x]y)", "([x[y)"] {
@@ -185,8 +185,8 @@ fn denominator_text_does_not_leak_bracket_depth_into_recovery() {
                     .iter()
                     .map(|error| error.error.code.to_string())
                     .collect::<Vec<_>>(),
-                ["CHO-1", "CHO-1"],
-                "opaque denominator changed recovery for {source:?}"
+                ["DEN-1", "CHO-1", "CHO-1"],
+                "invalid denominator changed recovery for {source:?}"
             );
             assert_eq!(report.warnings.len(), 1);
             assert_eq!(

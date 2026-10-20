@@ -235,7 +235,13 @@ second `9` produces a warning with code `DUPLICATE_EXTENSION` and
 `additionalInfo: "9"`. Each further repetition in the same chord produces its
 own warning. Related spellings such as `9` and `add9` are not duplicates.
 Warnings encountered in malformed chord extension lists can accompany errors;
-extensions on `%`, `_`, or `?`, and opaque slash denominators are not checked.
+extensions on `%`, `_`, or `?`, and slash denominator extensions do not receive
+duplicate warnings.
+
+Slash denominators must be complete chord spellings, such as `C/G` or
+`C/F#m(7,b5)`, or `?` for an unidentified bass (`C/?`). Arbitrary text and numeric
+denominators such as `C/Unknown` and `C/5` return `DEN-1`. Extensions require
+parentheses here too: use `C/G(7)` instead of `C/G7`.
 
 `ParsePosition`, `ParseError`, `WarningCode`, and `ParseWarning` are exported
 TypeScript types. Warning positions use the original source text: display

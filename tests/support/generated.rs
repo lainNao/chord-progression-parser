@@ -93,7 +93,7 @@ fn chord(choices: &mut Choices<'_>) -> (String, ChordExpression) {
     )
 }
 
-/** Builds metadata, special expressions, and opaque denominators for one chord. */
+/** Builds metadata, special expressions, and validated denominators for one chord. */
 fn chord_info(choices: &mut Choices<'_>, has_prior: bool) -> (String, ChordInfo) {
     let mut source = String::new();
     let mut meta_infos = Vec::new();
@@ -127,17 +127,7 @@ fn chord_info(choices: &mut Choices<'_>, has_prior: bool) -> (String, ChordInfo)
     };
     source.push_str(&spelling);
     let denominator = if choices.index(3) == 0 {
-        let value = [
-            "G",
-            "F#m(7,b5)",
-            "😀あ",
-            "(x[y)",
-            "Bb",
-            "%",
-            "_",
-            "?",
-            "G(9,9)",
-        ][choices.index(9)];
+        let value = ["G", "F#m(7,b5)", "Bb", "?", "G(9,9)"][choices.index(5)];
         write!(source, "{}/{}{value}", choices.gap(), choices.gap()).unwrap();
         Some(value.to_owned())
     } else {

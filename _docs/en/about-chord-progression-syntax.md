@@ -90,6 +90,18 @@ Applications decide target existence, forward/self/cyclic references, and which
 definition to choose when duplicate names have different contents. The parser
 retains references and definitions in source order without choosing a definition.
 
+## Slash chord denominators
+
+A denominator must be a note name or a complete chord in the same syntax as the
+numerator. `C/G`, `C/F#`, and `C/F#m(7,b5)` are accepted, and the denominator
+spelling remains a string in the AST. `C/?` means a C chord with an unidentified
+bass; `?` must occupy the entire denominator.
+
+Numeric degrees and arbitrary text, including `C/5`, `C/Unknown`, `C/Garbage`,
+`C/%`, and `C/_`, produce `DEN-1`. Extensions require parentheses in denominators
+too: write `C/G(7)`, not `C/G7`. Spaces may surround punctuation but must not
+split a text atom, so `C/G m` is invalid.
+
 ## Diagnostic positions
 
 Errors and warnings use one-based line numbers and Unicode scalar columns.
@@ -111,8 +123,8 @@ The JavaScript API always returns a `warnings` array, on success and failure.
 Warnings do not fail parsing; no warnings produces an empty array. Positions
 refer to the original input and use the same display line/column numbers and
 UTF-16 offsets as errors. Duplicates detected in malformed chord lists may
-accompany errors. Unsupported extensions on `%`, `_`, or `?`, and opaque slash
-denominators are not checked.
+accompany errors. Unsupported extensions on `%`, `_`, or `?`, and slash
+denominator extensions do not receive duplicate warnings.
 
 Each npm package provides `getWarningMessage({ warningCode: warning.code, lang: "en" })`
 through its `warning_code_message_map` submodule. `lang` accepts `"en"` or `"ja"`.

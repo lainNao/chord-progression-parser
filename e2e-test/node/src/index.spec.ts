@@ -13,6 +13,24 @@ import {
 } from "@lainnao/chord-progression-parser-node/error_code_message_map";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warning_code_message_map";
 
+/** The JS/WASM boundary accepts unknown basses but rejects arbitrary denominator text. */
+test("validates slash denominators and preserves an unidentified bass", (): void => {
+  const source = "[key=C]C/? - %/G - %/? - C/F#m(7,b5)";
+  const parsed = parser.parseChordProgressionString(source);
+  if (!parsed.success) throw new Error("valid denominators must parse");
+  expect(parser.formatChordProgression(parsed.ast)).toBe(source);
+  for (const denominator of ["5", "Unknown", "Garbage", "G7", "G m", "?m"]) {
+    const source = `@section=😀\r\nC/${denominator}-D(9,9)`;
+    const result = parser.parseChordProgressionString(source);
+    if (result.success)
+      throw new Error(`invalid denominator accepted: ${denominator}`);
+    expect(result.errors.map((error): string => error.code)).toEqual(["DEN-1"]);
+    const { startOffset, endOffset } = result.errors[0].position;
+    expect(source.slice(startOffset, endOffset)).toBe(`/${denominator}`);
+    expect(result.warnings).toHaveLength(1);
+  }
+});
+
 /** The generated metadata union and the WASM API keep named references without expansion. */
 test("preserves same-section references in generated TypeScript types and WASM", (): void => {
   const reference: SectionMeta = { type: "same", value: "サビ😀" };

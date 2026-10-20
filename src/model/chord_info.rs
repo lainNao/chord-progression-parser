@@ -13,5 +13,6 @@ pub struct ChordInfo {
     )]
     pub meta_infos: Vec<ChordInfoMeta>,
     pub chord_expression: ChordExpression,
-    pub denominator: Option<String>, // ambiguous so string
+    /** A validated chord spelling, or `?` when the bass is unidentified. */
+    pub denominator: Option<String>,
 }

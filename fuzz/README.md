@@ -52,7 +52,7 @@ progressions. It builds the expected AST independently of both the document
 parser and formatter, then checks parsing, duplicate-warning counts, source
 positions, and formatting round trips. Choices cover all chord types and
 extensions, special expressions, key and section metadata (including reference-only
-sections), opaque denominators,
+sections), validated chord denominators and unidentified basses,
 optional horizontal whitespace, trailing bar commas, and all newline forms.
 It also appends malformed chords to otherwise valid progressions and checks
 that earlier warnings are preserved, later chords are inspected, and repetition

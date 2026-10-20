@@ -3,6 +3,25 @@ import { testData } from "./main.spec.fixtures";
 import type { ParseWarning } from "@lainnao/chord-progression-parser-bundler";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-bundler/warning_code_message_map.js";
 
+/** Real bundled WASM keeps explicit unknown basses and highlights rejected denominators. */
+test("accepts C/? and rejects malformed slash denominators", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  const source = "[key=C]C/? - %/G - %/? - C/F#m(7,b5)";
+  await page.locator("#textarea").fill(source);
+  await expect(page.locator("#result")).toHaveAttribute(
+    "data-formatted",
+    source,
+  );
+  for (const denominator of ["5", "Unknown", "Garbage", "G7"]) {
+    await page.locator("#textarea").fill(`C/${denominator}`);
+    await expect(page.locator("#result")).toContainText("DEN-1");
+    await expect(page.locator("#result mark")).toHaveText(`/${denominator}`);
+    await expect(page.locator("#result")).toHaveAttribute("data-formatted", "");
+  }
+});
+
 /** Bundled WASM retains reference metadata and reports forbidden chord bodies as parser errors. */
 test("keeps same-section references and reports mixed chord lines", async ({
   page,
@@ -156,10 +175,11 @@ test("keeps Unicode context intact when shortening long diagnostic lines", async
   await page.goto("http://localhost:3034/");
   for (const source of [`C/${"😀".repeat(81)},H`, `H,C/${"😀".repeat(81)}`]) {
     await page.locator("#textarea").fill(source);
-    await expect(page.locator("#result mark")).toHaveText("H");
-    const excerpt = await page
-      .locator("#result > div > div:last-child")
-      .textContent();
+    const error = page.locator("#result > div").filter({
+      has: page.locator("mark").filter({ hasText: /^H$/ }),
+    });
+    await expect(error.locator("mark")).toHaveText("H");
+    const excerpt = await error.locator("div:last-child").textContent();
     expect(excerpt).toContain("…");
     expect(excerpt).toContain("😀");
     // Array.from iterates complete code points; a remaining surrogate is an unpaired half.
