@@ -1,3 +1,5 @@
+mod chord_head;
+
 use std::{fmt::Write, str::FromStr};
 
 use strum::EnumCount;
@@ -17,6 +19,32 @@ use crate::{
 pub(crate) fn parse(input: &str, collect_warnings: bool) -> ParseReport {
     let source = lex(input);
     Parser::new(&source.tokens, source.eof_span, collect_warnings).parse_document()
+}
+
+/** Parses a standalone chord through the shared grammar, without metadata or a denominator. */
+pub(crate) fn parse_chord_symbol(input: &str) -> Result<Chord, ErrorInfo> {
+    let source = lex(input);
+    let mut parser = Parser::new(&source.tokens, source.eof_span, false);
+    let expression = parser.parse_chord_expression(false).map_err(|errors| {
+        errors
+            .into_iter()
+            .next()
+            .expect("failed parsing has an error")
+            .error
+    })?;
+    if !parser.is_at_end() {
+        return Err(ErrorInfo {
+            code: ErrorCode::Tkn1,
+            additional_info: Some(input.to_owned()),
+        });
+    }
+    match expression {
+        ChordExpression::Chord(chord) => Ok(chord),
+        _ => Err(ErrorInfo {
+            code: ErrorCode::Cho1,
+            additional_info: Some(input.to_owned()),
+        }),
+    }
 }
 
 /** Owns the token cursor and converts one grammar production at a time. */
@@ -264,61 +292,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             meta_infos.push(self.parse_chord_meta().map_err(|error| vec![error])?);
         }
 
-        let (head, head_span) = self
-            .expect_text(ErrorCode::Cho3)
-            .map_err(|error| vec![error])?;
-        let mut chord_expression = match head {
-            "?" => ChordExpression::UnIdentified,
-            "_" => ChordExpression::NoChord,
-            "%" if has_prior_chord => ChordExpression::Same,
-            "%" => return Err(vec![parse_error(ErrorCode::Chb1, head_span, None)]),
-            _ => {
-                let detailed = ChordDetailed::from_head(head).map_err(|error| {
-                    vec![parse_error(
-                        ErrorCode::Cho1,
-                        head_span,
-                        Some(format!("{}: {head}", error.code)),
-                    )]
-                })?;
-                ChordExpression::Chord(Chord {
-                    plain: head.to_string(),
-                    detailed,
-                })
-            }
-        };
-
-        if self.at(TokenKind::LeftParen) {
-            let extensions = self.parse_extensions(
-                self.collect_warnings && matches!(chord_expression, ChordExpression::Chord(_)),
-            )?;
-            match &mut chord_expression {
-                ChordExpression::Chord(chord) => {
-                    chord.plain.push('(');
-                    // Write directly into the chord spelling without allocating per extension.
-                    for (index, extension) in extensions.iter().enumerate() {
-                        if index > 0 {
-                            chord.plain.push(',');
-                        }
-                        write!(chord.plain, "{extension}")
-                            .expect("writing into a String cannot fail");
-                    }
-                    chord.plain.push(')');
-                    chord.detailed.extensions = extensions;
-                }
-                _ => {
-                    return Err(vec![parse_error(ErrorCode::Ext3, head_span, None)]);
-                }
-            }
-        }
-
-        if self.at(TokenKind::LeftParen) {
-            return Err(vec![parse_error(
-                ErrorCode::Ext4,
-                self.current_span(),
-                None,
-            )]);
-        }
-
+        let chord_expression = self.parse_chord_expression(has_prior_chord)?;
         let denominator = if self.at(TokenKind::Slash) {
             Some(self.parse_denominator().map_err(|error| vec![error])?)
         } else {
@@ -330,6 +304,115 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             chord_expression,
             denominator,
         })
+    }
+
+    /** Reads one chord expression while retaining spelling and sorting only structured extensions. */
+    fn parse_chord_expression(
+        &mut self,
+        has_prior_chord: bool,
+    ) -> Result<ChordExpression, Vec<ErrorInfoWithPosition>> {
+        let (head, head_span) = self
+            .expect_text(ErrorCode::Cho3)
+            .map_err(|error| vec![error])?;
+        let mut seen = [false; Extension::COUNT];
+        let mut expression = match head {
+            "?" => ChordExpression::UnIdentified,
+            "_" => ChordExpression::NoChord,
+            "%" if has_prior_chord => ChordExpression::Same,
+            "%" => return Err(vec![parse_error(ErrorCode::Chb1, head_span, None)]),
+            _ => {
+                let parsed = chord_head::parse_head(head).map_err(|error| {
+                    vec![parse_error(
+                        ErrorCode::Cho1,
+                        head_span,
+                        Some(format!("{}: {head}", error.code)),
+                    )]
+                })?;
+                let mut extensions = Vec::with_capacity(parsed.extensions.len());
+                for extension in parsed.extensions {
+                    // Accepted chord atoms are ASCII, so byte, scalar, and UTF-16 indices agree here.
+                    let span = SourceSpan {
+                        start_offset: head_span.start_offset + extension.range.start,
+                        end_offset: head_span.start_offset + extension.range.end,
+                        column: head_span.column + extension.range.start,
+                        length: extension.range.len(),
+                        ..head_span
+                    };
+                    self.record_extension(
+                        &extension.value,
+                        &head[extension.range],
+                        span,
+                        self.collect_warnings,
+                        &mut seen,
+                    );
+                    extensions.push(extension.value);
+                }
+                ChordExpression::Chord(Chord {
+                    plain: head.to_owned(),
+                    detailed: ChordDetailed {
+                        base: parsed.base,
+                        accidental: parsed.accidental,
+                        chord_type: parsed.chord_type,
+                        extensions,
+                    },
+                })
+            }
+        };
+        if self.at(TokenKind::LeftParen) {
+            let extensions = self.parse_extensions(
+                self.collect_warnings && matches!(expression, ChordExpression::Chord(_)),
+                &mut seen,
+            )?;
+            match &mut expression {
+                ChordExpression::Chord(chord) => {
+                    chord.plain.push('(');
+                    for (index, extension) in extensions.iter().enumerate() {
+                        if index > 0 {
+                            chord.plain.push(',');
+                        }
+                        write!(chord.plain, "{extension}")
+                            .expect("writing into a String cannot fail");
+                    }
+                    chord.plain.push(')');
+                    chord.detailed.extensions.extend(extensions);
+                }
+                _ => return Err(vec![parse_error(ErrorCode::Ext3, head_span, None)]),
+            }
+        }
+        if self.at(TokenKind::LeftParen) {
+            return Err(vec![parse_error(
+                ErrorCode::Ext4,
+                self.current_span(),
+                None,
+            )]);
+        }
+        if let ChordExpression::Chord(chord) = &mut expression {
+            // Duplicate warnings use source order; sorting must happen only after all diagnostics.
+            chord.detailed.extensions.sort_by_key(Extension::sort_order);
+        }
+        Ok(expression)
+    }
+
+    /** Records duplicates across shorthand and parenthesized extensions at their original positions. */
+    fn record_extension(
+        &mut self,
+        extension: &Extension,
+        spelling: &str,
+        span: SourceSpan,
+        warn: bool,
+        seen: &mut [bool; Extension::COUNT],
+    ) {
+        if warn {
+            let was_seen = &mut seen[extension.clone() as usize];
+            if *was_seen {
+                self.warnings.push(ParseWarning {
+                    code: WarningCode::DuplicateExtension,
+                    additional_info: Some(spelling.to_owned()),
+                    position: span.into(),
+                });
+            }
+            *was_seen = true;
+        }
     }
 
     /** Parses one chord metadata expression and validates its key and value. */
@@ -353,13 +436,12 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     fn parse_extensions(
         &mut self,
         warn_on_duplicates: bool,
+        seen: &mut [bool; Extension::COUNT],
     ) -> Result<Vec<Extension>, Vec<ErrorInfoWithPosition>> {
         let opening = self
             .expect_symbol(TokenKind::LeftParen, ErrorCode::Ext3)
             .map_err(|error| vec![error])?;
         let mut extensions = Vec::new();
-        // EnumCount keeps the stack-allocated lookup aligned with all supported extensions.
-        let mut seen = [false; Extension::COUNT];
         let mut errors = Vec::new();
         let mut is_first_value = true;
 
@@ -381,18 +463,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             match self.expect_text(ErrorCode::Ext2) {
                 Ok((value, span)) => match Extension::from_str(value) {
                     Ok(extension) => {
-                        if warn_on_duplicates {
-                            // This fieldless enum has contiguous, zero-based discriminants.
-                            let was_seen = &mut seen[extension.clone() as usize];
-                            if *was_seen {
-                                self.warnings.push(ParseWarning {
-                                    code: WarningCode::DuplicateExtension,
-                                    additional_info: Some(value.to_string()),
-                                    position: span.into(),
-                                });
-                            }
-                            *was_seen = true;
-                        }
+                        self.record_extension(&extension, value, span, warn_on_duplicates, seen);
                         extensions.push(extension);
                     }
                     Err(_) => {
@@ -472,7 +543,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
         if parenthesis_depth != 0
             || has_split_atom
-            || (value != "?" && ChordDetailed::from_str(&value).is_err())
+            || (value != "?" && parse_chord_symbol(&value).is_err())
         {
             return Err(parse_error(
                 ErrorCode::Den1,

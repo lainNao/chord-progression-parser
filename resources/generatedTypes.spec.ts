@@ -5,17 +5,24 @@ import { Extension } from "./generatedTypes";
 
 /** Keeps the shared fixture, generated enum, syntax references, and EBNF aligned. */
 test("canonical extension values agree across types, fixture, and docs", async (): Promise<void> => {
-  const fixture: { extensions: string[] } = JSON.parse(
-    await readFile(
-      path.join(import.meta.dir, "../tests/fixtures/canonical_syntax.json"),
-      "utf8",
-    ),
-  );
+  const fixture: { extensions: string[]; extensionOrder: string[] } =
+    JSON.parse(
+      await readFile(
+        path.join(import.meta.dir, "../tests/fixtures/canonical_syntax.json"),
+        "utf8",
+      ),
+    );
   expect(fixture.extensions).toEqual(Object.values(Extension));
+  expect([...fixture.extensionOrder].sort()).toEqual(
+    [...fixture.extensions].sort(),
+  );
 
   for (const language of ["en", "ja"]) {
     const source = await readFile(
-      path.join(import.meta.dir, `../_docs/${language}/about-chord-progression-syntax.md`),
+      path.join(
+        import.meta.dir,
+        `../_docs/${language}/about-chord-progression-syntax.md`,
+      ),
       "utf8",
     );
     const block = source.match(
@@ -23,6 +30,11 @@ test("canonical extension values agree across types, fixture, and docs", async (
     );
     expect(block).not.toBeNull();
     expect(block![1].split("\n")).toEqual(fixture.extensions);
+    const order = source.match(
+      /<!-- extension-order:start -->\s*```txt\n([\s\S]*?)\n```\s*<!-- extension-order:end -->/,
+    );
+    expect(order).not.toBeNull();
+    expect(order![1].split(/,\s*/)).toEqual(fixture.extensionOrder);
   }
 
   const grammar = await readFile(
@@ -31,8 +43,9 @@ test("canonical extension values agree across types, fixture, and docs", async (
   );
   const rule = grammar.match(/^extension\s*=\s*([^;]+);/m);
   expect(rule).not.toBeNull();
-  expect(Array.from(rule![1].matchAll(/"([^"]+)"/g), (match): string => match[1]))
-    .toEqual(fixture.extensions);
+  expect(
+    Array.from(rule![1].matchAll(/"([^"]+)"/g), (match): string => match[1]),
+  ).toEqual(fixture.extensions);
 });
 
 /** Keeps generated TypeScript nullability aligned with serde JSON output. */

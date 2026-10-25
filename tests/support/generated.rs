@@ -8,6 +8,9 @@ use chord_progression_parser::{
 use chord_progression_parser::{ErrorCode, ParseWarning, WarningCode};
 use strum::VariantNames;
 
+#[path = "extension_order.rs"]
+mod extension_order;
+
 /** Reuses a non-empty byte stream to make bounded, reproducible grammar choices. */
 struct Choices<'a> {
     bytes: &'a [u8],
@@ -54,10 +57,31 @@ fn chord(choices: &mut Choices<'_>) -> (String, ChordExpression) {
         (ChordType::Diminished, "dim"),
     ][choices.index(5)]
     .clone();
-    let head = format!("{root}{alteration}{suffix}");
+    let mut head = format!("{root}{alteration}{suffix}");
+    let mut extensions = Vec::new();
+    let shorthand_count = choices.index(4);
+    if shorthand_count > 0 {
+        // A redundant major marker would turn M + 7 into M7; omit it before generating shorthand.
+        if suffix == "M" {
+            head.pop();
+        }
+        let leading = [
+            "1", "2", "3", "4", "5", "6", "7", "9", "11", "13", "M7", "M9", "M11", "M13", "sus2",
+            "sus4", "add9", "add11", "add13", "omit5",
+        ];
+        let modifiers = [
+            "b3", "b5", "#5", "b6", "b9", "#9", "b11", "#11", "b13", "#13", "sus2", "sus4", "add9",
+            "add11", "add13", "omit5",
+        ];
+        for index in 0..shorthand_count {
+            let values: &[&str] = if index == 0 { &leading } else { &modifiers };
+            let spelling = values[choices.index(values.len())];
+            head.push_str(spelling);
+            extensions.push(Extension::from_str(spelling).expect("declared shorthand must parse"));
+        }
+    }
     let mut source = head.clone();
     let mut plain = head;
-    let mut extensions = Vec::new();
     let count = choices.index(6);
     if count > 0 {
         source.push_str(choices.gap());
@@ -79,6 +103,7 @@ fn chord(choices: &mut Choices<'_>) -> (String, ChordExpression) {
         source.push(')');
         plain.push(')');
     }
+    extensions.sort_by_key(extension_order::expected_rank);
     (
         source,
         ChordExpression::Chord(Chord {
@@ -127,7 +152,18 @@ fn chord_info(choices: &mut Choices<'_>, has_prior: bool) -> (String, ChordInfo)
     };
     source.push_str(&spelling);
     let denominator = if choices.index(3) == 0 {
-        let value = ["G", "F#m(7,b5)", "Bb", "?", "G(9,9)"][choices.index(5)];
+        let values = [
+            "G",
+            "F#m(7,b5)",
+            "Bb",
+            "?",
+            "G(9,9)",
+            "G7",
+            "F#m7b5",
+            "Gsus4(7)",
+            "Gomit5",
+        ];
+        let value = values[choices.index(values.len())];
         write!(source, "{}/{}{value}", choices.gap(), choices.gap()).unwrap();
         Some(value.to_owned())
     } else {

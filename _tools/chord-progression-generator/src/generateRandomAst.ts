@@ -3,6 +3,7 @@ import { assertIntegerRange, type Range } from "./util/Range";
 import { getRandomElement } from "./util/getRandomElement";
 import { getRandomEnum } from "./util/getRandomEnum";
 import { randomBetween } from "./util/randomBetween";
+import { getExtensionSortOrder } from "./util/getExtensionSortOrder";
 
 type GenerateRandomChordInfoArgs = GenerateRandomChordMetaInfoArgs & {
   chordInfoCountRange: Range;
@@ -89,6 +90,12 @@ function generateRandomChordExpression({
         (accidental ?? "") +
         chordTypeString +
         (extensions.length > 0 ? `(${extensions.join(",")})` : "");
+
+      // Keep randomly generated spelling while satisfying the structured AST ordering contract.
+      extensions.sort(
+        (left, right): number =>
+          getExtensionSortOrder(left) - getExtensionSortOrder(right),
+      );
 
       return {
         type: "chord",

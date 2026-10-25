@@ -9,6 +9,36 @@ A converter from chord progression strings to AST built in Rust that outputs was
 > - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-node>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 
+## Upgrading to 1.0.0
+
+Version 1.0.0 adds chord shorthand and `omit5` while retaining parenthesized input.
+For example, `C7`, `C7sus4`, `Csus4(7)`, `C7(13)`, `Cm7b5`, `Cdim7`,
+`Caug7`, and `C7omit5` are accepted. `CM7` means `C(M7)`; `CM(7)` keeps
+its existing meaning. `maj`, bare `sus`, `alt`, and symbolic dim/aug aliases
+remain unsupported.
+
+The breaking change is **structured extension ordering**: `detailed.extensions`
+now uses a fixed order, keeping duplicates. `plain` keeps the compact input
+spelling and its extension order, and the formatter retains that spelling.
+`C7sus4` and `Csus4(7)` therefore share a detailed representation but have
+different `plain` strings and complete ASTs. No sounding pitches or implicit
+sevenths are added.
+
+Before upgrading:
+
+- Reparse saved source text and regenerate stored ASTs and order-sensitive derived
+  data. The v1 formatter rejects old ASTs whose extension order differs from its
+  parser's order. If only ASTs are stored, export source with the previous
+  formatter before upgrading.
+- Update exhaustive extension handling for `omit5` (`Extension::Omit5` in Rust,
+  `Extension.Omit5` in TypeScript).
+- Read the additional 0.10.0 migration notes below when upgrading from 0.9.4 or earlier.
+
+Rust API names, JavaScript import filenames, and AST field names are unchanged.
+See the [v1 syntax reference](./_docs/en/about-chord-progression-syntax.md)
+([日本語](./_docs/ja/about-chord-progression-syntax.md)) and
+[compatibility policy](./PARSER_COMPATIBILITY.md) for the full contract.
+
 ## Upgrading to 0.10.0
 
 Blank lines now stay within the preceding section, preserving its name, key,
@@ -26,20 +56,25 @@ reference section are rejected with `SMIV-4`.
 See the [compatibility policy](./PARSER_COMPATIBILITY.md) and
 [syntax reference](./_docs/en/about-chord-progression-syntax.md) for details.
 
-## Canonical syntax
+## Chord spelling and shorthand
 
-This syntax is a canonical serialization format for chord progression ASTs,
-not an attempt to accept every conventional chord-symbol notation.
-Extensions always go inside `(...)`: use `C(7)`, `Cm(7)`, `C(M7)`,
-`C(add9)`, and `C(sus4)`. Conventional spellings such as `C7`, `Cm7`,
-`Cmaj7`, `CM7`, and `C△7` are rejected.
+Parenthesized spellings such as `C(7)`, `Cm(7)`, and `C(M7)` remain supported.
+The parser also accepts shorthand such as `C7`, `Cm7`, `CM7`, `C7sus4`,
+`Csus4(7)`, `Cm7b5`, `C7(13)`, and `C7omit5`. `CM7` means `C(M7)`,
+while `CM(7)` retains its existing meaning. `maj`, bare `sus`, symbolic
+`o`/`ø`/`°` aliases, `alt`, and `no3` are not supported. The existing
+parenthesized `o` extension remains accepted. Use `C6(9)` rather than `C6/9`.
 
-This intentional restriction reduces spelling variations and supports stable
-AST → string → AST round trips. Applications accepting conventional chord names
-should convert them to canonical syntax in a separate layer before parsing.
-Keep canonical spelling when generating input or editing examples, including with AI.
+`plain` preserves the input chord spelling and extension order, with whitespace
+removed. The formatter retains that spelling. `detailed.extensions` uses a
+fixed order, preserves duplicates, and does not infer additional chord tones.
+For example, `C7sus4` and `Csus4(7)` have the same detailed representation but
+different `plain` strings. `omit5` records omission of the fifth without
+computing sounding pitches.
+
 See the [syntax reference](./_docs/en/about-chord-progression-syntax.md)
-([日本語](./_docs/ja/about-chord-progression-syntax.md)) for all accepted extensions.
+([日本語](./_docs/ja/about-chord-progression-syntax.md)) for the complete rules
+and extension order.
 
 ## Example
 
@@ -173,7 +208,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
       <h2>parse C</h2>
       <pre id="result"></pre>
       <script type="module">
-        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@0.11.0/chord_progression_parser.js";
+        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@1.0.0/chord_progression_parser.js";
 
         (async () => {
           // initialize wasm
@@ -240,8 +275,8 @@ duplicate warnings.
 
 Slash denominators must be complete chord spellings, such as `C/G` or
 `C/F#m(7,b5)`, or `?` for an unidentified bass (`C/?`). Arbitrary text and numeric
-denominators such as `C/Unknown` and `C/5` return `DEN-1`. Extensions require
-parentheses here too: use `C/G(7)` instead of `C/G7`.
+denominators such as `C/Unknown` and `C/5` return `DEN-1`. Shorthand is also accepted
+here, including `C/G7` and `C/F#m7b5`.
 
 `ParsePosition`, `ParseError`, `WarningCode`, and `ParseWarning` are exported
 TypeScript types. Warning positions use the original source text: display

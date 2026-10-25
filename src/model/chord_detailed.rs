@@ -3,7 +3,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use typeshare::typeshare;
 
-use crate::error_code::{ErrorCode, ErrorInfo};
+use crate::error_code::ErrorInfo;
 
 use super::{accidental::Accidental, base::Base, chord_type::ChordType, extension::Extension};
 
@@ -14,6 +14,7 @@ pub struct ChordDetailed {
     pub base: Base,
     pub accidental: Option<Accidental>,
     pub chord_type: ChordType,
+    /** Extensions in fixed sort_order order, including repeated values. */
     #[cfg_attr(
         target_arch = "wasm32",
         serde(deserialize_with = "crate::wasm_ast::deserialize_array")
@@ -21,97 +22,12 @@ pub struct ChordDetailed {
     pub extensions: Vec<Extension>,
 }
 
-impl ChordDetailed {
-    /** Parses a chord head without its optional parenthesized extension list. */
-    pub(crate) fn from_head(value: &str) -> Result<Self, ErrorInfo> {
-        let Some(base_character) = value.chars().next() else {
-            return Err(chord_error(ErrorCode::Bs1, None));
-        };
-
-        let base = match base_character {
-            'A' => Base::A,
-            'B' => Base::B,
-            'C' => Base::C,
-            'D' => Base::D,
-            'E' => Base::E,
-            'F' => Base::F,
-            'G' => Base::G,
-            _ => return Err(chord_error(ErrorCode::Bs1, Some(value.to_string()))),
-        };
-
-        let remainder = &value[base_character.len_utf8()..];
-        let (accidental, remainder) = match remainder.chars().next() {
-            Some('#') => (Some(Accidental::Sharp), &remainder[1..]),
-            Some('b') => (Some(Accidental::Flat), &remainder[1..]),
-            _ => (None, remainder),
-        };
-
-        let chord_type = match remainder {
-            "" | "M" => ChordType::Major,
-            "m" => ChordType::Minor,
-            "aug" => ChordType::Augmented,
-            "dim" => ChordType::Diminished,
-            _ => return Err(chord_error(ErrorCode::Cho1, Some(value.to_string()))),
-        };
-
-        Ok(Self {
-            base,
-            accidental,
-            chord_type,
-            extensions: Vec::new(),
-        })
-    }
-}
-
 impl FromStr for ChordDetailed {
     type Err = ErrorInfo;
 
-    /** Parses a complete chord using exact chord-type and extension matches. */
+    /** Uses the same complete chord grammar and extension ordering as the document parser. */
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let Some(opening_index) = value.find('(') else {
-            if value.contains(')') {
-                return Err(chord_error(ErrorCode::Ext3, Some(value.to_string())));
-            }
-            return Self::from_head(value);
-        };
-
-        if !value.ends_with(')') {
-            return Err(chord_error(ErrorCode::Ext3, Some(value.to_string())));
-        }
-
-        let head = &value[..opening_index];
-        let extension_source = &value[opening_index + 1..value.len() - 1];
-        if extension_source
-            .chars()
-            .any(|character| matches!(character, '(' | ')'))
-        {
-            return Err(chord_error(ErrorCode::Ext4, Some(value.to_string())));
-        }
-        if extension_source.is_empty() {
-            return Err(chord_error(ErrorCode::Ext2, None));
-        }
-
-        let mut detailed = Self::from_head(head)?;
-        detailed.extensions = extension_source
-            .split(',')
-            .map(|extension| {
-                if extension.is_empty() {
-                    return Err(chord_error(ErrorCode::Ext2, None));
-                }
-                Extension::from_str(extension)
-                    .map_err(|_| chord_error(ErrorCode::Ext1, Some(extension.to_string())))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(detailed)
-    }
-}
-
-/** Creates a chord parsing error without assigning a source position. */
-fn chord_error(code: ErrorCode, additional_info: Option<String>) -> ErrorInfo {
-    ErrorInfo {
-        code,
-        additional_info,
+        crate::parser::parse_chord_symbol(value).map(|chord| chord.detailed)
     }
 }
 

@@ -15,6 +15,7 @@ check-not-broken:
 	make test-wasm-references
 	make install-e2e-dependencies
 	make test-rust
+	make test-bench-fixtures
 	make test-e2e
 	make test-generator
 
@@ -25,6 +26,7 @@ check-local:
 	make check-lint
 	make check-build
 	make test-rust
+	make test-bench-fixtures
 	make test-resources
 
 ################################################################
@@ -170,6 +172,10 @@ check-types:
 # Unit, integration, and documentation examples (explicit --all-targets skips doctests).
 test-rust:
 	cargo test --all-features
+
+# Check benchmark input assumptions in CI without measuring performance.
+test-bench-fixtures:
+	cargo bench --bench parser -- --check-fixtures
 
 # e2e test
 test-e2e:

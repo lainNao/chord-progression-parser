@@ -31,6 +31,10 @@ of chord bodies in reference sections. They also exercise recovery from malforme
 notation. The parser accepts UTF-8 strings, so
 invalid UTF-8 bytes are discarded before calling its API.
 
+Shorthand seeds also cover numeric and major extensions, `dim`/`aug`, `sus4`,
+`omit5`, mixed parenthesized/shorthand duplicates, malformed suffixes, and
+shorthand denominators.
+
 The target checks the same invariants as `tests/source_positions.rs` through
 `tests/support/mod.rs`: diagnostic ranges and order, Unicode display coordinates,
 warning source text, and preservation of the AST and warning values after
@@ -54,6 +58,9 @@ positions, and formatting round trips. Choices cover all chord types and
 extensions, special expressions, key and section metadata (including reference-only
 sections), validated chord denominators and unidentified basses,
 optional horizontal whitespace, trailing bar commas, and all newline forms.
+Chord generation mixes up to three shorthand extensions with an optional
+parenthesized group, and includes shorthand denominators. Major markers are
+handled explicitly so generated expected values do not confuse `CM7` with `CM(7)`.
 It also appends malformed chords to otherwise valid progressions and checks
 that earlier warnings are preserved, later chords are inspected, and repetition
 context resets at section boundaries. The same generator runs deterministically
@@ -65,7 +72,7 @@ cargo +nightly fuzz run grammar -- \
 ```
 
 Each input produces at most four sections, five bars per section, four chords
-per bar, and five extensions per chord. Unlike `parser`, its bytes are grammar
+per bar, and eight extensions per chord. Unlike `parser`, its bytes are grammar
 choices rather than source text and need not be valid UTF-8. Crashes are saved
 under `fuzz/artifacts/grammar/`; replay and minimize them with the `grammar`
 target in place of `parser`.

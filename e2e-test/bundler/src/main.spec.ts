@@ -3,6 +3,57 @@ import { testData } from "./main.spec.fixtures";
 import type { ParseWarning } from "@lainnao/chord-progression-parser-bundler";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-bundler/warning_code_message_map.js";
 
+/** Confirms the production bundle retains shorthand and exposes sorted extension data. */
+test("supports shorthand and omit5 in the bundled browser package", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  const source = "CM7 - Csus4(7,omit5) - C7(13)/F#m7b5";
+  await page.locator("#textarea").fill(source);
+  await expect(page.locator("#result")).toHaveAttribute(
+    "data-formatted",
+    source,
+  );
+  const result = JSON.parse(await page.locator("#result").innerText());
+  expect(result.success).toBe(true);
+  expect(result.ast[0].chordBlocks).toMatchObject([
+    {
+      type: "bar",
+      value: [
+        {
+          chordExpression: {
+            value: { plain: "CM7", detailed: { extensions: ["M7"] } },
+          },
+        },
+      ],
+    },
+    {
+      type: "bar",
+      value: [
+        {
+          chordExpression: {
+            value: {
+              plain: "Csus4(7,omit5)",
+              detailed: { extensions: ["7", "sus4", "omit5"] },
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: "bar",
+      value: [
+        {
+          denominator: "F#m7b5",
+          chordExpression: {
+            value: { plain: "C7(13)", detailed: { extensions: ["7", "13"] } },
+          },
+        },
+      ],
+    },
+  ]);
+});
+
 /** Real bundled WASM keeps explicit unknown basses and highlights rejected denominators. */
 test("accepts C/? and rejects malformed slash denominators", async ({
   page,
@@ -14,7 +65,7 @@ test("accepts C/? and rejects malformed slash denominators", async ({
     "data-formatted",
     source,
   );
-  for (const denominator of ["5", "Unknown", "Garbage", "G7"]) {
+  for (const denominator of ["5", "Unknown", "Garbage", "G79"]) {
     await page.locator("#textarea").fill(`C/${denominator}`);
     await expect(page.locator("#result")).toContainText("DEN-1");
     await expect(page.locator("#result mark")).toHaveText(`/${denominator}`);

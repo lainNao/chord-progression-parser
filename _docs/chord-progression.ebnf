@@ -1,3 +1,4 @@
+(* Chord progression syntax, version 1.0.0. *)
 document          = { line-break | section-meta | (chord-line, line-end) } ;
 section-meta      = "@", section-meta-key, "=", section-meta-value, line-end ;
 section-meta-key  = "section" | "repeat" | "same" ;
@@ -8,12 +9,14 @@ chord-info        = chord-meta*, chord-expression, denominator? ;
 chord-meta        = "[", "key", "=", key, "]" ;
 
 chord-expression  = chord | "?" | "_" | "%" ;
-chord             = base, accidental?, chord-type?, extensions? ;
+chord             = base, accidental?, chord-type?, primary-extension?, { modifier }, extensions? ;
 base              = "A" | "B" | "C" | "D" | "E" | "F" | "G" ;
 accidental        = "#" | "b" ;
 chord-type        = "m" | "M" | "aug" | "dim" ;
 extensions        = "(", extension, { ",", extension }, ")" ;
-extension         = "1" | "2" | "3" | "b3" | "4" | "b5" | "5" | "#5" | "b6" | "6" | "7" | "b9" | "9" | "#9" | "b11" | "11" | "#11" | "b13" | "13" | "#13" | "M7" | "M9" | "M11" | "M13" | "add9" | "add11" | "add13" | "sus2" | "sus4" | "o" ;
+extension         = "1" | "2" | "3" | "b3" | "4" | "b5" | "5" | "#5" | "b6" | "6" | "7" | "b9" | "9" | "#9" | "b11" | "11" | "#11" | "b13" | "13" | "#13" | "M7" | "M9" | "M11" | "M13" | "add9" | "add11" | "add13" | "sus2" | "sus4" | "o" | "omit5" ;
+primary-extension = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "9" | "11" | "13" | "M7" | "M9" | "M11" | "M13" ;
+modifier          = "b3" | "b5" | "#5" | "b6" | "b9" | "#9" | "b11" | "#11" | "b13" | "#13" | "add9" | "add11" | "add13" | "sus2" | "sus4" | "omit5" ;
 denominator       = "/", (chord | "?") ;
 
 line-end          = line-break | end-of-input ;
@@ -36,11 +39,16 @@ line-break        = "\r\n" | "\n" | "\r" ;
   it. A reference-only section is complete: subsequent section or same metadata
   starts a new section, while repeat metadata still belongs to the reference.
   A section with same metadata must not contain chord lines (SMIV-4).
-  This is a canonical AST serialization format; extensions require parentheses.
+  Shorthand atoms use longest extension tokens; M7/M9/M11/M13 take precedence
+  over consuming M as a chord-type marker. CM7 is C(M7), whereas CM(7) retains
+  its explicit major marker plus 7. Root accidentals take precedence over modifiers.
+  At most one primary extension is permitted outside parentheses, before modifiers.
+  Plain chord spelling retains input extension order with whitespace removed.
+  Structured extensions use the documented fixed order, retaining duplicates.
   For compatibility, the parser also accepts one trailing comma after a bar's
   last chord-info (including before a dash, line break, or end of input).
   The formatter omits that comma; extension lists do not allow trailing commas.
-  Conventional chord-symbol aliases are not accepted as chord heads.
+  maj, bare sus, symbolic dim/aug aliases, alt, and no3 are not accepted.
   A denominator uses the same complete chord syntax as a numerator. The special
   denominator ? denotes an unidentified bass; numeric degrees and arbitrary text
   are not accepted. Chord-shaped denominators retain their spelling as strings.

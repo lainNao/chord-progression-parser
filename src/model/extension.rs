@@ -98,4 +98,68 @@ pub enum Extension {
     #[strum(serialize = "o")]
     #[serde(rename = "o")]
     HalfDiminish,
+    /// Requests omission of the fifth without computing sounding pitches.
+    #[strum(serialize = "omit5")]
+    #[serde(rename = "omit5")]
+    Omit5,
+}
+
+impl Extension {
+    /** Defines AST ordering independently of spelling and enum discriminants. */
+    pub fn sort_order(&self) -> u8 {
+        match self {
+            Self::One => 0,
+            Self::Two => 1,
+            Self::Three => 2,
+            Self::Four => 3,
+            Self::Five => 4,
+            Self::Six => 5,
+            Self::Seven => 6,
+            Self::MajorSeven => 7,
+            Self::Nine => 8,
+            Self::MajorNine => 9,
+            Self::Eleven => 10,
+            Self::MajorEleven => 11,
+            Self::Thirteen => 12,
+            Self::MajorThirteen => 13,
+            Self::Sus2 => 14,
+            Self::Sus4 => 15,
+            Self::FlatThree => 16,
+            Self::FlatFive => 17,
+            Self::SharpFive => 18,
+            Self::FlatSix => 19,
+            Self::FlatNine => 20,
+            Self::SharpNine => 21,
+            Self::FlatEleven => 22,
+            Self::SharpEleven => 23,
+            Self::FlatThirteen => 24,
+            Self::SharpThirteen => 25,
+            Self::Add9 => 26,
+            Self::Add11 => 27,
+            Self::Add13 => 28,
+            Self::Omit5 => 29,
+            Self::HalfDiminish => 30,
+        }
+    }
+
+    /** Identifies the single leading numeric extension permitted outside parentheses. */
+    pub(crate) fn is_primary(&self) -> bool {
+        matches!(
+            self,
+            Self::One
+                | Self::Two
+                | Self::Three
+                | Self::Four
+                | Self::Five
+                | Self::Six
+                | Self::Seven
+                | Self::Nine
+                | Self::Eleven
+                | Self::Thirteen
+                | Self::MajorSeven
+                | Self::MajorNine
+                | Self::MajorEleven
+                | Self::MajorThirteen
+        )
+    }
 }

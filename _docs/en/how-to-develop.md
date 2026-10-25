@@ -35,6 +35,28 @@ Edit `resources/error_code_message_map.ts` or `resources/warning_code_message_ma
 then run `make generate-diagnostic-codes`. Both Rust enums are generated from these
 localized message maps. `make check-local` verifies that the generated sources match.
 
+## Automated test responsibilities
+
+Run `make check-local` for native Rust tests, generated-source checks, linting,
+type checking, resource tests, and benchmark fixture validation. Run
+`make check-not-broken` for the full release check, including freshly built
+WASM packages, Node.js, browser E2E, and the random progression generator.
+
+- `tests/fixtures/shorthand.json` contains literal chord expectations shared by
+  Rust and the Node/WASM tests. Document parsing, standalone parsing, denominator
+  validation, and formatting are tested separately. Formatter fixtures are built
+  directly from expected ASTs.
+- `tests/fixtures/canonical_syntax.json` specifies accepted/rejected syntax and
+  extension ordering. Expected generated ASTs do not call the production sort key.
+  Rust, generated TypeScript, the generator, and both syntax references are checked
+  against these specifications.
+- Warning and error tests check public codes, recovery, and original Unicode/UTF-16
+  positions. Deterministic generated and mutation tests cover combinations and
+  large inputs during normal CI.
+- Browser E2E checks integration with the built packages and UI; coverage-guided
+  fuzzing and comparisons with a previous implementation are additional checks,
+  not claims about routine CI coverage.
+
 ## Fuzzing
 
 The optional [fuzz workspace](../../fuzz/README.md) checks parser diagnostics and
@@ -45,14 +67,16 @@ toolchain; normal development and deterministic regression tests remain on stabl
 
 Run `cargo bench --bench parser` for deterministic native Rust workloads: short
 and long progressions, duplicate warnings, the legacy API without warnings,
-independent syntax errors, Unicode, single chords, and AST/diagnostic formatting. The benchmark
+independent syntax errors, Unicode, shorthand and its duplicate warnings, single
+chords, and AST/diagnostic formatting. The benchmark
 validates its fixtures, calibrates each workload, and prints CSV with the median,
 minimum, and maximum microseconds per operation across seven samples. Each sample
 targets at least 100 ms; the timings include dropping returned ASTs and diagnostics.
 
 Compare revisions with the same Rust toolchain, hardware, and quiet background
 workload. These are native API timings, not JavaScript/WASM conversion or browser
-rendering timings. CI compiles the benchmark but does not enforce timing thresholds.
+rendering timings. `make test-bench-fixtures` runs its input assertions without timing samples and is
+part of local/CI checks. CI does not enforce timing thresholds.
 
 After `make build-wasm-web`, run `node _tools/benchmark-wasm.mjs` to include the
 JS/WASM boundary. It reports CSV across seven samples for short and long inputs,

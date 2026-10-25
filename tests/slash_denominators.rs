@@ -6,7 +6,19 @@ use chord_progression_parser::{
 /** Keeps known bass spellings and explicit unknowns stable through AST formatting. */
 #[test]
 fn accepts_complete_chords_and_unidentified_basses() {
-    for denominator in ["G", "F#", "Bb", "?", "F#m(7,b5)", "G(9,9)"] {
+    for denominator in [
+        "G",
+        "F#",
+        "Bb",
+        "?",
+        "F#m(7,b5)",
+        "G(9,9)",
+        "G7",
+        "F#m7b5",
+        "G7(13)",
+        "Gsus4(7)",
+        "Gomit5",
+    ] {
         let source = format!("[key=C]C/{denominator} - % - %/?");
         let ast = parse_chord_progression_string(&source).expect("valid bass must parse");
         let ChordBlock::Bar(bar) = &ast[0].chord_blocks[0] else {
@@ -26,7 +38,7 @@ fn rejects_invalid_denominators_without_guessing_a_note() {
         "5",
         "Unknown",
         "Garbage",
-        "G7",
+        "G79",
         "G##",
         "Gbb",
         "G(unknown)",

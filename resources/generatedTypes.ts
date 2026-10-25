@@ -91,16 +91,20 @@ export enum Extension {
 	Sus2 = "sus2",
 	Sus4 = "sus4",
 	HalfDiminish = "o",
+	/** Requests omission of the fifth without computing sounding pitches. */
+	Omit5 = "omit5",
 }
 
 export interface ChordDetailed {
 	base: Base;
 	accidental: Accidental | null;
 	chordType: ChordType;
+	/** Extensions in fixed sort_order order, including repeated values. */
 	extensions: Extension[];
 }
 
 export interface Chord {
+	/** Input chord spelling and extension order, with whitespace removed. */
 	plain: string;
 	detailed: ChordDetailed;
 }

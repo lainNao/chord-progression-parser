@@ -11,3 +11,9 @@ Blank lines do not start a section. Every section after the first therefore has
 at least one section metadata entry; if random metadata generation produces none,
 the generator emits `@section=Section2`, `@section=Section3`, and so on. The specified
 range for metadata attached to chords is still respected, including zero entries.
+
+The generated `plain` strings retain the random extension order. Structured
+`detailed.extensions` follow the parser v1 ordering contract, including `omit5`.
+The complete order is tested against `tests/fixtures/canonical_syntax.json`,
+independently of the Rust sort implementation. Rebuild `pkg/pkg-node` after
+changing the parser before running this tool's tests.

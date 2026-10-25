@@ -1,6 +1,72 @@
 import { test, expect } from "@playwright/test";
 import type { Ast } from "@lainnao/chord-progression-parser-web/generatedTypes";
 
+/** Exercises shorthand and omission through the direct browser WASM entry point. */
+test("native browser WASM preserves shorthand and sorts extensions", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3498/");
+  const result = await page.evaluate(async () => {
+    const modulePath = "/chord_progression_parser.js";
+    const parser = (await import(
+      modulePath
+    )) as typeof import("@lainnao/chord-progression-parser-web");
+    await parser.default();
+    const source = "CM7 - Csus4(7,omit5) - C7(13)/F#m7b5";
+    const parsed = parser.parseChordProgressionString(source);
+    switch (parsed.success) {
+      case true:
+        return {
+          ast: parsed.ast,
+          formatted: parser.formatChordProgression(parsed.ast),
+        };
+      case false:
+        throw new Error(JSON.stringify(parsed.errors));
+      default: {
+        const exhaustiveCheck: never = parsed;
+        throw new Error(`Unexpected result: ${exhaustiveCheck}`);
+      }
+    }
+  });
+  expect(result.formatted).toBe("CM7 - Csus4(7,omit5) - C7(13)/F#m7b5");
+  expect(result.ast[0].chordBlocks).toMatchObject([
+    {
+      type: "bar",
+      value: [
+        {
+          chordExpression: {
+            value: { plain: "CM7", detailed: { extensions: ["M7"] } },
+          },
+        },
+      ],
+    },
+    {
+      type: "bar",
+      value: [
+        {
+          chordExpression: {
+            value: {
+              plain: "Csus4(7,omit5)",
+              detailed: { extensions: ["7", "sus4", "omit5"] },
+            },
+          },
+        },
+      ],
+    },
+    {
+      type: "bar",
+      value: [
+        {
+          denominator: "F#m7b5",
+          chordExpression: {
+            value: { plain: "C7(13)", detailed: { extensions: ["7", "13"] } },
+          },
+        },
+      ],
+    },
+  ]);
+});
+
 /** The direct browser package exports the same reference tag and localized syntax error. */
 test("native browser WASM preserves references without allowing chord bodies", async ({
   page,

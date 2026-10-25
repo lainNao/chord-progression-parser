@@ -1,0 +1,628 @@
+[
+  {
+    "source": "C1",
+    "expected": {
+      "plain": "C1",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "1"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C2",
+    "expected": {
+      "plain": "C2",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "2"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C3",
+    "expected": {
+      "plain": "C3",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "3"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C4",
+    "expected": {
+      "plain": "C4",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "4"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C5",
+    "expected": {
+      "plain": "C5",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C6",
+    "expected": {
+      "plain": "C6",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "6"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C7",
+    "expected": {
+      "plain": "C7",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C9",
+    "expected": {
+      "plain": "C9",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "9"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C11",
+    "expected": {
+      "plain": "C11",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "11"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C13",
+    "expected": {
+      "plain": "C13",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "13"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CM7",
+    "expected": {
+      "plain": "CM7",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "M7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CM9",
+    "expected": {
+      "plain": "CM9",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "M9"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CM11",
+    "expected": {
+      "plain": "CM11",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "M11"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CM13",
+    "expected": {
+      "plain": "CM13",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "M13"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cm7",
+    "expected": {
+      "plain": "Cm7",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "m",
+        "extensions": [
+          "7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CmM7",
+    "expected": {
+      "plain": "CmM7",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "m",
+        "extensions": [
+          "M7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Caug7",
+    "expected": {
+      "plain": "Caug7",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "aug",
+        "extensions": [
+          "7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CaugM7",
+    "expected": {
+      "plain": "CaugM7",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "aug",
+        "extensions": [
+          "M7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cdim7",
+    "expected": {
+      "plain": "Cdim7",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "dim",
+        "extensions": [
+          "7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cdim7(9)",
+    "expected": {
+      "plain": "Cdim7(9)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "dim",
+        "extensions": [
+          "7",
+          "9"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C7sus4",
+    "expected": {
+      "plain": "C7sus4",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "sus4"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C7(13)",
+    "expected": {
+      "plain": "C7(13)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "13"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Csus4(7)",
+    "expected": {
+      "plain": "Csus4(7)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "sus4"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Csus2",
+    "expected": {
+      "plain": "Csus2",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "sus2"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cm7b5",
+    "expected": {
+      "plain": "Cm7b5",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "m",
+        "extensions": [
+          "7",
+          "b5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C7b9#11",
+    "expected": {
+      "plain": "C7b9#11",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "b9",
+          "#11"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cadd9",
+    "expected": {
+      "plain": "Cadd9",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "add9"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cmadd11",
+    "expected": {
+      "plain": "Cmadd11",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "m",
+        "extensions": [
+          "add11"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cadd13",
+    "expected": {
+      "plain": "Cadd13",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "add13"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Comit5",
+    "expected": {
+      "plain": "Comit5",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "omit5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C7omit5",
+    "expected": {
+      "plain": "C7omit5",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "omit5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cm7(omit5)",
+    "expected": {
+      "plain": "Cm7(omit5)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "m",
+        "extensions": [
+          "7",
+          "omit5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C7#5omit5",
+    "expected": {
+      "plain": "C7#5omit5",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "#5",
+          "omit5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C7b3#5b6b11b13#13",
+    "expected": {
+      "plain": "C7b3#5b6b11b13#13",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "b3",
+          "#5",
+          "b6",
+          "b11",
+          "b13",
+          "#13"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C#5",
+    "expected": {
+      "plain": "C#5",
+      "detailed": {
+        "base": "C",
+        "accidental": "#",
+        "chordType": "M",
+        "extensions": [
+          "5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cb5",
+    "expected": {
+      "plain": "Cb5",
+      "detailed": {
+        "base": "C",
+        "accidental": "b",
+        "chordType": "M",
+        "extensions": [
+          "5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C(#5)",
+    "expected": {
+      "plain": "C(#5)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "#5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C(b5)",
+    "expected": {
+      "plain": "C(b5)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "b5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C ( omit5 , #11 , add9 , 7 , sus4 , b9 , 7 )",
+    "expected": {
+      "plain": "C(omit5,#11,add9,7,sus4,b9,7)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7",
+          "7",
+          "sus4",
+          "b9",
+          "#11",
+          "add9",
+          "omit5"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CM(7)",
+    "expected": {
+      "plain": "CM(7)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "CM(9)",
+    "expected": {
+      "plain": "CM(9)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "M",
+        "extensions": [
+          "9"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cm(o)",
+    "expected": {
+      "plain": "Cm(o)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "m",
+        "extensions": [
+          "o"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Cdim(b5,7)",
+    "expected": {
+      "plain": "Cdim(b5,7)",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "dim",
+        "extensions": [
+          "7",
+          "b5"
+        ]
+      }
+    }
+  }
+]

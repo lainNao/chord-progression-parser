@@ -18,6 +18,8 @@ fn mutated_documents_keep_diagnostics_aligned_with_the_original_source() {
         "@section=日本語\r\n@repeat=4294967295\r\n[key=Fb]C#dim(7,b5)/Gm(9,11)-?\r\nC(9,9,9)",
         "C/D(あ,😀)-[key=C#]Fbm(1,1)\r\r[key=E#]C(9,9)-%",
         "C-H\n\n%",
+        "@section=😀\r\nC7sus4sus4(7,sus4)-CmM7(omit5)-C/F#m7b5",
+        "C7(13)-Csus4(7)-Comit5omit5-CM7(M7)",
         "@section=😀\n\nC(9,9)",
         "C/D(9,11)-C(7,7)\n[key=Bb]C(1)-%",
         "@section=Reprise\n@same=曲😀\n@repeat=2\n@section=曲😀\nC(9,9)",

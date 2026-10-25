@@ -1,11 +1,13 @@
 import { test, expect } from "bun:test";
 import parser from "@lainnao/chord-progression-parser-node";
+import { readFileSync } from "node:fs";
 import type { ParseWarning } from "@lainnao/chord-progression-parser-node";
 import {
   Accidental,
   ChordType,
   Extension,
   type SectionMeta,
+  type Chord,
 } from "@lainnao/chord-progression-parser-node/generatedTypes";
 import {
   ERROR_CODE_MESSAGE_MAP,
@@ -13,13 +15,77 @@ import {
 } from "@lainnao/chord-progression-parser-node/error_code_message_map";
 import { getWarningMessage } from "@lainnao/chord-progression-parser-node/warning_code_message_map";
 
+/** Checks WASM serialization against the same literal contract as the Rust entry points. */
+test("WASM chord objects match the literal shorthand contract", (): void => {
+  const cases: { source: string; expected: Chord }[] = JSON.parse(
+    readFileSync(
+      new URL("../../../tests/fixtures/shorthand.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  for (const fixture of cases) {
+    const result = parser.parseChordProgressionString(fixture.source);
+    switch (result.success) {
+      case true:
+        expect(result.ast).toEqual([
+          {
+            metaInfos: [],
+            chordBlocks: [
+              {
+                type: "bar",
+                value: [
+                  {
+                    metaInfos: [],
+                    denominator: null,
+                    chordExpression: { type: "chord", value: fixture.expected },
+                  },
+                ],
+              },
+            ],
+          },
+        ]);
+        expect(parser.formatChordProgression(result.ast)).toBe(
+          fixture.expected.plain,
+        );
+        break;
+      case false:
+        throw new Error(JSON.stringify(result.errors));
+      default: {
+        const exhaustiveCheck: never = result;
+        throw new Error(`Unexpected result: ${exhaustiveCheck}`);
+      }
+    }
+  }
+});
+
+/** Keeps UTF-16 warning serialization correct when shorthand and parentheses overlap. */
+test("WASM shorthand warnings retain original Unicode source positions", (): void => {
+  const source = "@section=😀\r\nC7sus4(7)";
+  const result = parser.parseChordProgressionString(source);
+  expect(result.success).toBe(true);
+  const startOffset = source.lastIndexOf("7");
+  expect(result.warnings).toEqual([
+    {
+      code: "DUPLICATE_EXTENSION",
+      additionalInfo: "7",
+      position: {
+        lineNumber: 2,
+        columnNumber: 8,
+        length: 1,
+        startOffset,
+        endOffset: startOffset + 1,
+      },
+    },
+  ]);
+});
+
 /** The JS/WASM boundary accepts unknown basses but rejects arbitrary denominator text. */
 test("validates slash denominators and preserves an unidentified bass", (): void => {
   const source = "[key=C]C/? - %/G - %/? - C/F#m(7,b5)";
   const parsed = parser.parseChordProgressionString(source);
   if (!parsed.success) throw new Error("valid denominators must parse");
   expect(parser.formatChordProgression(parsed.ast)).toBe(source);
-  for (const denominator of ["5", "Unknown", "Garbage", "G7", "G m", "?m"]) {
+  for (const denominator of ["5", "Unknown", "Garbage", "G79", "G m", "?m"]) {
     const source = `@section=😀\r\nC/${denominator}-D(9,9)`;
     const result = parser.parseChordProgressionString(source);
     if (result.success)

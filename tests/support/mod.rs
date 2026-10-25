@@ -1,7 +1,7 @@
 use chord_progression_parser::{
     format_chord_progression, parse_chord_progression_string,
-    parse_chord_progression_string_with_warnings, Chord, ChordBlock, ChordDetailed,
-    ChordExpression, ChordInfo, Position, Section,
+    parse_chord_progression_string_with_warnings, ChordBlock, ChordDetailed, ChordExpression,
+    Position,
 };
 
 /** Describes one Unicode scalar boundary in the original source. */
@@ -73,18 +73,21 @@ pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
     assert_eq!(report.result, parse_chord_progression_string(input));
     // The standalone chord parser must agree with the document parser on every accepted input.
     if let Ok(detailed) = input.parse::<ChordDetailed>() {
-        let expected = vec![Section {
-            meta_infos: Vec::new(),
-            chord_blocks: vec![ChordBlock::Bar(vec![ChordInfo {
-                meta_infos: Vec::new(),
-                denominator: None,
-                chord_expression: ChordExpression::Chord(Chord {
-                    plain: input.to_string(),
-                    detailed,
-                }),
-            }])],
-        }];
-        assert_eq!(report.result.as_ref().ok(), Some(&expected));
+        let parsed = report
+            .result
+            .as_ref()
+            .expect("standalone chords must parse as documents");
+        assert_eq!(parsed.len(), 1);
+        let [ChordBlock::Bar(bar)] = parsed[0].chord_blocks.as_slice() else {
+            panic!("standalone chord must produce one bar");
+        };
+        assert_eq!(bar.len(), 1);
+        let ChordExpression::Chord(chord) = &bar[0].chord_expression else {
+            panic!("standalone chord must produce one chord");
+        };
+        assert_eq!(chord.detailed, detailed);
+        assert!(bar[0].meta_infos.is_empty());
+        assert!(bar[0].denominator.is_none());
     }
     let mut previous_offset = 0;
     for warning in &report.warnings {

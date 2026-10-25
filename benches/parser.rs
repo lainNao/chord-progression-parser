@@ -6,7 +6,7 @@ use std::{
 
 use chord_progression_parser::{
     format_chord_progression, parse_chord_progression_string,
-    parse_chord_progression_string_with_warnings, ChordDetailed,
+    parse_chord_progression_string_with_warnings, ChordDetailed, ErrorCode,
 };
 
 /** Measures a batch including destruction of returned ASTs and diagnostic vectors. */
@@ -44,6 +44,8 @@ fn main() {
     let duplicates = format!("C({})", vec!["9"; 1_000].join(","));
     let errors = vec!["H"; 1_000].join("-");
     let unicode = format!("@section=日本語😀\r\n{}", "C/(😀あ)-Dm(7)\r\n".repeat(100));
+    let shorthand = "CM7-Csus4(7)-C7(13)/F#m7b5-C7omit5\n".repeat(100);
+    let shorthand_duplicates = format!("C7{}(7,sus4)", "sus4".repeat(1_000));
 
     // Validate fixtures outside the timed loops, so an accidentally rejected input
     // cannot appear to be a parser performance improvement.
@@ -64,7 +66,26 @@ fn main() {
     let diagnostics = parse_chord_progression_string(&errors).unwrap_err();
     assert_eq!(diagnostics.len(), 1_000);
     assert_eq!(diagnostics[0].error.to_string(), "CHO-1: BS-1: H");
-    parse_chord_progression_string(&unicode).expect("Unicode fixture must parse");
+    // These Unicode denominators are deliberately invalid; validate rejection before timing it.
+    let unicode_errors = parse_chord_progression_string(&unicode)
+        .expect_err("Unicode denominator text must remain invalid");
+    assert_eq!(unicode_errors.len(), 100);
+    assert!(unicode_errors
+        .iter()
+        .all(|error| error.error.code == ErrorCode::Den1));
+    parse_chord_progression_string(&shorthand).expect("shorthand fixture must parse");
+    let shorthand_report = parse_chord_progression_string_with_warnings(&shorthand_duplicates);
+    assert!(shorthand_report.result.is_ok());
+    assert_eq!(shorthand_report.warnings.len(), 1_001);
+
+    let chord = "C#dim(1,b3,b5,7,9,#11,13)";
+    chord
+        .parse::<ChordDetailed>()
+        .expect("chord fixture must parse");
+    // CI validates fixtures without running timing samples or asserting machine-dependent durations.
+    if std::env::args().any(|argument| argument == "--check-fixtures") {
+        return;
+    }
 
     println!("case,input_bytes,median_us,min_us,max_us");
     measure("parse_short", short.len(), || {
@@ -87,6 +108,14 @@ fn main() {
     measure("parse_unicode", unicode.len(), || {
         parse_chord_progression_string_with_warnings(black_box(&unicode))
     });
+    measure("parse_shorthand", shorthand.len(), || {
+        parse_chord_progression_string_with_warnings(black_box(&shorthand))
+    });
+    measure(
+        "parse_shorthand_duplicates",
+        shorthand_duplicates.len(),
+        || parse_chord_progression_string_with_warnings(black_box(&shorthand_duplicates)),
+    );
     measure("format_progression", progression.len(), || {
         format_chord_progression(black_box(&progression_ast)).expect("valid AST must format")
     });
@@ -100,10 +129,6 @@ fn main() {
         }
         output
     });
-    let chord = "C#dim(1,b3,b5,7,9,#11,13)";
-    chord
-        .parse::<ChordDetailed>()
-        .expect("chord fixture must parse");
     measure("parse_chord", chord.len(), || {
         black_box(chord).parse::<ChordDetailed>()
     });
