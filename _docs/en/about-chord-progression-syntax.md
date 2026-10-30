@@ -279,3 +279,9 @@ The existing parenthesized `o` extension remains accepted; it is not a new
 shorthand for diminished chords.
 
 See the [machine-readable fixture](../../tests/fixtures/canonical_syntax.json).
+
+## Empty named sections and source positions (1.1.1)
+
+A new `@section` starts a separate section even before any chords have been entered. Consecutive names are not merged into the first definition. `@repeat` and a qualifying `@same` remain attached to their section. Reference names remain literal strings; target lookup, duplicate precedence and identifier semantics belong to the application.
+
+Successful JavaScript results include `sectionMetaPositions` outside the AST. Each entry addresses `ast[sectionIndex].metaInfos[metaIndex]`; `position` covers only the original metadata value after `=`, excluding surrounding ASCII spaces and tabs. Offsets are zero-based UTF-16 with an exclusive end; line/column are one-based, CRLF counts as one newline, and columns/length count Unicode scalar values. Applications can use these exact ranges for semantic diagnostics without rescanning metadata syntax. The stored AST shape is unchanged.

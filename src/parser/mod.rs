@@ -12,7 +12,7 @@ use crate::{
         chord_expression::ChordExpression, chord_info::ChordInfo, chord_info_meta::ChordInfoMeta,
         extension::Extension, key::Key, section::Section, section_meta::SectionMeta,
     },
-    ParseReport, ParseWarning, WarningCode,
+    ParseReport, ParseWarning, SectionMetaPosition, WarningCode,
 };
 
 /** Parses source text, optionally collecting non-blocking warnings. */
@@ -83,6 +83,8 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         // Explicit metadata starts a section even after a line rejected during recovery.
         let mut section_has_chord_lines = false;
         let mut section_has_reference = false;
+        let mut section_has_name = false;
+        let mut section_meta_positions = Vec::new();
         let mut errors = Vec::new();
 
         loop {
@@ -98,15 +100,21 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 self.tokens.get(self.cursor + 1).map(|token| token.kind),
                 Some(TokenKind::Text("repeat"))
             );
+            let starts_named_section = matches!(
+                self.tokens.get(self.cursor + 1).map(|token| token.kind),
+                Some(TokenKind::Text("section"))
+            );
             if starts_section_meta
                 && (section_has_chord_lines
-                    || (section_has_reference && !extends_reference_metadata))
+                    || (section_has_reference && !extends_reference_metadata)
+                    || (section_has_name && starts_named_section))
             {
                 sections.push(current_section);
                 current_section = empty_section();
                 has_prior_chord = false;
                 section_has_chord_lines = false;
                 section_has_reference = false;
+                section_has_name = false;
             } else if !current_section.chord_blocks.is_empty() {
                 // One Br preserves a newline; two preserve one blank line without
                 // discarding section metadata or the preceding chord reference.
@@ -117,7 +125,15 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
 
             if starts_section_meta {
                 match self.parse_section_meta() {
-                    Ok(meta) => {
+                    Ok((meta, span)) => {
+                        if self.collect_warnings {
+                            section_meta_positions.push(SectionMetaPosition {
+                                section_index: sections.len(),
+                                meta_index: current_section.meta_infos.len(),
+                                position: span.into(),
+                            });
+                        }
+                        section_has_name |= matches!(&meta, SectionMeta::Section(_));
                         section_has_reference |= matches!(&meta, SectionMeta::Same(_));
                         current_section.meta_infos.push(meta);
                     }
@@ -174,11 +190,14 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 Err(errors)
             },
             warnings: self.warnings,
+            section_meta_positions,
         }
     }
 
     /** Parses a section metadata line and leaves its terminating newline untouched. */
-    fn parse_section_meta(&mut self) -> Result<SectionMeta, Vec<ErrorInfoWithPosition>> {
+    fn parse_section_meta(
+        &mut self,
+    ) -> Result<(SectionMeta, SourceSpan), Vec<ErrorInfoWithPosition>> {
         self.expect_symbol(TokenKind::At, ErrorCode::Smik1)
             .map_err(|error| vec![error])?;
         let (key, key_span) = self
@@ -191,14 +210,17 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         // Names are literal line values, not chord tokens. Use the original UTF-8
         // slice so internal whitespace and structural characters remain exact.
         if matches!(key, "section" | "same") {
-            let value = self
-                .read_section_name(equal.start_byte + 1)
+            let (value, span) = self
+                .read_section_name(equal.start_byte + 1, equal.span)
                 .map_err(|error| vec![error])?;
-            return Ok(match key {
-                "section" => SectionMeta::Section(value.to_owned()),
-                "same" => SectionMeta::Same(value.to_owned()),
-                _ => unreachable!("name metadata was checked above"),
-            });
+            return Ok((
+                match key {
+                    "section" => SectionMeta::Section(value.to_owned()),
+                    "same" => SectionMeta::Same(value.to_owned()),
+                    _ => unreachable!("name metadata was checked above"),
+                },
+                span,
+            ));
         }
 
         let mut errors = Vec::new();
@@ -247,23 +269,43 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
 
         if errors.is_empty() {
-            Ok(meta.expect("known metadata with a parsed value must produce a result"))
+            Ok((
+                meta.expect("known metadata with a parsed value must produce a result"),
+                value.expect("valid metadata has a value").1,
+            ))
         } else {
             Err(errors)
         }
     }
 
     /** Reads a nonempty literal name up to CR/LF/EOF, trimming only surrounding space and tab. */
-    fn read_section_name(&mut self, start_byte: usize) -> Result<&'src str, ErrorInfoWithPosition> {
+    fn read_section_name(
+        &mut self,
+        start_byte: usize,
+        equal_span: SourceSpan,
+    ) -> Result<(&'src str, SourceSpan), ErrorInfoWithPosition> {
         self.skip_to_line_end();
         let end_byte = self
             .peek()
             .map_or(self.input.len(), |token| token.start_byte);
-        let value = self.input[start_byte..end_byte].trim_matches([' ', '\t']);
+        let raw = &self.input[start_byte..end_byte];
+        let value = raw.trim_matches([' ', '\t']);
         if value.is_empty() {
             return Err(parse_error(ErrorCode::Smiv1, self.current_span(), None));
         }
-        Ok(value)
+        // Only ASCII space/tab are trimmed, so their byte, scalar and UTF-16 lengths agree.
+        let leading = raw.len() - raw.trim_start_matches([' ', '\t']).len();
+        let start_offset = equal_span.end_offset + leading;
+        Ok((
+            value,
+            SourceSpan {
+                line: equal_span.line,
+                column: equal_span.column + equal_span.length + leading,
+                length: value.chars().count(),
+                start_offset,
+                end_offset: start_offset + value.encode_utf16().count(),
+            },
+        ))
     }
 
     /** Parses one chord line as a sequence of bars separated by dashes. */

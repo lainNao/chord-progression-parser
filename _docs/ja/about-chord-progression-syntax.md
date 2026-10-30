@@ -266,3 +266,9 @@ C7/E
 既存の括弧内の `o` は引き続き受理しますが、dim の省略記号として括弧外へは展開しません。
 
 機械的に確認できる [fixture](../../tests/fixtures/canonical_syntax.json) も参照してください。
+
+## 空の名前付きセクションと原文位置（1.1.1）
+
+コード未入力でも、次の`@section`は別のセクションを開始します。複数の名前を先頭のセクションへまとめません。`@repeat`と、その名前に属する`@same`は同じセクションに保持します。パーサーは参照名を文字列として保持し、参照先の検索・重複の優先順位・識別子の意味はアプリ側で解釈します。
+
+JavaScriptの解析成功結果には、ASTと別に`sectionMetaPositions`を返します。各要素の`sectionIndex`・`metaIndex`は`ast[sectionIndex].metaInfos[metaIndex]`を指し、`position`は`=`の後の値だけの原文範囲です。周囲のASCII空白・タブは含めず、内部空白・Unicode・記号は保持します。位置は元の入力に対するUTF-16 offset（終端はexclusive）で、CRLFは1改行、列とlengthはUnicode scalar単位です。アプリ側の参照診断もこの範囲へ表示でき、正規表現などで原文を再解釈する必要はありません。保存ASTの形は変更しません。

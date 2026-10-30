@@ -19,7 +19,7 @@ pub use model::{
     chord_info_meta::ChordInfoMeta, chord_type::ChordType, extension::Extension, key::Key,
     section::Section, section_meta::SectionMeta,
 };
-pub use parse_report::{ParseReport, ParseWarning};
+pub use parse_report::{ParseReport, ParseWarning, SectionMetaPosition};
 pub use util::position::Position;
 pub use warning_code::WarningCode;
 
@@ -28,6 +28,8 @@ pub use warning_code::WarningCode;
 struct JsParseSuccess {
     success: bool,
     ast: Ast,
+    #[serde(rename = "sectionMetaPositions")]
+    section_meta_positions: Vec<JsSectionMetaPosition>,
     warnings: Vec<JsParseDiagnostic>,
 }
 
@@ -45,6 +47,15 @@ struct JsParseFailure {
 struct JsParseDiagnostic {
     code: String,
     additional_info: Option<String>,
+    position: JsPosition,
+}
+
+/** Keeps source ranges outside the stored AST so consumers can locate semantic diagnostics. */
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsSectionMetaPosition {
+    section_index: usize,
+    meta_index: usize,
     position: JsPosition,
 }
 
@@ -135,10 +146,18 @@ export type ParseWarning = {
   position: ParsePosition;
 };
 
+/** Original range of an AST metadata value. Indices address ast[sectionIndex].metaInfos[metaIndex]. */
+export type SectionMetaPosition = {
+  sectionIndex: number;
+  metaIndex: number;
+  position: ParsePosition;
+};
+
 export type ParsedResult =
   | {
       success: true;
       ast: Ast;
+      sectionMetaPositions: SectionMetaPosition[];
       warnings: ParseWarning[];
     }
   | {
@@ -172,12 +191,24 @@ pub fn parse_chord_progression_string_export(
 #[doc(hidden)]
 /** Parses a Rust string into the JavaScript response shape. */
 pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
-    let ParseReport { result, warnings } = parse_chord_progression_string_with_warnings(input);
+    let ParseReport {
+        result,
+        warnings,
+        section_meta_positions,
+    } = parse_chord_progression_string_with_warnings(input);
     let warnings = warnings.into_iter().map(JsParseDiagnostic::from).collect();
     let response = match result {
         Ok(ast) => JsParseResult::Success(JsParseSuccess {
             success: true,
             ast,
+            section_meta_positions: section_meta_positions
+                .into_iter()
+                .map(|source| JsSectionMetaPosition {
+                    section_index: source.section_index,
+                    meta_index: source.meta_index,
+                    position: source.position.into(),
+                })
+                .collect(),
             warnings,
         }),
         Err(error_infos) => JsParseResult::Failure(JsParseFailure {
