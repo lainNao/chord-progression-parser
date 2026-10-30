@@ -39,6 +39,16 @@ See the [v1 syntax reference](./_docs/en/about-chord-progression-syntax.md)
 ([日本語](./_docs/ja/about-chord-progression-syntax.md)) and
 [compatibility policy](./PARSER_COMPATIBILITY.md) for the full contract.
 
+## Upgrading to 1.1.0
+
+`@section=` and `@same=` now accept literal names through the end of the line,
+including `pre-chorus`, internal spaces, punctuation, and Unicode. Surrounding
+ASCII spaces and tabs are trimmed; empty names remain invalid. Metadata-looking
+text on the same line is part of the name, so put each directive on its own line.
+`@repeat` still requires a non-negative integer. AST shapes and existing valid
+inputs are unchanged. Reference resolution remains the application's responsibility.
+Update all readers and writers before saving names that require this syntax.
+
 ## Upgrading to 0.10.0
 
 Blank lines now stay within the preceding section, preserving its name, key,
@@ -208,7 +218,7 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
       <h2>parse C</h2>
       <pre id="result"></pre>
       <script type="module">
-        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@1.0.0/chord_progression_parser.js";
+        import * as mod from "https://cdn.jsdelivr.net/npm/@lainnao/chord-progression-parser-web@1.1.0/chord_progression_parser.js";
 
         (async () => {
           // initialize wasm

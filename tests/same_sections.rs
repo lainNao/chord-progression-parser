@@ -115,7 +115,14 @@ fn same_metadata_accepts_structural_whitespace_and_supported_line_endings() {
 /** Formatting must reject reference names that would inject syntax or lose AST information. */
 #[test]
 fn formatter_rejects_unrepresentable_reference_names() {
-    for name in ["", "Verse Chorus", "Verse\n@section=Other", "Verse-C"] {
+    for name in [
+        "",
+        " \t",
+        " Verse",
+        "Verse ",
+        "Verse\n@section=Other",
+        "Verse\rOther",
+    ] {
         let ast: Ast = serde_json::from_value(json!([{
             "metaInfos": [{"type": "same", "value": name}],
             "chordBlocks": []
@@ -142,8 +149,6 @@ fn malformed_same_directives_report_existing_metadata_errors() {
         ("@same", "SMIK-2", 5),
         ("@same=", "SMIV-1", 6),
         ("@same=\n", "SMIV-1", 6),
-        ("@same=Verse extra", "SMIV-2", 12),
-        ("@same=Verse-C", "SMIV-2", 11),
     ] {
         let errors = parse_chord_progression_string(source).expect_err("invalid same metadata");
         assert_eq!(errors.len(), 1, "unexpected diagnostics for {source:?}");

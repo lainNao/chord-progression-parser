@@ -18,13 +18,13 @@ use crate::{
 /** Parses source text, optionally collecting non-blocking warnings. */
 pub(crate) fn parse(input: &str, collect_warnings: bool) -> ParseReport {
     let source = lex(input);
-    Parser::new(&source.tokens, source.eof_span, collect_warnings).parse_document()
+    Parser::new(input, &source.tokens, source.eof_span, collect_warnings).parse_document()
 }
 
 /** Parses a standalone chord through the shared grammar, without metadata or a denominator. */
 pub(crate) fn parse_chord_symbol(input: &str) -> Result<Chord, ErrorInfo> {
     let source = lex(input);
-    let mut parser = Parser::new(&source.tokens, source.eof_span, false);
+    let mut parser = Parser::new(input, &source.tokens, source.eof_span, false);
     let expression = parser.parse_chord_expression(false).map_err(|errors| {
         errors
             .into_iter()
@@ -49,6 +49,7 @@ pub(crate) fn parse_chord_symbol(input: &str) -> Result<Chord, ErrorInfo> {
 
 /** Owns the token cursor and converts one grammar production at a time. */
 struct Parser<'tokens, 'src> {
+    input: &'src str,
     tokens: &'tokens [Token<'src>],
     cursor: usize,
     eof_span: SourceSpan,
@@ -58,8 +59,14 @@ struct Parser<'tokens, 'src> {
 
 impl<'tokens, 'src> Parser<'tokens, 'src> {
     /** Creates a parser positioned before the first token. */
-    fn new(tokens: &'tokens [Token<'src>], eof_span: SourceSpan, collect_warnings: bool) -> Self {
+    fn new(
+        input: &'src str,
+        tokens: &'tokens [Token<'src>],
+        eof_span: SourceSpan,
+        collect_warnings: bool,
+    ) -> Self {
         Self {
+            input,
             tokens,
             cursor: 0,
             eof_span,
@@ -177,11 +184,25 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let (key, key_span) = self
             .expect_text(ErrorCode::Smik2)
             .map_err(|error| vec![error])?;
-        self.expect_symbol(TokenKind::Equal, ErrorCode::Smik2)
+        let equal = self
+            .expect_symbol(TokenKind::Equal, ErrorCode::Smik2)
             .map_err(|error| vec![error])?;
 
+        // Names are literal line values, not chord tokens. Use the original UTF-8
+        // slice so internal whitespace and structural characters remain exact.
+        if matches!(key, "section" | "same") {
+            let value = self
+                .read_section_name(equal.start_byte + 1)
+                .map_err(|error| vec![error])?;
+            return Ok(match key {
+                "section" => SectionMeta::Section(value.to_owned()),
+                "same" => SectionMeta::Same(value.to_owned()),
+                _ => unreachable!("name metadata was checked above"),
+            });
+        }
+
         let mut errors = Vec::new();
-        if !matches!(key, "section" | "repeat" | "same") {
+        if key != "repeat" {
             errors.push(parse_error(
                 ErrorCode::Smik1,
                 key_span,
@@ -211,8 +232,6 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         };
 
         let meta = match (key, value) {
-            ("section", Some((value, _))) => Some(SectionMeta::Section(value.to_string())),
-            ("same", Some((value, _))) => Some(SectionMeta::Same(value.to_string())),
             ("repeat", Some((value, value_span))) => match value.parse::<u32>() {
                 Ok(repeat) => Some(SectionMeta::Repeat(repeat)),
                 Err(_) => {
@@ -232,6 +251,19 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         } else {
             Err(errors)
         }
+    }
+
+    /** Reads a nonempty literal name up to CR/LF/EOF, trimming only surrounding space and tab. */
+    fn read_section_name(&mut self, start_byte: usize) -> Result<&'src str, ErrorInfoWithPosition> {
+        self.skip_to_line_end();
+        let end_byte = self
+            .peek()
+            .map_or(self.input.len(), |token| token.start_byte);
+        let value = self.input[start_byte..end_byte].trim_matches([' ', '\t']);
+        if value.is_empty() {
+            return Err(parse_error(ErrorCode::Smiv1, self.current_span(), None));
+        }
+        Ok(value)
     }
 
     /** Parses one chord line as a sequence of bars separated by dashes. */
@@ -904,7 +936,7 @@ mod tests {
             ("@unknown=x", "SMIK-1"),
             ("@section", "SMIK-2"),
             ("@section=", "SMIV-1"),
-            ("@section=A extra", "SMIV-2"),
+            ("@repeat=2 extra", "SMIV-2"),
             ("@repeat=nope", "SMIV-3"),
             ("@same=Verse\nC", "SMIV-4"),
             ("[key C]C", "CIMK-1"),
@@ -1075,7 +1107,7 @@ mod tests {
     /** Reports every supported section metadata failure without swallowing later lines. */
     #[test]
     fn reports_section_metadata_boundary_errors() {
-        let errors = parse("@unknown=x\n@section=\n@repeat=nope\n@section=Ok extra\nH")
+        let errors = parse("@unknown=x\n@section=\n@repeat=nope\n@repeat=2 extra\nH")
             .expect_err("each malformed metadata line must produce a diagnostic");
         let diagnostics: Vec<_> = errors
             .iter()
@@ -1095,7 +1127,7 @@ mod tests {
                 ("SMIK-1".to_string(), 1, 2, 7),
                 ("SMIV-1".to_string(), 2, 10, 1),
                 ("SMIV-3".to_string(), 3, 9, 4),
-                ("SMIV-2".to_string(), 4, 13, 5),
+                ("SMIV-2".to_string(), 4, 11, 5),
                 ("CHO-1".to_string(), 5, 1, 1),
             ]
         );

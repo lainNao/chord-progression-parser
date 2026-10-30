@@ -67,6 +67,51 @@ test("native browser WASM preserves shorthand and sorts extensions", async ({
   ]);
 });
 
+/** Direct browser imports preserve the same free names as the Rust and bundled entry points. */
+test("native browser WASM preserves literal section names", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3498/");
+  const results = await page.evaluate(
+    async (): Promise<{ name: string; ast: Ast; formatted: string }[]> => {
+      const modulePath = "/chord_progression_parser.js";
+      const parser = (await import(
+        modulePath
+      )) as typeof import("@lainnao/chord-progression-parser-web");
+      await parser.default();
+      return ["pre-chorus", "Verse extra", "主題 / A (😀) @repeat=2"].map(
+        (name) => {
+          const parsed = parser.parseChordProgressionString(
+            `@section= ${name} \r\nC\r\n@same=${name}\r\n@repeat=3`,
+          );
+          if (!parsed.success) throw new Error(JSON.stringify(parsed.errors));
+          return {
+            name,
+            ast: parsed.ast,
+            formatted: parser.formatChordProgression(parsed.ast),
+          };
+        },
+      );
+    },
+  );
+  for (const result of results) {
+    expect(result.ast).toHaveLength(2);
+    expect(result.ast[0].metaInfos).toEqual([
+      { type: "section", value: result.name },
+    ]);
+    expect(result.ast[1]).toEqual({
+      metaInfos: [
+        { type: "same", value: result.name },
+        { type: "repeat", value: 3 },
+      ],
+      chordBlocks: [],
+    });
+    expect(result.formatted).toBe(
+      `@section=${result.name}\nC\n\n@same=${result.name}\n@repeat=3`,
+    );
+  }
+});
+
 /** The direct browser package exports the same reference tag and localized syntax error. */
 test("native browser WASM preserves references without allowing chord bodies", async ({
   page,

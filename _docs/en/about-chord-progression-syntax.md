@@ -61,6 +61,25 @@ G - Am - Bm(o) - C
     - Section metadata must occupy its own line
     - Pipe notation such as `|C|` is not supported
 
+## Section names
+
+Values of `@section=` and `@same=` are literal strings up to the next line ending
+(LF, CRLF, or CR) or end of input. Names may contain hyphens, spaces, tabs,
+parentheses, slashes, `=`, `@`, and Unicode characters. Surrounding ASCII spaces
+and tabs are removed; internal whitespace, punctuation, and case are preserved.
+Empty names produce `SMIV-1`. Names cannot contain line endings.
+
+```txt
+@section=pre-chorus / サビ前 (2)
+C - G
+
+@same=pre-chorus / サビ前 (2)
+```
+
+Text such as `@repeat=2` on the same line is part of the name. Put each additional
+metadata directive or chord progression on its own line. Quotes and comments have
+no special meaning. `@repeat` still requires a non-negative integer.
+
 ## Named-section references (`@same`)
 
 ```txt
@@ -75,8 +94,8 @@ C - G - Am - F
 An optional `@section` before `@same` names the referencing section. The AST stores
 the reference as `SectionMeta` `{ "type": "same", "value": "Verse" }` without
 expanding the target's chords. A reference-only section has an empty `chordBlocks`
-array. Reference names follow the same single-value syntax as section names and
-retain their exact Unicode spelling and case.
+array. Reference names use the same literal line-value syntax as section names
+and retain their exact Unicode spelling and case.
 
 Following `@repeat` metadata belongs to the referencing section. Following
 `@section` or `@same` metadata starts a new section even without any chord lines.

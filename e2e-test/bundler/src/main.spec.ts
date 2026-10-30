@@ -54,6 +54,32 @@ test("supports shorthand and omit5 in the bundled browser package", async ({
   ]);
 });
 
+/** Real browser WASM treats punctuation and metadata-looking text inside names literally. */
+test("preserves literal section and reference names in the browser", async ({
+  page,
+}): Promise<void> => {
+  await page.goto("http://localhost:3034/");
+  for (const name of ["pre-chorus", "Verse extra", "主題 / A (😀) @repeat=2"]) {
+    await page
+      .locator("#textarea")
+      .fill(`@section= ${name} \nC\n@same=${name}\n@repeat=3`);
+    await expect(page.locator("#result")).toHaveAttribute(
+      "data-formatted",
+      `@section=${name}\nC\n\n@same=${name}\n@repeat=3`,
+    );
+    const result = JSON.parse(await page.locator("#result").innerText());
+    expect(result.ast).toHaveLength(2);
+    expect(result.ast[0].metaInfos).toEqual([{ type: "section", value: name }]);
+    expect(result.ast[1]).toEqual({
+      metaInfos: [
+        { type: "same", value: name },
+        { type: "repeat", value: 3 },
+      ],
+      chordBlocks: [],
+    });
+  }
+});
+
 /** Real bundled WASM keeps explicit unknown basses and highlights rejected denominators. */
 test("accepts C/? and rejects malformed slash denominators", async ({
   page,

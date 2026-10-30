@@ -58,6 +58,29 @@ test("WASM chord objects match the literal shorthand contract", (): void => {
   }
 });
 
+/** Generated WASM preserves literal names and keeps metadata on following lines separate. */
+test("WASM accepts literal section and reference names", (): void => {
+  for (const name of ["pre-chorus", "Verse extra", "主題 / A (😀) @repeat=2"]) {
+    const source = `@section= ${name} \r\nC\r\n@same=${name}\r\n@repeat=3`;
+    const parsed = parser.parseChordProgressionString(source);
+    if (!parsed.success) throw new Error(JSON.stringify(parsed.errors));
+    expect(parsed.ast).toHaveLength(2);
+    expect(parsed.ast[0].metaInfos).toEqual([{ type: "section", value: name }]);
+    expect(parsed.ast[1]).toEqual({
+      metaInfos: [
+        { type: "same", value: name },
+        { type: "repeat", value: 3 },
+      ],
+      chordBlocks: [],
+    });
+    const formatted = parser.formatChordProgression(parsed.ast);
+    expect(formatted).toBe(`@section=${name}\nC\n\n@same=${name}\n@repeat=3`);
+    const reparsed = parser.parseChordProgressionString(formatted);
+    if (!reparsed.success) throw new Error(JSON.stringify(reparsed.errors));
+    expect(reparsed.ast).toEqual(parsed.ast);
+  }
+});
+
 /** Keeps UTF-16 warning serialization correct when shorthand and parentheses overlap. */
 test("WASM shorthand warnings retain original Unicode source positions", (): void => {
   const source = "@section=😀\r\nC7sus4(7)";

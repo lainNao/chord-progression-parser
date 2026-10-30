@@ -40,6 +40,8 @@ impl From<SourceSpan> for crate::Position {
 /** A token paired with the exact source range from which it was read. */
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Token<'src> {
+    // UTF-8 byte position for slicing literal metadata; public diagnostics remain UTF-16.
+    pub(crate) start_byte: usize,
     pub(crate) kind: TokenKind<'src>,
     pub(crate) span: SourceSpan,
 }
@@ -100,6 +102,7 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
                 }
 
                 tokens.push(Token {
+                    start_byte,
                     kind: TokenKind::Newline,
                     span: SourceSpan {
                         start_offset,
@@ -117,6 +120,7 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
                     let start_offset = offset;
                     offset += ch.len_utf16();
                     tokens.push(Token {
+                        start_byte,
                         kind,
                         span: SourceSpan {
                             start_offset,
@@ -150,6 +154,7 @@ pub(crate) fn lex(input: &str) -> LexedSource<'_> {
                 }
 
                 tokens.push(Token {
+                    start_byte,
                     kind: TokenKind::Text(&input[start_byte..end_byte]),
                     span: SourceSpan {
                         start_offset,
@@ -221,6 +226,7 @@ mod tests {
             lex(input).tokens,
             vec![
                 Token {
+                    start_byte: 0,
                     kind: TokenKind::Text("Cあ"),
                     span: SourceSpan {
                         start_offset: 0,
@@ -231,6 +237,7 @@ mod tests {
                     },
                 },
                 Token {
+                    start_byte: 4,
                     kind: TokenKind::Newline,
                     span: SourceSpan {
                         start_offset: 2,
@@ -241,6 +248,7 @@ mod tests {
                     },
                 },
                 Token {
+                    start_byte: 5,
                     kind: TokenKind::Text("D"),
                     span: SourceSpan {
                         start_offset: 3,
