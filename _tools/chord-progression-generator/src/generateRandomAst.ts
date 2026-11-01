@@ -151,11 +151,15 @@ function generateRandomChordBlock({
   };
 }
 
-/** Generates a supported section name or repeat count. */
-function generateRandomSectionInfoMeta(): types.SectionMeta {
+/** Generates repeat metadata, allowing a section name only at the start. */
+function generateRandomSectionInfoMeta({
+  allowSectionName,
+}: {
+  allowSectionName: boolean;
+}): types.SectionMeta {
   // Prefer section names while also exercising numeric repeat metadata.
   const choice = randomBetween({ min: 0, max: 5 });
-  if (choice > 0) {
+  if (allowSectionName && choice > 0) {
     return {
       type: "section",
       value: getRandomElement(["A", "B", "C"]),
@@ -175,7 +179,8 @@ function generateRandomSection({
 }: GenerateRandomSectionArgs & { sectionIndex: number }): types.Section {
   const metaInfos = Array.from(
     { length: randomBetween(args.chordMetaInfoCountRange) },
-    () => generateRandomSectionInfoMeta(),
+    // A second name starts a new section, so later metadata must be repeat counts.
+    (_, index) => generateRandomSectionInfoMeta({ allowSectionName: index === 0 }),
   );
   // Blank lines remain inside a section; later sections need their own metadata line.
   if (sectionIndex > 0 && metaInfos.length === 0) {

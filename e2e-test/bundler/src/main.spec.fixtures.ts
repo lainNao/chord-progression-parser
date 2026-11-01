@@ -1,6 +1,12 @@
+import type { ParsedResult } from "@lainnao/chord-progression-parser-bundler";
+import {
+  Base,
+  ChordType,
+} from "@lainnao/chord-progression-parser-bundler/generatedTypes.js";
+
 type TestData = {
   input: string;
-  expected: object;
+  expected: ParsedResult;
 };
 
 export const testData: TestData = {
@@ -8,6 +14,7 @@ export const testData: TestData = {
   expected: {
     success: true,
     warnings: [],
+    sectionMetaPositions: [],
     ast: [
       {
         metaInfos: [],
@@ -23,9 +30,9 @@ export const testData: TestData = {
                   value: {
                     plain: "C",
                     detailed: {
-                      base: "C",
+                      base: Base.C,
                       accidental: null,
-                      chordType: "M",
+                      chordType: ChordType.Major,
                       extensions: [],
                     },
                   },

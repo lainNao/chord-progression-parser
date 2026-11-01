@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 import type { Ast } from "@lainnao/chord-progression-parser-web/generatedTypes";
+import type { ParsedResult } from "@lainnao/chord-progression-parser-web";
+import {
+  Base,
+  ChordType,
+} from "@lainnao/chord-progression-parser-web/generatedTypes.js";
 
 /** Exercises shorthand and omission through the direct browser WASM entry point. */
 test("native browser WASM preserves shorthand and sorts extensions", async ({
@@ -210,6 +215,7 @@ test("success simple usage", async ({ page }) => {
   expect(JSON.parse(resultText)).toStrictEqual({
     success: true,
     warnings: [],
+    sectionMetaPositions: [],
     ast: [
       {
         metaInfos: [],
@@ -225,9 +231,9 @@ test("success simple usage", async ({ page }) => {
                   value: {
                     plain: "C",
                     detailed: {
-                      base: "C",
+                      base: Base.C,
                       accidental: null,
-                      chordType: "M",
+                      chordType: ChordType.Major,
                       extensions: [],
                     },
                   },
@@ -238,7 +244,7 @@ test("success simple usage", async ({ page }) => {
         ],
       },
     ],
-  });
+  } satisfies ParsedResult);
 });
 
 /** Imports localized warnings as native browser modules from the generated package. */

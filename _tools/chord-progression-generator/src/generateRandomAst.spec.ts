@@ -90,6 +90,30 @@ test("generates valid repetition context and duplicate extension warnings", (): 
   }
 });
 
+/** Multiple metadata entries must not create extra named sections during reparsing. */
+test("generates only one section name when multiple metadata entries are requested", (): void => {
+  const random = spyOn(Math, "random").mockReturnValue(0.5);
+  try {
+    const ast = generateRandomAst({
+      ...countRanges,
+      chordMetaInfoCountRange: { min: 3, max: 3 },
+    });
+    for (const section of ast) {
+      expect(section.metaInfos).toEqual([
+        { type: "section", value: "B" },
+        { type: "repeat", value: 2 },
+        { type: "repeat", value: 2 },
+      ]);
+    }
+    expect(parseChordProgressionString(formatChordProgression(ast))).toMatchObject({
+      success: true,
+      ast,
+    });
+  } finally {
+    random.mockRestore();
+  }
+});
+
 /** Covers larger extension lists and metadata through a repeatable generated corpus. */
 test("seeded ASTs round trip through the public formatter and parser", (): void => {
   let state = 0x4d595df4;
