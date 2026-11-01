@@ -9,63 +9,6 @@ A converter from chord progression strings to AST built in Rust that outputs was
 > - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-node>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 
-## Upgrading to 1.0.0
-
-Version 1.0.0 adds chord shorthand and `omit5` while retaining parenthesized input.
-For example, `C7`, `C7sus4`, `Csus4(7)`, `C7(13)`, `Cm7b5`, `Cdim7`,
-`Caug7`, and `C7omit5` are accepted. `CM7` means `C(M7)`; `CM(7)` keeps
-its existing meaning. `maj`, bare `sus`, `alt`, and symbolic dim/aug aliases
-remain unsupported.
-
-The breaking change is **structured extension ordering**: `detailed.extensions`
-now uses a fixed order, keeping duplicates. `plain` keeps the compact input
-spelling and its extension order, and the formatter retains that spelling.
-`C7sus4` and `Csus4(7)` therefore share a detailed representation but have
-different `plain` strings and complete ASTs. No sounding pitches or implicit
-sevenths are added.
-
-Before upgrading:
-
-- Reparse saved source text and regenerate stored ASTs and order-sensitive derived
-  data. The v1 formatter rejects old ASTs whose extension order differs from its
-  parser's order. If only ASTs are stored, export source with the previous
-  formatter before upgrading.
-- Update exhaustive extension handling for `omit5` (`Extension::Omit5` in Rust,
-  `Extension.Omit5` in TypeScript).
-- Read the additional 0.10.0 migration notes below when upgrading from 0.9.4 or earlier.
-
-Rust API names, JavaScript import filenames, and AST field names are unchanged.
-See the [v1 syntax reference](./_docs/en/about-chord-progression-syntax.md)
-([日本語](./_docs/ja/about-chord-progression-syntax.md)) and
-[compatibility policy](./PARSER_COMPATIBILITY.md) for the full contract.
-
-## Upgrading to 1.1.0
-
-`@section=` and `@same=` now accept literal names through the end of the line,
-including `pre-chorus`, internal spaces, punctuation, and Unicode. Surrounding
-ASCII spaces and tabs are trimmed; empty names remain invalid. Metadata-looking
-text on the same line is part of the name, so put each directive on its own line.
-`@repeat` still requires a non-negative integer. AST shapes and existing valid
-inputs are unchanged. Reference resolution remains the application's responsibility.
-Update all readers and writers before saving names that require this syntax.
-
-## Upgrading to 0.10.0
-
-Blank lines now stay within the preceding section, preserving its name, key,
-and `%` context. One blank line is retained; multiple blank lines collapse to one.
-Reparse stored source text and regenerate section-derived data and search indexes
-when upgrading from 0.9.4 or earlier. Older ASTs may no longer round-trip through
-the formatter.
-
-`@same=SectionName` adds an unresolved section reference represented by
-`SectionMeta::Same(String)` in Rust and `{ type: "same", value: string }` in
-JavaScript/TypeScript. Update exhaustive metadata handling for this new variant.
-Reference resolution belongs to the consuming application. Chord lines in a
-reference section are rejected with `SMIV-4`.
-
-See the [compatibility policy](./PARSER_COMPATIBILITY.md) and
-[syntax reference](./_docs/en/about-chord-progression-syntax.md) for details.
-
 ## Chord spelling and shorthand
 
 Parenthesized spellings such as `C(7)`, `Cm(7)`, and `C(M7)` remain supported.
