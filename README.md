@@ -9,13 +9,23 @@ A converter from chord progression strings to AST built in Rust that outputs was
 > - JS/TS(server): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-node>
 > - JS(CDN): <https://www.npmjs.com/package/@lainnao/chord-progression-parser-web>
 
-## Chord spelling and shorthand
+## Preferred chord spelling
 
-Parenthesized spellings such as `C(7)`, `Cm(7)`, and `C(M7)` remain supported.
-The parser also accepts shorthand such as `C7`, `Cm7`, `CM7`, `C7sus4`,
-`Csus4(7)`, `Cm7b5`, `C7(13)`, and `C7omit5`. `CM7` means `C(M7)`,
-while `CM(7)` retains its existing meaning. `maj`, bare `sus`, symbolic
-`o`/`ø`/`°` aliases, `alt`, and `no3` are not supported. The existing
+**Use shorthand without parentheses by default for readability.** When writing
+or generating chord progressions in this format, prefer `Am7`, `C7`, `CM7`,
+`C7sus4`, `Cm7b5`, and `C7omit5`.
+
+```txt
+@section=Verse
+[key=C]CM7 - Am7 - Dm7 - G7
+```
+
+Parenthesized spellings such as `Am(7)`, `C(7)`, and `C(M7)` are also valid,
+but shorthand is the recommended default. Use parentheses when needed, such as
+`C7(9)`, `C6(9)`, or `C(#5)`. Write `C7sus4` when parentheses are unnecessary;
+`Csus4(7)` is also accepted. `CM7` means `C(M7)`, while `CM(7)` retains its
+existing meaning. `maj`, bare `sus`, symbolic `o`/`ø`/`°` aliases, `alt`, and
+`no3` are not supported. The existing
 parenthesized `o` extension remains accepted. Use `C6(9)` rather than `C6/9`.
 
 `plain` preserves the input chord spelling and extension order, with whitespace
@@ -64,12 +74,12 @@ You can try it on [CodeSandbox](https://codesandbox.io/p/devbox/vite-react-ts-fo
   fn main() {
     let input: &str = "
   @section=Intro
-  [key=E]E - C#m(7) - Bm(7) - C#(7)
-  F#m(7) - Am(7) - F#(7) - B
+  [key=E]E - C#m7 - Bm7 - C#7
+  F#m7 - Am7 - F#7 - B
 
   @section=Verse
-  E - C#m(7) - Bm(7) - C#(7)
-  F#m(7) - Am(7) - F#(7) - B
+  E - C#m7 - Bm7 - C#7
+  F#m7 - Am7 - F#7 - B
   ";
 
       let result = parse_chord_progression_string(input);
@@ -226,10 +236,10 @@ Warnings encountered in malformed chord extension lists can accompany errors;
 extensions on `%`, `_`, or `?`, and slash denominator extensions do not receive
 duplicate warnings.
 
-Slash denominators must be complete chord spellings, such as `C/G` or
-`C/F#m(7,b5)`, or `?` for an unidentified bass (`C/?`). Arbitrary text and numeric
-denominators such as `C/Unknown` and `C/5` return `DEN-1`. Shorthand is also accepted
-here, including `C/G7` and `C/F#m7b5`.
+Slash denominators must be complete chord spellings, such as `C/G`, `C/G7`, or
+`C/F#m7b5`, or `?` for an unidentified bass (`C/?`). Prefer shorthand here too;
+parenthesized spellings such as `C/F#m(7,b5)` are also accepted. Arbitrary text
+and numeric denominators such as `C/Unknown` and `C/5` return `DEN-1`.
 
 `ParsePosition`, `ParseError`, `WarningCode`, and `ParseWarning` are exported
 TypeScript types. Warning positions use the original source text: display
