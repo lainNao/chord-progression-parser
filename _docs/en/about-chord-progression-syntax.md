@@ -155,6 +155,7 @@ The accepted values are exactly the following 31 case-sensitive strings,
 matching [`Extension`](../../resources/generatedTypes.ts).
 
 <!-- extension-values:start -->
+
 ```txt
 1
 2
@@ -188,6 +189,7 @@ sus4
 o
 omit5
 ```
+
 <!-- extension-values:end -->
 
 One optional non-empty parenthesized group may follow a chord atom. Separate
@@ -211,6 +213,12 @@ means an explicitly major chord head with the `7` extension. `CmM7` and
 `CaugM7` use the same extension rule. `Cdim7` stores the same detailed data
 as `Cdim(7)`; the parser does not calculate its sounding pitches.
 
+An otherwise untyped chord may also place `aug` directly after its primary extension.
+`C7aug` shares the detailed representation of `Caug7`, and `CM7aug` that of `CaugM7`;
+`plain` retains the input spelling. `C7aug(b9)`, `C7augsus4`, and `C/G7aug` are valid.
+Repeated or mixed qualities (`Cm7aug`, `Cdim7aug`, `Caug7aug`) and postfix placement
+after modifiers or parentheses (`C7sus4aug`, `C(7)aug`) are rejected.
+
 Root accidentals take precedence immediately after the base: `C#5` is `C#(5)`
 and `Cb5` is `Cb(5)`. Write `C(#5)` or `C(b5)` to alter C's fifth instead.
 `omit5` requests omission of the fifth; `omit1`, `omit3`, and `no3` are unsupported.
@@ -220,11 +228,13 @@ Musically conflicting combinations such as `C7#5omit5` are stored without valida
 Structured extension order (independent of `plain` and enum declaration order):
 
 <!-- extension-order:start -->
+
 ```txt
 1, 2, 3, 4, 5, 6, 7, M7, 9, M9, 11, M11, 13, M13,
 sus2, sus4, b3, b5, #5, b6, b9, #9, b11, #11, b13, #13,
 add9, add11, add13, omit5, o
 ```
+
 <!-- extension-order:end -->
 
 Warnings are computed in original source order before sorting. For example,

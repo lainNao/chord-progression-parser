@@ -45,7 +45,7 @@ pub(super) fn parse_head(source: &str) -> Result<ParsedHead, ErrorInfo> {
 
     // M7/M9/M11/M13 are whole extension tokens, never a major marker followed by a number.
     let suffix = &source[cursor..];
-    let (chord_type, type_length) = if suffix.starts_with('m') {
+    let (mut chord_type, type_length) = if suffix.starts_with('m') {
         (ChordType::Minor, 1)
     } else if suffix.starts_with("aug") {
         (ChordType::Augmented, 3)
@@ -72,7 +72,8 @@ pub(super) fn parse_head(source: &str) -> Result<ParsedHead, ErrorInfo> {
             .max_by_key(|value| value.len())
             .ok_or_else(|| head_error(source, ErrorCode::Cho1))?;
         let value = Extension::from_str(spelling).expect("declared extension must parse");
-        if value.is_primary() && !extensions.is_empty() {
+        let is_primary = value.is_primary();
+        if is_primary && !extensions.is_empty() {
             return Err(head_error(source, ErrorCode::Cho1));
         }
         let end = cursor + spelling.len();
@@ -81,6 +82,12 @@ pub(super) fn parse_head(source: &str) -> Result<ParsedHead, ErrorInfo> {
             range: cursor..end,
         });
         cursor = end;
+        // C7aug and Caug7 share the same quality and extensions. Only an untyped
+        // head may place aug directly after its primary token; m/dim/aug cannot mix.
+        if is_primary && type_length == 0 && source[cursor..].starts_with("aug") {
+            chord_type = ChordType::Augmented;
+            cursor += 3;
+        }
     }
 
     Ok(ParsedHead {

@@ -80,7 +80,10 @@
     "Comit5",
     "C(omit5)",
     "C7omit5",
-    "Cm7(omit5)"
+    "Cm7(omit5)",
+    "C7aug",
+    "CM7aug",
+    "C7aug(b9)/G7aug"
   ],
   "invalid": [
     "C/5",
@@ -121,7 +124,13 @@
     "C69",
     "C713",
     "C7(9)(13)",
-    "C(7)sus4"
+    "C(7)sus4",
+    "Cm7aug",
+    "Cdim7aug",
+    "Caug7aug",
+    "C7aug9",
+    "C7sus4aug",
+    "C(7)aug"
   ],
   "extensionOrder": [
     "1",

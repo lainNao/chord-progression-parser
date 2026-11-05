@@ -17,7 +17,7 @@ test("native browser WASM preserves shorthand and sorts extensions", async ({
       modulePath
     )) as typeof import("@lainnao/chord-progression-parser-web");
     await parser.default();
-    const source = "CM7 - Csus4(7,omit5) - C7(13)/F#m7b5";
+    const source = "CM7 - Csus4(7,omit5) - C7(13)/F#m7b5 - C7aug/G7aug";
     const parsed = parser.parseChordProgressionString(source);
     switch (parsed.success) {
       case true:
@@ -33,7 +33,9 @@ test("native browser WASM preserves shorthand and sorts extensions", async ({
       }
     }
   });
-  expect(result.formatted).toBe("CM7 - Csus4(7,omit5) - C7(13)/F#m7b5");
+  expect(result.formatted).toBe(
+    "CM7 - Csus4(7,omit5) - C7(13)/F#m7b5 - C7aug/G7aug",
+  );
   expect(result.ast[0].chordBlocks).toMatchObject([
     {
       type: "bar",
@@ -65,6 +67,20 @@ test("native browser WASM preserves shorthand and sorts extensions", async ({
           denominator: "F#m7b5",
           chordExpression: {
             value: { plain: "C7(13)", detailed: { extensions: ["7", "13"] } },
+          },
+        },
+      ],
+    },
+    {
+      type: "bar",
+      value: [
+        {
+          denominator: "G7aug",
+          chordExpression: {
+            value: {
+              plain: "C7aug",
+              detailed: { chordType: "aug", extensions: ["7"] },
+            },
           },
         },
       ],

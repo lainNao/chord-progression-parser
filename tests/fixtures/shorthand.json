@@ -624,5 +624,50 @@
         ]
       }
     }
+  },
+  {
+    "source": "C7aug",
+    "expected": {
+      "plain": "C7aug",
+      "detailed": {
+        "base": "C",
+        "accidental": null,
+        "chordType": "aug",
+        "extensions": [
+          "7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "C#M7aug",
+    "expected": {
+      "plain": "C#M7aug",
+      "detailed": {
+        "base": "C",
+        "accidental": "#",
+        "chordType": "aug",
+        "extensions": [
+          "M7"
+        ]
+      }
+    }
+  },
+  {
+    "source": "Bb13augsus4(b9,omit5)",
+    "expected": {
+      "plain": "Bb13augsus4(b9,omit5)",
+      "detailed": {
+        "base": "B",
+        "accidental": "b",
+        "chordType": "aug",
+        "extensions": [
+          "13",
+          "sus4",
+          "b9",
+          "omit5"
+        ]
+      }
+    }
   }
 ]

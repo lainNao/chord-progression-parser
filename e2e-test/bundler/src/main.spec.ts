@@ -8,7 +8,7 @@ test("supports shorthand and omit5 in the bundled browser package", async ({
   page,
 }): Promise<void> => {
   await page.goto("http://localhost:3034/");
-  const source = "CM7 - Csus4(7,omit5) - C7(13)/F#m7b5";
+  const source = "CM7 - Csus4(7,omit5) - C7(13)/F#m7b5 - C7aug/G7aug";
   await page.locator("#textarea").fill(source);
   await expect(page.locator("#result")).toHaveAttribute(
     "data-formatted",
@@ -47,6 +47,20 @@ test("supports shorthand and omit5 in the bundled browser package", async ({
           denominator: "F#m7b5",
           chordExpression: {
             value: { plain: "C7(13)", detailed: { extensions: ["7", "13"] } },
+          },
+        },
+      ],
+    },
+    {
+      type: "bar",
+      value: [
+        {
+          denominator: "G7aug",
+          chordExpression: {
+            value: {
+              plain: "C7aug",
+              detailed: { chordType: "aug", extensions: ["7"] },
+            },
           },
         },
       ],

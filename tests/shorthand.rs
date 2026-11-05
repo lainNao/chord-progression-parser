@@ -203,7 +203,18 @@ fn rejects_unagreed_or_ambiguous_shorthand_in_every_chord_context() {
         "Cø7",
         "C°7",
         "C+7",
-        "C7aug",
+        "Cm7aug",
+        "Cdim7aug",
+        "Caug7aug",
+        "C7augaug",
+        "C7aug9",
+        "C7auggarbage",
+        "C7au",
+        "C7 aug",
+        "C7sus4aug",
+        "Cadd9aug",
+        "C(7)aug",
+        "C7(aug)",
         "C7+",
         "C△7",
         "CΔ7",
@@ -240,6 +251,8 @@ fn reports_shorthand_failures_in_the_correct_diagnostic_domain() {
         ("Cmaj7", "CHO-1", "Cmaj7", 0),
         ("Csus", "CHO-1", "Csus", 0),
         ("C7(unknown)", "EXT-1", "unknown", 3),
+        ("C7aug(unknown)", "EXT-1", "unknown", 6),
+        ("Cm7aug", "CHO-1", "Cm7aug", 0),
         ("C7(9)(13)", "EXT-4", "(", 5),
         ("C7()", "EXT-2", "(", 2),
         ("C7(9,)", "EXT-2", ",", 4),
@@ -344,4 +357,45 @@ fn has_a_complete_stable_extension_order() {
             .join(",")
     );
     assert_eq!(parse_chord(&source).detailed.extensions, expected);
+}
+
+/** Accepts postfix aug only after the primary token, preserving the existing detailed model. */
+#[test]
+fn postfix_aug_matches_prefix_aug_for_every_primary_token() {
+    for root in ["C", "F#", "Bb"] {
+        for primary in [
+            "1", "2", "3", "4", "5", "6", "7", "9", "11", "13", "M7", "M9", "M11", "M13",
+        ] {
+            for modifiers in ["", "sus4", "b9#11", "omit5", "(7,13)"] {
+                let source = format!("{root}{primary}aug{modifiers}");
+                let existing = format!("{root}aug{primary}{modifiers}");
+                let actual = parse_chord(&source);
+                assert_eq!(actual.plain, source);
+                assert_eq!(actual.detailed, parse_chord(&existing).detailed, "{source}");
+                assert_eq!(ChordDetailed::from_str(&source).unwrap(), actual.detailed);
+                let ast = chord_ast(actual);
+                assert_eq!(format_chord_progression(&ast).unwrap(), source);
+                assert_eq!(parse_chord_progression_string(&source).unwrap(), ast);
+            }
+        }
+    }
+}
+
+/** Keeps extension diagnostics at their original UTF-16 positions across a postfix quality. */
+#[test]
+fn postfix_aug_retains_original_duplicate_extension_positions() {
+    let source = "@section=😀\r\nC7augsus4sus4(7)";
+    let report = parse_chord_progression_string_with_warnings(source);
+    assert!(report.result.is_ok());
+    assert_eq!(report.warnings.len(), 2);
+    for (warning, (fragment, column)) in report.warnings.iter().zip([("sus4", 10), ("7", 15)]) {
+        assert_eq!(warning.code, WarningCode::DuplicateExtension);
+        assert_eq!(warning.additional_info.as_deref(), Some(fragment));
+        assert_eq!(warning.position.line_number, 2);
+        assert_eq!(warning.position.column_number, column);
+        let offset = source.find('\n').unwrap() + 1 + column - 1;
+        let start = source[..offset].encode_utf16().count();
+        assert_eq!(warning.position.start_offset, start);
+        assert_eq!(warning.position.end_offset, start + fragment.len());
+    }
 }

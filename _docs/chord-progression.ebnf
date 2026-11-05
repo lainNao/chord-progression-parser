@@ -13,7 +13,8 @@ chord-info        = chord-meta*, chord-expression, denominator? ;
 chord-meta        = "[", "key", "=", key, "]" ;
 
 chord-expression  = chord | "?" | "_" | "%" ;
-chord             = base, accidental?, chord-type?, primary-extension?, { modifier }, extensions? ;
+chord             = base, accidental?, chord-head, { modifier }, extensions? ;
+chord-head        = chord-type?, primary-extension? | primary-extension, "aug" ;
 base              = "A" | "B" | "C" | "D" | "E" | "F" | "G" ;
 accidental        = "#" | "b" ;
 chord-type        = "m" | "M" | "aug" | "dim" ;
@@ -51,6 +52,9 @@ line-break        = "\r\n" | "\n" | "\r" ;
   over consuming M as a chord-type marker. CM7 is C(M7), whereas CM(7) retains
   its explicit major marker plus 7. Root accidentals take precedence over modifiers.
   At most one primary extension is permitted outside parentheses, before modifiers.
+  An otherwise untyped head may put aug directly after that primary extension:
+  C7aug has the same detailed representation as Caug7, retaining its own plain.
+  The postfix quality cannot follow modifiers or parentheses, or repeat/mix types.
   Plain chord spelling retains input extension order with whitespace removed.
   Structured extensions use the documented fixed order, retaining duplicates.
   For compatibility, the parser also accepts one trailing comma after a bar's

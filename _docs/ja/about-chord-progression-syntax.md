@@ -148,6 +148,7 @@ Node.js の ESM またはブラウザから直接 import する場合は `.js` �
 [`Extension`](../../resources/generatedTypes.ts) enum と一致します。
 
 <!-- extension-values:start -->
+
 ```txt
 1
 2
@@ -181,6 +182,7 @@ sus4
 o
 omit5
 ```
+
 <!-- extension-values:end -->
 
 コード本体の後ろには、空でない括弧のグループを1つまで置けます。
@@ -202,6 +204,12 @@ omit5
 Major のコード本体に `7` を指定する表記です。`CmM7`・`CaugM7` も同じ規則を使います。
 `Cdim7` は `Cdim(7)` と同じ detailed を保存し、実音の解釈は行いません。
 
+コード種別を先に指定していない場合、数字系の指定の直後にも `aug` を置けます。
+`C7aug` は `Caug7`、`CM7aug` は `CaugM7` と同じ detailed になり、plain は入力した表記を保持します。
+`C7aug(b9)`・`C7augsus4`・`C/G7aug` も有効です。
+`Cm7aug`・`Cdim7aug`・`Caug7aug` のような種別の重複、
+`C7sus4aug`・`C(7)aug` のような修飾・括弧の後への配置は受理しません。
+
 音名直後の `#`・`b` はルートの変化記号を優先します。`C#5` は `C#(5)`、`Cb5` は `Cb(5)` です。
 C の5度を変化させる場合は `C(#5)`・`C(b5)` と書きます。
 `omit5` は5度の省略指定です。`omit1`・`omit3`・`no3` は受理しません。
@@ -210,11 +218,13 @@ C の5度を変化させる場合は `C(#5)`・`C(b5)` と書きます。
 内部の拡張指定の順序は次のとおりです。plain の順序や enum の宣言順とは独立しています。
 
 <!-- extension-order:start -->
+
 ```txt
 1, 2, 3, 4, 5, 6, 7, M7, 9, M9, 11, M11, 13, M13,
 sus2, sus4, b3, b5, #5, b6, b9, #9, b11, #11, b13, #13,
 add9, add11, add13, omit5, o
 ```
+
 <!-- extension-order:end -->
 
 警告は並べ替え前に元の入力順で判定します。`C7(7)` は括弧内の `7` に警告が付き、
