@@ -24,8 +24,9 @@ parser.initSync({ module: wasmBytes });
 const shortSource = "C";
 const longSource = "C(9,9)-Am(7)-Dm(7)-G/B\n".repeat(100);
 const unicodeSource =
-  "@section=日本語😀\n@repeat=2\n" +
-  "[key=C]C/(😀あ)-[key=Dm]Dm(7)\n".repeat(100);
+  "@section=日本語😀 / 主題 (A♭)\n@repeat=2\n" +
+  "[key=C]C/G(7)-[key=Dm]Dm(7)\n".repeat(50) +
+  "\n@same=日本語😀 / 主題 (A♭)\n".repeat(50);
 const errorSource = "H\n".repeat(100);
 
 /** Validates each fixture once, outside the timed parse and format operations. */
