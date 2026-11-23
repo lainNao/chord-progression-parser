@@ -149,3 +149,63 @@ test("release pushes the tag without changing a same-named branch", async (): Pr
   expect(notes).toContain("chore: release 0.9.4");
   expect(notes.match(/^- /gm)).toHaveLength(4);
 }, 30_000);
+
+/** Non-release tags merged into HEAD must not hijack prev-tag selection. */
+test("prev-tag lookup ignores non-release tags", async (): Promise<void> => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "chord-parser-prev-tag-"),
+  );
+  try {
+    await runScript({
+      directory,
+      previousTag: "",
+      script: `
+git init --quiet
+git init --bare --quiet origin.git
+git remote add origin ./origin.git
+git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m 'feat: initial release'
+git tag v0.9.3
+git tag z-backup
+git tag v-experimental
+git -c core.hooksPath=/dev/null commit --quiet --allow-empty -m 'fix: next release'
+git push --quiet origin --tags
+`,
+    });
+    const cargoShim = path.join(directory, "cargo");
+    await Bun.write(
+      cargoShim,
+      `#!/usr/bin/env bash
+printf '{"packages":[{"name":"chord-progression-parser","version":"0.9.4"}]}\\n'
+`,
+    );
+    await Bun.$`chmod +x ${cargoShim}`;
+    const workflow = Bun.YAML.parse(
+      await readFile(
+        path.join(import.meta.dir, "../.github/workflows/test-and-release.yml"),
+        "utf8",
+      ),
+    ) as {
+      jobs: Record<string, { steps: { name?: string; run?: string }[] }>;
+    };
+    const step = workflow.jobs["test-and-release"].steps.find(
+      (candidate) => candidate.name === "Get prev-tag and new-version",
+    );
+    if (!step?.run) throw new Error("Version step was not found");
+    const systemPath = process.env.PATH ?? "";
+    const script = `export PATH="${directory}:${systemPath}"\nexport REQUESTED_TAG=""\n${step.run.replaceAll("${{ github.event_name }}", "push")}`;
+    await runScript({
+      directory,
+      previousTag: "",
+      script,
+    });
+    const outputs = await readFile(
+      path.join(directory, "workflow-output"),
+      "utf8",
+    );
+    expect(outputs).toContain("prev-tag=v0.9.3\n");
+    expect(outputs).toContain("new-tag=v0.9.4\n");
+    expect(outputs).toContain("should-release=true\n");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 30_000);

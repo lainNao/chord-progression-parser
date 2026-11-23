@@ -158,3 +158,15 @@ test("old-tag retries retain current publication tooling and cover all npm targe
     "generate-diagnostic-codes",
   );
 });
+
+/** Direct workflow_dispatch runs must have permission to create GitHub Releases. */
+test("github release workflow explicitly requests contents: write permission", async (): Promise<void> => {
+  const source = await readFile(
+    path.join(import.meta.dir, "../.github/workflows/release-to-github.yml"),
+    "utf8",
+  );
+  const workflow = Bun.YAML.parse(source) as {
+    permissions?: Record<string, string>;
+  };
+  expect(workflow.permissions?.contents).toBe("write");
+});

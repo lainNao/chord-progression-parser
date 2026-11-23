@@ -1,7 +1,7 @@
 use chord_progression_parser::{
     format_chord_progression, parse_chord_progression_string,
-    parse_chord_progression_string_with_warnings, ChordBlock, ChordDetailed, ChordExpression,
-    Position,
+    parse_chord_progression_string_with_warnings, Ast, ChordBlock, ChordDetailed, ChordExpression,
+    Position, SectionMeta, SectionMetaPosition,
 };
 
 /** Describes one Unicode scalar boundary in the original source. */
@@ -65,6 +65,49 @@ fn assert_source_position(coordinates: &[Option<SourceCoordinate>], position: &P
     assert_eq!(position.length, end.scalar_index - start.scalar_index);
 }
 
+/** Verifies every section metadata source position aligns 1:1 with the parsed AST. */
+fn assert_section_meta_positions(
+    source: &[u16],
+    coordinates: &[Option<SourceCoordinate>],
+    ast: &Ast,
+    positions: &[SectionMetaPosition],
+) {
+    let expected: Vec<(usize, usize, &SectionMeta)> = ast
+        .iter()
+        .enumerate()
+        .flat_map(|(section_index, section)| {
+            section
+                .meta_infos
+                .iter()
+                .enumerate()
+                .map(move |(meta_index, meta)| (section_index, meta_index, meta))
+        })
+        .collect();
+    assert_eq!(positions.len(), expected.len());
+    let mut previous_end_offset = 0;
+    for (entry, (section_index, meta_index, meta)) in positions.iter().zip(expected) {
+        assert_eq!(
+            (entry.section_index, entry.meta_index),
+            (section_index, meta_index)
+        );
+        assert_source_position(coordinates, &entry.position);
+        assert!(previous_end_offset <= entry.position.start_offset);
+        previous_end_offset = entry.position.end_offset;
+        let fragment =
+            String::from_utf16(&source[entry.position.start_offset..entry.position.end_offset])
+                .expect("metadata range must contain whole characters");
+        match meta {
+            SectionMeta::Section(value) | SectionMeta::Same(value) => {
+                assert_eq!(fragment, *value);
+            }
+            SectionMeta::Repeat(value) => {
+                assert!(!fragment.is_empty() && fragment.bytes().all(|b| b.is_ascii_digit()));
+                assert_eq!(fragment.parse::<u32>(), Ok(*value));
+            }
+        }
+    }
+}
+
 /** Checks source ranges and AST round trips for both mutation tests and guided fuzzing. */
 pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
     let source: Vec<u16> = input.encode_utf16().collect();
@@ -103,10 +146,26 @@ pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
 
     match report.result {
         Ok(ast) => {
+            assert_section_meta_positions(
+                &source,
+                &coordinates,
+                &ast,
+                &report.section_meta_positions,
+            );
             let formatted = format_chord_progression(&ast)
                 .unwrap_or_else(|error| panic!("formatter rejected {input:?}: {error}"));
             let reparsed = parse_chord_progression_string_with_warnings(&formatted);
             assert_eq!(reparsed.result, Ok(ast), "round trip changed {input:?}");
+            let formatted_source: Vec<u16> = formatted.encode_utf16().collect();
+            let formatted_coordinates = source_coordinates(&formatted);
+            if let Ok(reparsed_ast) = &reparsed.result {
+                assert_section_meta_positions(
+                    &formatted_source,
+                    &formatted_coordinates,
+                    reparsed_ast,
+                    &reparsed.section_meta_positions,
+                );
+            }
             assert_eq!(
                 reparsed
                     .warnings
@@ -124,6 +183,7 @@ pub fn assert_parse_invariants(input: &str) -> (bool, usize) {
         }
         Err(errors) => {
             assert!(!errors.is_empty());
+            assert!(report.section_meta_positions.is_empty());
             let mut previous_offset = 0;
             for error in errors {
                 assert_source_position(&coordinates, &error.position);
