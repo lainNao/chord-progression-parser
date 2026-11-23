@@ -14,6 +14,18 @@ describe("ERROR_CODE_MESSAGE_MAP", () => {
     expect(
       getErrorMessage({ errorCode: "CHO-999" as ErrorCode, lang: "ja" }),
     ).toBeUndefined();
+    expect(
+      getErrorMessage({
+        errorCode: "toString" as ErrorCode,
+        lang: "name" as "en",
+      }),
+    ).toBeUndefined();
+    expect(
+      getErrorMessage({
+        errorCode: "CHO-1",
+        lang: "toString" as "en",
+      }),
+    ).toBeUndefined();
   });
   it("has unique error messages", () => {
     const englishErrorMessages = Object.values(ERROR_CODE_MESSAGE_MAP)

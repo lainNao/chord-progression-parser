@@ -76,4 +76,15 @@ mod tests {
         );
         assert!(ChordDetailed::from_str("Cminor").is_err());
     }
+
+    /** Rejects non-chord symbols uniformly as CHO-1 without section-level diagnostics. */
+    #[test]
+    fn rejects_non_chord_expressions_consistently() {
+        for input in ["?", "_", "%"] {
+            let error = ChordDetailed::from_str(input)
+                .expect_err("non-chord symbols cannot parse as a standalone chord");
+            assert_eq!(error.code.to_string(), "CHO-1", "{input:?}");
+            assert_eq!(error.additional_info.as_deref(), Some(input), "{input:?}");
+        }
+    }
 }

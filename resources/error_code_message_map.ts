@@ -176,7 +176,7 @@ export type ErrorCode = ExtractKeys<
   (typeof ERROR_CODE_MESSAGE_MAP)[keyof typeof ERROR_CODE_MESSAGE_MAP]
 >;
 
-const ERROR_MESSAGES: Partial<Record<ErrorCode, { en: string; ja: string }>> =
+const ERROR_MESSAGES: Record<string, { en: string; ja: string }> =
   Object.fromEntries(
     Object.values(ERROR_CODE_MESSAGE_MAP).flatMap((group) =>
       Object.entries(group),
@@ -191,5 +191,9 @@ export function getErrorMessage({
   errorCode: ErrorCode;
   lang: "en" | "ja";
 }): string | undefined {
-  return ERROR_MESSAGES[errorCode]?.[lang];
+  if (!Object.hasOwn(ERROR_MESSAGES, errorCode)) {
+    return undefined;
+  }
+  const messages = ERROR_MESSAGES[errorCode];
+  return Object.hasOwn(messages, lang) ? messages[lang] : undefined;
 }

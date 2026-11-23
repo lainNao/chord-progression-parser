@@ -8,13 +8,17 @@ export const WARNING_CODE_MESSAGE_MAP = {
 
 export type WarningCode = keyof typeof WARNING_CODE_MESSAGE_MAP;
 
-/** Returns the localized message for a supported warning code. */
+/** Returns a localized message, or undefined for an unsupported runtime warning code. */
 export function getWarningMessage({
   warningCode,
   lang,
 }: {
   warningCode: WarningCode;
   lang: "en" | "ja";
-}): string {
-  return WARNING_CODE_MESSAGE_MAP[warningCode][lang];
+}): string | undefined {
+  if (!Object.hasOwn(WARNING_CODE_MESSAGE_MAP, warningCode)) {
+    return undefined;
+  }
+  const messages = WARNING_CODE_MESSAGE_MAP[warningCode];
+  return Object.hasOwn(messages, lang) ? messages[lang] : undefined;
 }
