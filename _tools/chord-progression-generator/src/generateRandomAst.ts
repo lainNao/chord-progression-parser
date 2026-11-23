@@ -46,71 +46,63 @@ function generateRandomChordExpression({
 }: GenerateRandomChordInfoArgs & {
   hasPriorChord: boolean;
 }): types.ChordExpression {
-  switch (randomBetween({ min: 1, max: 20 })) {
-    case 1:
-      return {
-        type: "noChord",
-      };
-    case 2:
-      return {
-        type: "unIdentified",
-      };
-    case 3: {
-      if (hasPriorChord) {
-        return {
-          type: "same",
-        };
-      }
-    }
-    default: {
-      const extensions = Array.from(
-        { length: randomBetween(extensionCountRange) },
-        () => generateRandomExtension(),
-      );
-
-      const chordType: types.ChordType = getRandomElement([
-        ...Array<types.ChordType>(10).fill(types.ChordType.Major),
-        ...Array<types.ChordType>(10).fill(types.ChordType.Minor),
-        types.ChordType.Augmented,
-        types.ChordType.Diminished,
-      ]);
-      const chordTypeString =
-        chordType === types.ChordType.Major ? "" : chordType;
-
-      const accidental = getRandomElement<types.Accidental | null>([
-        ...Array<null>(10).fill(null),
-        types.Accidental.Sharp,
-        types.Accidental.Flat,
-      ]);
-
-      const base = getRandomEnum(types.Base);
-
-      const plain =
-        base +
-        (accidental ?? "") +
-        chordTypeString +
-        (extensions.length > 0 ? `(${extensions.join(",")})` : "");
-
-      // Keep randomly generated spelling while satisfying the structured AST ordering contract.
-      extensions.sort(
-        (left, right): number =>
-          getExtensionSortOrder(left) - getExtensionSortOrder(right),
-      );
-
-      return {
-        type: "chord",
-        value: {
-          plain,
-          detailed: {
-            base,
-            accidental,
-            chordType,
-            extensions,
-          },
-        },
-      };
-    }
+  const choice = randomBetween({ min: 1, max: 20 });
+  if (choice === 1) {
+    return { type: "noChord" };
   }
+  if (choice === 2) {
+    return { type: "unIdentified" };
+  }
+  if (choice === 3 && hasPriorChord) {
+    return { type: "same" };
+  }
+
+  const extensions = Array.from(
+    { length: randomBetween(extensionCountRange) },
+    () => generateRandomExtension(),
+  );
+
+  const chordType: types.ChordType = getRandomElement([
+    ...Array<types.ChordType>(10).fill(types.ChordType.Major),
+    ...Array<types.ChordType>(10).fill(types.ChordType.Minor),
+    types.ChordType.Augmented,
+    types.ChordType.Diminished,
+  ]);
+  const chordTypeString =
+    chordType === types.ChordType.Major ? "" : chordType;
+
+  const accidental = getRandomElement<types.Accidental | null>([
+    ...Array<null>(10).fill(null),
+    types.Accidental.Sharp,
+    types.Accidental.Flat,
+  ]);
+
+  const base = getRandomEnum(types.Base);
+
+  const plain =
+    base +
+    (accidental ?? "") +
+    chordTypeString +
+    (extensions.length > 0 ? `(${extensions.join(",")})` : "");
+
+  // Keep randomly generated spelling while satisfying the structured AST ordering contract.
+  extensions.sort(
+    (left, right): number =>
+      getExtensionSortOrder(left) - getExtensionSortOrder(right),
+  );
+
+  return {
+    type: "chord",
+    value: {
+      plain,
+      detailed: {
+        base,
+        accidental,
+        chordType,
+        extensions,
+      },
+    },
+  };
 }
 
 /** Occasionally attaches key metadata to the following chord. */

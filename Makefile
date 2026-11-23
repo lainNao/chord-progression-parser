@@ -193,9 +193,9 @@ test-generator:
 
 # e2e test of web
 run-web-e2e:
-# copy pkg-web to e2e-test/web/generated-src, by overrite
+# copy pkg-web to e2e-test/web/generated-src, overwriting any previous build
 	rm -rf ./e2e-test/web/generated-src && cp -r ./pkg/pkg-web ./e2e-test/web/generated-src
-# copy e2e-test/web/originl.index.html to e2e-test/web/src/index.html
+# copy e2e-test/web/original.index.html to e2e-test/web/generated-src/index.html
 	cp ./e2e-test/web/original.index.html ./e2e-test/web/generated-src/index.html
 # test
 	cd ./e2e-test/web && npx playwright install --with-deps && bun run test

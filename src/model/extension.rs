@@ -1,10 +1,21 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumCount, EnumString, VariantNames};
+use strum_macros::{Display, EnumCount, EnumString, IntoStaticStr, VariantNames};
 use typeshare::typeshare;
 
 #[typeshare]
 #[derive(
-    Debug, PartialEq, Clone, Display, EnumCount, EnumString, VariantNames, Serialize, Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Display,
+    EnumCount,
+    EnumString,
+    IntoStaticStr,
+    VariantNames,
+    Serialize,
+    Deserialize,
 )]
 pub enum Extension {
     /// Preserves a root-only notation without deriving its sounding pitches.

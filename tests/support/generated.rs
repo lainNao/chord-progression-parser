@@ -41,22 +41,19 @@ fn chord(choices: &mut Choices<'_>) -> (String, ChordExpression) {
         (Base::E, "E"),
         (Base::F, "F"),
         (Base::G, "G"),
-    ][choices.index(7)]
-    .clone();
+    ][choices.index(7)];
     let (accidental, alteration) = [
         (None, ""),
         (Some(Accidental::Sharp), "#"),
         (Some(Accidental::Flat), "b"),
-    ][choices.index(3)]
-    .clone();
+    ][choices.index(3)];
     let (chord_type, suffix) = [
         (ChordType::Major, ""),
         (ChordType::Major, "M"),
         (ChordType::Minor, "m"),
         (ChordType::Augmented, "aug"),
         (ChordType::Diminished, "dim"),
-    ][choices.index(5)]
-    .clone();
+    ][choices.index(5)];
     let mut head = format!("{root}{alteration}{suffix}");
     let mut extensions = Vec::new();
     let shorthand_count = choices.index(4);
@@ -129,8 +126,7 @@ fn chord_info(choices: &mut Choices<'_>, has_prior: bool) -> (String, ChordInfo)
             (Key::Es_m, "E#m"),
             (Key::Bb_m, "Bbm"),
             (Key::Fs_M, "F#"),
-        ][choices.index(5)]
-        .clone();
+        ][choices.index(5)];
         write!(
             source,
             "[{}key{}={}{}{}]{}",

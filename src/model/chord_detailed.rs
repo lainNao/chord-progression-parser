@@ -8,7 +8,7 @@ use crate::error_code::ErrorInfo;
 use super::{accidental::Accidental, base::Base, chord_type::ChordType, extension::Extension};
 
 #[typeshare]
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChordDetailed {
     pub base: Base,

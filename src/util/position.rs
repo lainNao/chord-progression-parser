@@ -1,5 +1,8 @@
+use serde::Serialize;
+
 /** Locates a diagnostic using display coordinates and JavaScript-compatible source offsets. */
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Position {
     /// One-based source line; CRLF counts as one line break.
     pub line_number: usize,

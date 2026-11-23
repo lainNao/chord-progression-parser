@@ -1,6 +1,6 @@
 mod chord_head;
 
-use std::{fmt::Write, str::FromStr};
+use std::str::FromStr;
 
 use strum::EnumCount;
 
@@ -14,6 +14,8 @@ use crate::{
     },
     ParseReport, ParseWarning, SectionMetaPosition, WarningCode,
 };
+
+const _: () = assert!(Extension::COUNT <= u32::BITS as usize);
 
 /** Parses source text, optionally collecting non-blocking warnings. */
 pub(crate) fn parse(input: &str, collect_warnings: bool) -> ParseReport {
@@ -48,6 +50,55 @@ pub(crate) fn parse_chord_symbol(input: &str) -> Result<Chord, ErrorInfo> {
     }
 }
 
+/** Accumulates one section and the syntax flags that determine section boundaries. */
+struct SectionBuilder {
+    section: Section,
+    has_prior_chord: bool,
+    // Explicit metadata starts a section even after a line rejected during recovery.
+    has_chord_lines: bool,
+    has_reference: bool,
+    has_name: bool,
+}
+
+impl SectionBuilder {
+    /** Starts a fresh section with all boundary flags cleared. */
+    fn new() -> Self {
+        Self {
+            section: Section {
+                meta_infos: Vec::new(),
+                chord_blocks: Vec::new(),
+            },
+            has_prior_chord: false,
+            has_chord_lines: false,
+            has_reference: false,
+            has_name: false,
+        }
+    }
+
+    /** Reports whether incoming section metadata must begin a new section. */
+    fn splits_before_meta(&self, next_key: Option<TokenKind<'_>>) -> bool {
+        // A reference is a complete section even without chord lines. Repeat
+        // metadata may still qualify it; other metadata starts the next section.
+        let extends_reference_metadata = matches!(next_key, Some(TokenKind::Text("repeat")));
+        let starts_named_section = matches!(next_key, Some(TokenKind::Text("section")));
+        self.has_chord_lines
+            || (self.has_reference && !extends_reference_metadata)
+            || (self.has_name && starts_named_section)
+    }
+
+    /** Records one parsed metadata item and updates section boundary flags. */
+    fn push_meta(&mut self, meta: SectionMeta) {
+        self.has_name |= matches!(&meta, SectionMeta::Section(_));
+        self.has_reference |= matches!(&meta, SectionMeta::Same(_));
+        self.section.meta_infos.push(meta);
+    }
+
+    /** Reports whether no metadata or chord blocks have been added to this section. */
+    fn is_empty(&self) -> bool {
+        self.section.meta_infos.is_empty() && self.section.chord_blocks.is_empty()
+    }
+}
+
 /** Owns the token cursor and converts one grammar production at a time. */
 struct Parser<'tokens, 'src> {
     input: &'src str,
@@ -79,12 +130,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     /** Parses all sections while interpreting line-break runs at document level. */
     fn parse_document(mut self) -> ParseReport {
         let mut sections = Vec::new();
-        let mut current_section = empty_section();
-        let mut has_prior_chord = false;
-        // Explicit metadata starts a section even after a line rejected during recovery.
-        let mut section_has_chord_lines = false;
-        let mut section_has_reference = false;
-        let mut section_has_name = false;
+        let mut current = SectionBuilder::new();
         let mut section_meta_positions = Vec::new();
         let mut errors = Vec::new();
 
@@ -95,32 +141,14 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
 
             let starts_section_meta = self.at(TokenKind::At);
-            // A reference is a complete section even without chord lines. Repeat
-            // metadata may still qualify it; other metadata starts the next section.
-            let extends_reference_metadata = matches!(
-                self.tokens.get(self.cursor + 1).map(|token| token.kind),
-                Some(TokenKind::Text("repeat"))
-            );
-            let starts_named_section = matches!(
-                self.tokens.get(self.cursor + 1).map(|token| token.kind),
-                Some(TokenKind::Text("section"))
-            );
-            if starts_section_meta
-                && (section_has_chord_lines
-                    || (section_has_reference && !extends_reference_metadata)
-                    || (section_has_name && starts_named_section))
-            {
-                sections.push(current_section);
-                current_section = empty_section();
-                has_prior_chord = false;
-                section_has_chord_lines = false;
-                section_has_reference = false;
-                section_has_name = false;
-            } else if !current_section.chord_blocks.is_empty() {
+            let next_meta_key = self.tokens.get(self.cursor + 1).map(|token| token.kind);
+            if starts_section_meta && current.splits_before_meta(next_meta_key) {
+                sections.push(std::mem::replace(&mut current, SectionBuilder::new()).section);
+            } else if !current.section.chord_blocks.is_empty() {
                 // One Br preserves a newline; two preserve one blank line without
                 // discarding section metadata or the preceding chord reference.
                 for _ in 0..newline_count.min(2) {
-                    current_section.chord_blocks.push(ChordBlock::Br);
+                    current.section.chord_blocks.push(ChordBlock::Br);
                 }
             }
 
@@ -130,13 +158,11 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                         if self.collect_warnings {
                             section_meta_positions.push(SectionMetaPosition {
                                 section_index: sections.len(),
-                                meta_index: current_section.meta_infos.len(),
+                                meta_index: current.section.meta_infos.len(),
                                 position: span.into(),
                             });
                         }
-                        section_has_name |= matches!(&meta, SectionMeta::Section(_));
-                        section_has_reference |= matches!(&meta, SectionMeta::Same(_));
-                        current_section.meta_infos.push(meta);
+                        current.push_meta(meta);
                     }
                     Err(meta_errors) => {
                         errors.extend(meta_errors);
@@ -144,30 +170,33 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                     }
                 }
             } else {
-                if section_has_reference {
+                if current.has_reference {
                     errors.push(parse_error(ErrorCode::Smiv4, self.current_span(), None));
                     self.skip_to_line_end();
                     continue;
                 }
-                section_has_chord_lines = true;
+                current.has_chord_lines = true;
                 loop {
                     let recovery_start = self.cursor;
-                    match self.parse_chord_line(&mut has_prior_chord) {
+                    match self.parse_chord_line(&mut current.has_prior_chord) {
                         Ok(blocks) => {
-                            current_section.chord_blocks.extend(blocks);
+                            current.section.chord_blocks.extend(blocks);
                             break;
                         }
                         Err(line_errors) => errors.extend(line_errors),
                     }
 
                     self.skip_to_bar_or_line_end(recovery_start);
-                    if !self.at(TokenKind::Dash) && !self.at(TokenKind::Comma) {
+                    let Some(mut separator) = self
+                        .eat(TokenKind::Dash)
+                        .or_else(|| self.eat(TokenKind::Comma))
+                    else {
                         break;
-                    }
-
-                    let mut separator = self.advance().expect("separator was checked above");
-                    if separator.kind == TokenKind::Comma && self.at(TokenKind::Dash) {
-                        separator = self.advance().expect("dash was checked above");
+                    };
+                    if separator.kind == TokenKind::Comma {
+                        if let Some(dash) = self.eat(TokenKind::Dash) {
+                            separator = dash;
+                        }
                     }
                     if self.is_at_end() || self.at(TokenKind::Newline) {
                         if separator.kind == TokenKind::Dash
@@ -187,8 +216,8 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
         }
 
-        if !current_section.meta_infos.is_empty() || !current_section.chord_blocks.is_empty() {
-            sections.push(current_section);
+        if !current.is_empty() {
+            sections.push(current.section);
         }
 
         if errors.is_empty() {
@@ -225,14 +254,12 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             let (value, span) = self
                 .read_section_name(equal.start_byte + 1, equal.span)
                 .map_err(|error| vec![error])?;
-            return Ok((
-                match key {
-                    "section" => SectionMeta::Section(value.to_owned()),
-                    "same" => SectionMeta::Same(value.to_owned()),
-                    _ => unreachable!("name metadata was checked above"),
-                },
-                span,
-            ));
+            let meta = if key == "section" {
+                SectionMeta::Section(value.to_owned())
+            } else {
+                SectionMeta::Same(value.to_owned())
+            };
+            return Ok((meta, span));
         }
 
         let mut errors = Vec::new();
@@ -244,40 +271,48 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             ));
         }
 
-        let value = if self.is_at_end() || self.at(TokenKind::Newline) {
-            errors.push(parse_error(ErrorCode::Smiv1, self.current_span(), None));
+        let value = match self.peek().copied() {
             None
-        } else {
-            let first = self.advance().expect("value token was checked above");
-            let mut last_span = first.span;
-            let mut is_single_token = true;
-            while let Some(next) = self.peek().copied() {
-                if next.kind == TokenKind::Newline || next.span.start_offset != last_span.end_offset
-                {
-                    break;
-                }
-                self.advance();
-                last_span = next.span;
-                is_single_token = false;
+            | Some(Token {
+                kind: TokenKind::Newline,
+                ..
+            }) => {
+                errors.push(parse_error(ErrorCode::Smiv1, self.current_span(), None));
+                None
             }
-            let span = if is_single_token {
-                first.span
-            } else {
-                span_through(first.span, last_span)
-            };
-            let text = match first.kind {
-                TokenKind::Text(value) if is_single_token => Some(value),
-                _ => None,
-            };
-            Some((text, span))
+            Some(first) => {
+                self.advance();
+                let mut last_span = first.span;
+                let mut is_single_token = true;
+                while let Some(next) = self.peek().copied() {
+                    if next.kind == TokenKind::Newline
+                        || next.span.start_offset != last_span.end_offset
+                    {
+                        break;
+                    }
+                    self.advance();
+                    last_span = next.span;
+                    is_single_token = false;
+                }
+                let span = if is_single_token {
+                    first.span
+                } else {
+                    span_through(first.span, last_span)
+                };
+                let text = match first.kind {
+                    TokenKind::Text(value) if is_single_token => Some(value),
+                    _ => None,
+                };
+                Some((text, span))
+            }
         };
 
-        let meta = match (key, value) {
+        let parsed = match (key, value) {
             ("repeat", Some((Some(text), value_span)))
                 if text.bytes().all(|byte| byte.is_ascii_digit()) =>
             {
                 match text.parse::<u32>() {
-                    Ok(repeat) => Some(SectionMeta::Repeat(repeat)),
+                    Ok(repeat) => Some((SectionMeta::Repeat(repeat), value_span)),
                     Err(_) => {
                         errors.push(parse_error(ErrorCode::Smiv3, value_span, None));
                         None
@@ -296,10 +331,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
 
         if errors.is_empty() {
-            Ok((
-                meta.expect("known metadata with a parsed value must produce a result"),
-                value.expect("valid metadata has a value").1,
-            ))
+            Ok(parsed.expect("valid metadata must produce a value and span"))
         } else {
             Err(errors)
         }
@@ -342,8 +374,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     ) -> Result<Vec<ChordBlock>, Vec<ErrorInfoWithPosition>> {
         let mut blocks = vec![ChordBlock::Bar(self.parse_bar(has_prior_chord)?)];
 
-        while self.at(TokenKind::Dash) {
-            let separator = self.advance().expect("dash was checked above");
+        while let Some(separator) = self.eat(TokenKind::Dash) {
             if self.is_at_end() || self.at(TokenKind::Newline) {
                 return Err(vec![parse_error(
                     ErrorCode::Chb3,
@@ -354,8 +385,11 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             blocks.push(ChordBlock::Bar(self.parse_bar(has_prior_chord)?));
         }
 
-        if !self.is_at_end() && !self.at(TokenKind::Newline) {
-            let token = self.peek().copied().expect("input end was checked above");
+        if let Some(token) = self
+            .peek()
+            .copied()
+            .filter(|token| token.kind != TokenKind::Newline)
+        {
             return Err(vec![parse_error(
                 ErrorCode::Tkn1,
                 token.span,
@@ -371,8 +405,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let mut bar = vec![self.parse_chord_info(*has_prior_chord)?];
         *has_prior_chord = true;
 
-        while self.at(TokenKind::Comma) {
-            self.advance();
+        while self.eat(TokenKind::Comma).is_some() {
             if self.is_at_end() || self.at(TokenKind::Newline) || self.at(TokenKind::Dash) {
                 break;
             }
@@ -415,18 +448,18 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         let (head, head_span) = self
             .expect_text(ErrorCode::Cho3)
             .map_err(|error| vec![error])?;
-        let mut seen = [false; Extension::COUNT];
+        let mut seen = 0u32;
         let mut expression = match head {
             "?" => ChordExpression::UnIdentified,
             "_" => ChordExpression::NoChord,
             "%" if has_prior_chord => ChordExpression::Same,
             "%" => return Err(vec![parse_error(ErrorCode::Chb1, head_span, None)]),
             _ => {
-                let parsed = chord_head::parse_head(head).map_err(|error| {
+                let parsed = chord_head::parse_head(head).map_err(|error_code| {
                     vec![parse_error(
                         ErrorCode::Cho1,
                         head_span,
-                        Some(format!("{}: {head}", error.code)),
+                        Some(format!("{error_code}: {head}")),
                     )]
                 })?;
                 let mut extensions = Vec::with_capacity(parsed.extensions.len());
@@ -439,12 +472,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                         length: extension.range.len(),
                         ..head_span
                     };
-                    self.record_extension(
-                        &extension.value,
-                        &head[extension.range],
-                        span,
-                        &mut seen,
-                    );
+                    self.record_extension(extension.value, &head[extension.range], span, &mut seen);
                     extensions.push(extension.value);
                 }
                 ChordExpression::Chord(Chord {
@@ -463,15 +491,26 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 return Err(vec![parse_error(ErrorCode::Ext3, head_span, None)]);
             };
             let extensions = self.parse_extensions(&mut seen)?;
+            let extra_bytes: usize = extensions
+                .iter()
+                .map(|&extension| <&'static str>::from(extension).len())
+                .sum::<usize>()
+                + extensions.len()
+                + 1;
+            chord.plain.reserve(extra_bytes);
             chord.plain.push('(');
-            for (index, extension) in extensions.iter().enumerate() {
+            for (index, &extension) in extensions.iter().enumerate() {
                 if index > 0 {
                     chord.plain.push(',');
                 }
-                write!(chord.plain, "{extension}").expect("writing into a String cannot fail");
+                chord.plain.push_str(extension.into());
             }
             chord.plain.push(')');
-            chord.detailed.extensions.extend(extensions);
+            if chord.detailed.extensions.is_empty() {
+                chord.detailed.extensions = extensions;
+            } else {
+                chord.detailed.extensions.extend(extensions);
+            }
         }
         if self.at(TokenKind::LeftParen) {
             return Err(vec![parse_error(
@@ -490,21 +529,21 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     /** Records duplicates across shorthand and parenthesized extensions at their original positions. */
     fn record_extension(
         &mut self,
-        extension: &Extension,
+        extension: Extension,
         spelling: &str,
         span: SourceSpan,
-        seen: &mut [bool; Extension::COUNT],
+        seen: &mut u32,
     ) {
         if self.collect_warnings {
-            let was_seen = &mut seen[extension.clone() as usize];
-            if *was_seen {
+            let bit = 1u32 << (extension as u32);
+            if (*seen & bit) != 0 {
                 self.warnings.push(ParseWarning {
                     code: WarningCode::DuplicateExtension,
                     additional_info: Some(spelling.to_owned()),
                     position: span.into(),
                 });
             }
-            *was_seen = true;
+            *seen |= bit;
         }
     }
 
@@ -543,7 +582,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     /** Parses extensions without removing duplicates; only called for chord heads. */
     fn parse_extensions(
         &mut self,
-        seen: &mut [bool; Extension::COUNT],
+        seen: &mut u32,
     ) -> Result<Vec<Extension>, Vec<ErrorInfoWithPosition>> {
         let opening = self
             .expect_symbol(TokenKind::LeftParen, ErrorCode::Ext3)
@@ -564,8 +603,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                 break;
             }
 
-            if self.at(TokenKind::Comma) {
-                let comma = self.advance().expect("comma was checked above");
+            if let Some(comma) = self.eat(TokenKind::Comma) {
                 errors.push(parse_error(ErrorCode::Ext2, comma.span, None));
                 is_first_value = false;
                 continue;
@@ -574,7 +612,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             match self.expect_text(ErrorCode::Ext2) {
                 Ok((value, span)) => match Extension::from_str(value) {
                     Ok(extension) => {
-                        self.record_extension(&extension, value, span, seen);
+                        self.record_extension(extension, value, span, seen);
                         extensions.push(extension);
                     }
                     Err(_) => {
@@ -588,11 +626,9 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
             is_first_value = false;
 
-            if !self.at(TokenKind::Comma) {
+            let Some(comma) = self.eat(TokenKind::Comma) else {
                 break;
-            }
-
-            let comma = self.advance().expect("comma was checked above");
+            };
             if self.at(TokenKind::RightParen)
                 || self.is_at_end()
                 || self.at(TokenKind::Newline)
@@ -614,14 +650,11 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
     }
 
-    /** Accepts a complete chord spelling or an explicitly unidentified bass. */
+    /** Accepts a complete chord spelling or an explicitly unidentified bass without re-lexing. */
     fn parse_denominator(&mut self) -> Result<String, ErrorInfoWithPosition> {
         let slash = self.expect_symbol(TokenKind::Slash, ErrorCode::Den1)?;
-        let mut value = String::new();
-        let mut parenthesis_depth = 0;
-        let mut last_span = slash.span;
-        let mut previous_was_text = false;
-        let mut has_split_atom = false;
+        let denom_start = self.cursor;
+        let mut parenthesis_depth = 0usize;
 
         while let Some(token) = self.peek().copied() {
             match token.kind {
@@ -640,47 +673,48 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                     self.advance();
                     return Err(parse_error(ErrorCode::Den2, token.span, None));
                 }
-                TokenKind::LeftParen => {
-                    parenthesis_depth += 1;
-                    value.push('(');
-                }
-                TokenKind::RightParen if parenthesis_depth > 0 => {
-                    parenthesis_depth -= 1;
-                    value.push(')');
-                }
+                TokenKind::LeftParen => parenthesis_depth += 1,
+                TokenKind::RightParen if parenthesis_depth > 0 => parenthesis_depth -= 1,
                 TokenKind::RightParen => break,
-                kind => value.push_str(token_label(kind)),
+                _ => {}
             }
-            // Whitespace may surround punctuation, but must not turn G m into Gm.
-            let is_text = matches!(token.kind, TokenKind::Text(_));
-            has_split_atom |= previous_was_text && is_text;
-            previous_was_text = is_text;
-            last_span = token.span;
             self.advance();
         }
 
-        if value.is_empty() {
+        let denom_tokens = &self.tokens[denom_start..self.cursor];
+        let Some(last) = denom_tokens.last() else {
             return Err(parse_error(ErrorCode::Den1, slash.span, None));
-        }
-        if parenthesis_depth != 0
-            || has_split_atom
-            || (value != "?" && parse_chord_symbol(&value).is_err())
-        {
+        };
+        let is_unidentified = matches!(
+            denom_tokens,
+            [Token {
+                kind: TokenKind::Text("?"),
+                ..
+            }]
+        );
+        if parenthesis_depth != 0 || (!is_unidentified && !is_valid_chord_tokens(denom_tokens)) {
             return Err(parse_error(
                 ErrorCode::Den1,
-                span_through(slash.span, last_span),
+                span_through(slash.span, last.span),
                 None,
             ));
         }
 
+        let capacity: usize = denom_tokens
+            .iter()
+            .map(|token| token_label(token.kind).len())
+            .sum();
+        let mut value = String::with_capacity(capacity);
+        for token in denom_tokens {
+            value.push_str(token_label(token.kind));
+        }
         Ok(value)
     }
 
     /** Consumes all consecutive newline tokens and returns their count. */
     fn consume_newlines(&mut self) -> usize {
         let mut count = 0;
-        while self.at(TokenKind::Newline) {
-            self.advance();
+        while self.eat(TokenKind::Newline).is_some() {
             count += 1;
         }
         count
@@ -761,6 +795,17 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         }
     }
 
+    /** Consumes and returns the current token when it matches the expected structural kind. */
+    fn eat(&mut self, expected: TokenKind<'static>) -> Option<Token<'src>> {
+        let token = self.peek().copied()?;
+        if token.kind == expected {
+            self.cursor += 1;
+            Some(token)
+        } else {
+            None
+        }
+    }
+
     /** Returns whether the current token exactly matches a structural kind. */
     fn at(&self, expected: TokenKind<'static>) -> bool {
         self.peek().is_some_and(|token| token.kind == expected)
@@ -791,6 +836,41 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
     }
 }
 
+/** Validates a tokenized chord symbol directly without re-lexing or building an AST. */
+fn is_valid_chord_tokens(tokens: &[Token<'_>]) -> bool {
+    let Some((first, rest)) = tokens.split_first() else {
+        return false;
+    };
+    let TokenKind::Text(head) = first.kind else {
+        return false;
+    };
+    if matches!(head, "?" | "_" | "%") || chord_head::parse_head(head).is_err() {
+        return false;
+    }
+    if rest.is_empty() {
+        return true;
+    }
+    let [Token {
+        kind: TokenKind::LeftParen,
+        ..
+    }, inner @ .., Token {
+        kind: TokenKind::RightParen,
+        ..
+    }] = rest
+    else {
+        return false;
+    };
+    !inner.is_empty()
+        && inner.len() % 2 == 1
+        && inner.iter().enumerate().all(|(index, token)| {
+            if index % 2 == 0 {
+                matches!(token.kind, TokenKind::Text(value) if Extension::from_str(value).is_ok())
+            } else {
+                token.kind == TokenKind::Comma
+            }
+        })
+}
+
 /** Tracks rejected nested values without interpreting their contents as grammar. */
 #[derive(Default)]
 struct DelimiterDepth {
@@ -817,14 +897,6 @@ impl DelimiterDepth {
     /** Reports whether a comma belongs to the surrounding grammar. */
     fn is_top_level(&self) -> bool {
         self.parentheses == 0 && self.brackets == 0
-    }
-}
-
-/** Creates an empty section without hiding mutation behind a wrapper type. */
-fn empty_section() -> Section {
-    Section {
-        meta_infos: Vec::new(),
-        chord_blocks: Vec::new(),
     }
 }
 
@@ -878,7 +950,93 @@ fn token_label(kind: TokenKind<'_>) -> &str {
 mod tests {
     use serde_json::{json, Value};
 
-    use crate::parse_chord_progression_string as parse;
+    use super::{is_valid_chord_tokens, lex, parse_chord_symbol};
+    use crate::{parse_chord_progression_string as parse, ErrorInfoWithPosition};
+
+    /** Projects diagnostics as `(code, line, column, length)` for readable span assertions. */
+    fn diagnostic_spans(
+        errors: &[ErrorInfoWithPosition],
+    ) -> Vec<(&'static str, usize, usize, usize)> {
+        errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.into(),
+                    error.position.line_number,
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect()
+    }
+
+    /** Projects diagnostics as `(code, column)` for single-line assertions. */
+    fn diagnostic_columns(errors: &[ErrorInfoWithPosition]) -> Vec<(&'static str, usize)> {
+        errors
+            .iter()
+            .map(|error| (error.error.code.into(), error.position.column_number))
+            .collect()
+    }
+
+    /** Projects diagnostics as `(code, column, length)` for single-line range assertions. */
+    fn diagnostic_column_lengths(
+        errors: &[ErrorInfoWithPosition],
+    ) -> Vec<(&'static str, usize, usize)> {
+        errors
+            .iter()
+            .map(|error| {
+                (
+                    error.error.code.into(),
+                    error.position.column_number,
+                    error.position.length,
+                )
+            })
+            .collect()
+    }
+
+    /** Ensures zero-relex denominator validation matches standalone chord parsing on every case. */
+    #[test]
+    fn token_validator_agrees_with_standalone_chord_parser() {
+        let cases = [
+            "",
+            "C",
+            "G",
+            "F#m7b5",
+            "G(7)",
+            "G ( 7 , 9 )",
+            "F#m(7,b5)",
+            "C7aug",
+            "Caug7",
+            "C(o)",
+            "Co",
+            "?",
+            "_",
+            "%",
+            "G m",
+            "G(1 1)",
+            "G()",
+            "G(7,)",
+            "G(,7)",
+            "G(7,,9)",
+            "G(7)(9)",
+            "G(7",
+            "(G)",
+            "G(7)m",
+            "G(111)",
+            "H",
+            "G/B",
+            "G(7/9)",
+        ];
+
+        for input in cases {
+            let tokens = lex(input).tokens;
+            assert_eq!(
+                is_valid_chord_tokens(&tokens),
+                parse_chord_symbol(input).is_ok(),
+                "token validator disagreed with parse_chord_symbol for {input:?}"
+            );
+        }
+    }
 
     /** Advances a deterministic pseudo-random state without adding a runtime dependency. */
     fn next_random(state: &mut u64) -> u64 {
@@ -1077,26 +1235,15 @@ mod tests {
     fn reports_multiple_errors_in_source_order() {
         let errors = parse("H-C(111)-I\n@repeat=nope\nJ")
             .expect_err("each invalid source region must be reported");
-        let diagnostics: Vec<_> = errors
-            .iter()
-            .map(|error| {
-                (
-                    error.error.code.to_string(),
-                    error.position.line_number,
-                    error.position.column_number,
-                    error.position.length,
-                )
-            })
-            .collect();
 
         assert_eq!(
-            diagnostics,
+            diagnostic_spans(&errors),
             vec![
-                ("CHO-1".to_string(), 1, 1, 1),
-                ("EXT-1".to_string(), 1, 5, 3),
-                ("CHO-1".to_string(), 1, 10, 1),
-                ("SMIV-3".to_string(), 2, 9, 4),
-                ("CHO-1".to_string(), 3, 1, 1),
+                ("CHO-1", 1, 1, 1),
+                ("EXT-1", 1, 5, 3),
+                ("CHO-1", 1, 10, 1),
+                ("SMIV-3", 2, 9, 4),
+                ("CHO-1", 3, 1, 1),
             ]
         );
     }
@@ -1106,11 +1253,11 @@ mod tests {
     fn reports_multiple_errors_within_a_bar_and_extension_list() {
         let errors = parse("H,I-C(111,222)")
             .expect_err("invalid comma-separated values must all be reported");
-        let diagnostics: Vec<_> = errors
+        let diagnostics: Vec<(&'static str, usize, usize)> = errors
             .iter()
             .map(|error| {
                 (
-                    error.error.code.to_string(),
+                    error.error.code.into(),
                     error.position.start_offset,
                     error.position.end_offset,
                 )
@@ -1120,10 +1267,10 @@ mod tests {
         assert_eq!(
             diagnostics,
             vec![
-                ("CHO-1".to_string(), 0, 1),
-                ("CHO-1".to_string(), 2, 3),
-                ("EXT-1".to_string(), 6, 9),
-                ("EXT-1".to_string(), 10, 13),
+                ("CHO-1", 0, 1),
+                ("CHO-1", 2, 3),
+                ("EXT-1", 6, 9),
+                ("EXT-1", 10, 13),
             ]
         );
     }
@@ -1143,23 +1290,9 @@ mod tests {
 
         for (input, expected) in cases {
             let errors = parse(input).expect_err("malformed extensions must be rejected");
-            let diagnostics: Vec<_> = errors
-                .iter()
-                .map(|error| {
-                    (
-                        error.error.code.to_string(),
-                        error.position.column_number,
-                        error.position.length,
-                    )
-                })
-                .collect();
-            let expected: Vec<_> = expected
-                .into_iter()
-                .map(|(code, column, length)| (code.to_string(), column, length))
-                .collect();
-
             assert_eq!(
-                diagnostics, expected,
+                diagnostic_column_lengths(&errors),
+                expected,
                 "unexpected diagnostics for {input:?}"
             );
         }
@@ -1170,11 +1303,11 @@ mod tests {
     fn reports_errors_after_truncated_section_metadata() {
         let errors = parse("@section\nH\n@repeat=nope\nI")
             .expect_err("metadata and chord errors on later lines must all be reported");
-        let diagnostics: Vec<_> = errors
+        let diagnostics: Vec<(&'static str, usize, usize, usize, usize)> = errors
             .iter()
             .map(|error| {
                 (
-                    error.error.code.to_string(),
+                    error.error.code.into(),
                     error.position.line_number,
                     error.position.column_number,
                     error.position.start_offset,
@@ -1186,10 +1319,10 @@ mod tests {
         assert_eq!(
             diagnostics,
             vec![
-                ("SMIK-2".to_string(), 1, 9, 8, 9),
-                ("CHO-1".to_string(), 2, 1, 9, 10),
-                ("SMIV-3".to_string(), 3, 9, 19, 23),
-                ("CHO-1".to_string(), 4, 1, 24, 25),
+                ("SMIK-2", 1, 9, 8, 9),
+                ("CHO-1", 2, 1, 9, 10),
+                ("SMIV-3", 3, 9, 19, 23),
+                ("CHO-1", 4, 1, 24, 25),
             ]
         );
     }
@@ -1199,26 +1332,15 @@ mod tests {
     fn reports_section_metadata_boundary_errors() {
         let errors = parse("@unknown=x\n@section=\n@repeat=nope\n@repeat=2 extra\nH")
             .expect_err("each malformed metadata line must produce a diagnostic");
-        let diagnostics: Vec<_> = errors
-            .iter()
-            .map(|error| {
-                (
-                    error.error.code.to_string(),
-                    error.position.line_number,
-                    error.position.column_number,
-                    error.position.length,
-                )
-            })
-            .collect();
 
         assert_eq!(
-            diagnostics,
+            diagnostic_spans(&errors),
             vec![
-                ("SMIK-1".to_string(), 1, 2, 7),
-                ("SMIV-1".to_string(), 2, 10, 1),
-                ("SMIV-3".to_string(), 3, 9, 4),
-                ("SMIV-2".to_string(), 4, 11, 5),
-                ("CHO-1".to_string(), 5, 1, 1),
+                ("SMIK-1", 1, 2, 7),
+                ("SMIV-1", 2, 10, 1),
+                ("SMIV-3", 3, 9, 4),
+                ("SMIV-2", 4, 11, 5),
+                ("CHO-1", 5, 1, 1),
             ]
         );
     }
@@ -1228,26 +1350,15 @@ mod tests {
     fn reports_multiple_errors_within_section_metadata() {
         let errors = parse("@unknown=x extra\n@repeat=nope extra\nH")
             .expect_err("each independent metadata issue must be reported");
-        let diagnostics: Vec<_> = errors
-            .iter()
-            .map(|error| {
-                (
-                    error.error.code.to_string(),
-                    error.position.line_number,
-                    error.position.column_number,
-                    error.position.length,
-                )
-            })
-            .collect();
 
         assert_eq!(
-            diagnostics,
+            diagnostic_spans(&errors),
             vec![
-                ("SMIK-1".to_string(), 1, 2, 7),
-                ("SMIV-2".to_string(), 1, 12, 5),
-                ("SMIV-3".to_string(), 2, 9, 4),
-                ("SMIV-2".to_string(), 2, 14, 5),
-                ("CHO-1".to_string(), 3, 1, 1),
+                ("SMIK-1", 1, 2, 7),
+                ("SMIV-2", 1, 12, 5),
+                ("SMIV-3", 2, 9, 4),
+                ("SMIV-2", 2, 14, 5),
+                ("CHO-1", 3, 1, 1),
             ]
         );
     }
@@ -1264,31 +1375,18 @@ mod tests {
     fn reports_repeat_integer_boundary_errors() {
         let errors = parse("@repeat=-1\nH\n@repeat=4294967296")
             .expect_err("out-of-range repeat values must be rejected");
-        let diagnostics: Vec<_> = errors
-            .iter()
-            .map(|error| {
-                (
-                    error.error.code.to_string(),
-                    error.position.line_number,
-                    error.position.column_number,
-                    error.position.length,
-                )
-            })
-            .collect();
 
         assert_eq!(
-            diagnostics,
+            diagnostic_spans(&errors),
             vec![
-                ("SMIV-3".to_string(), 1, 9, 2),
-                ("CHO-1".to_string(), 2, 1, 1),
-                ("SMIV-3".to_string(), 3, 9, 10),
+                ("SMIV-3", 1, 9, 2),
+                ("CHO-1", 2, 1, 1),
+                ("SMIV-3", 3, 9, 10),
             ]
         );
 
         let trailing_minus = parse("@repeat=-").expect_err("a bare minus must be rejected");
-        assert_eq!(trailing_minus[0].error.code.to_string(), "SMIV-3");
-        assert_eq!(trailing_minus[0].position.column_number, 9);
-        assert_eq!(trailing_minus[0].position.length, 1);
+        assert_eq!(diagnostic_spans(&trailing_minus), vec![("SMIV-3", 1, 9, 1)]);
     }
 
     /** Rejects extension lists attached to non-chord expressions. */
@@ -1297,9 +1395,11 @@ mod tests {
         for input in ["?(7)", "_(7)"] {
             let errors = parse(input).expect_err("non-chords cannot have extensions");
 
-            assert_eq!(errors.len(), 1, "unexpected diagnostics for {input:?}");
-            assert_eq!(errors[0].error.code.to_string(), "EXT-3");
-            assert_eq!(errors[0].position.column_number, 1);
+            assert_eq!(
+                diagnostic_columns(&errors),
+                vec![("EXT-3", 1)],
+                "unexpected diagnostics for {input:?}"
+            );
         }
     }
 
@@ -1308,24 +1408,13 @@ mod tests {
     fn reports_chord_metadata_errors_across_lines() {
         let errors = parse("[key=H]C-[bad=C]D\n[key=G]I")
             .expect_err("invalid chord metadata and later chords must all be reported");
-        let diagnostics: Vec<_> = errors
-            .iter()
-            .map(|error| {
-                (
-                    error.error.code.to_string(),
-                    error.position.line_number,
-                    error.position.column_number,
-                    error.position.length,
-                )
-            })
-            .collect();
 
         assert_eq!(
-            diagnostics,
+            diagnostic_spans(&errors),
             vec![
-                ("CIMV-4".to_string(), 1, 6, 1),
-                ("CIMK-3".to_string(), 1, 11, 3),
-                ("CHO-1".to_string(), 2, 8, 1),
+                ("CIMV-4", 1, 6, 1),
+                ("CIMK-3", 1, 11, 3),
+                ("CHO-1", 2, 8, 1),
             ]
         );
     }
@@ -1353,19 +1442,15 @@ mod tests {
     #[test]
     fn reports_errors_around_repeated_bar_separators() {
         let errors = parse("-H--I-").expect_err("every malformed bar region must be reported");
-        let diagnostics: Vec<_> = errors
-            .iter()
-            .map(|error| (error.error.code.to_string(), error.position.column_number))
-            .collect();
 
         assert_eq!(
-            diagnostics,
+            diagnostic_columns(&errors),
             vec![
-                ("CHO-3".to_string(), 1),
-                ("CHO-1".to_string(), 2),
-                ("CHO-3".to_string(), 4),
-                ("CHO-1".to_string(), 5),
-                ("CHB-3".to_string(), 6),
+                ("CHO-3", 1),
+                ("CHO-1", 2),
+                ("CHO-3", 4),
+                ("CHO-1", 5),
+                ("CHB-3", 6),
             ]
         );
     }
@@ -1375,27 +1460,16 @@ mod tests {
     fn reports_delimiter_and_eof_boundary_errors() {
         let errors = parse("C()\nD(111,)\nE//G\nF/\n[key=")
             .expect_err("delimiter and EOF failures must all be reported");
-        let diagnostics: Vec<_> = errors
-            .iter()
-            .map(|error| {
-                (
-                    error.error.code.to_string(),
-                    error.position.line_number,
-                    error.position.column_number,
-                    error.position.length,
-                )
-            })
-            .collect();
 
         assert_eq!(
-            diagnostics,
+            diagnostic_spans(&errors),
             vec![
-                ("EXT-2".to_string(), 1, 2, 1),
-                ("EXT-1".to_string(), 2, 3, 3),
-                ("EXT-2".to_string(), 2, 6, 1),
-                ("DEN-2".to_string(), 3, 3, 1),
-                ("DEN-1".to_string(), 4, 2, 1),
-                ("CIMV-2".to_string(), 5, 6, 0),
+                ("EXT-2", 1, 2, 1),
+                ("EXT-1", 2, 3, 3),
+                ("EXT-2", 2, 6, 1),
+                ("DEN-2", 3, 3, 1),
+                ("DEN-1", 4, 2, 1),
+                ("CIMV-2", 5, 6, 0),
             ]
         );
 
@@ -1408,24 +1482,10 @@ mod tests {
     fn reports_unclosed_denominator_ranges() {
         let errors = parse("C/F#m(7\nD/(G")
             .expect_err("each denominator with an unclosed parenthesis must be rejected");
-        let positions: Vec<_> = errors
-            .iter()
-            .map(|error| {
-                (
-                    error.error.code.to_string(),
-                    error.position.line_number,
-                    error.position.column_number,
-                    error.position.length,
-                )
-            })
-            .collect();
 
         assert_eq!(
-            positions,
-            vec![
-                ("DEN-1".to_string(), 1, 2, 6),
-                ("DEN-1".to_string(), 2, 2, 3),
-            ]
+            diagnostic_spans(&errors),
+            vec![("DEN-1", 1, 2, 6), ("DEN-1", 2, 2, 3)]
         );
     }
 
@@ -1439,24 +1499,9 @@ mod tests {
 
         for (input, expected) in cases {
             let errors = parse(input).expect_err("unclosed denominator and later bar must fail");
-            let diagnostics: Vec<_> = errors
-                .iter()
-                .map(|error| {
-                    (
-                        error.error.code.to_string(),
-                        error.position.line_number,
-                        error.position.column_number,
-                        error.position.length,
-                    )
-                })
-                .collect();
-            let expected: Vec<_> = expected
-                .into_iter()
-                .map(|(code, line, column, length)| (code.to_string(), line, column, length))
-                .collect();
-
             assert_eq!(
-                diagnostics, expected,
+                diagnostic_spans(&errors),
+                expected,
                 "unexpected diagnostics for {input:?}"
             );
         }
@@ -1465,10 +1510,7 @@ mod tests {
         let errors = report
             .result
             .expect_err("unclosed denominator must fail while retaining later bar warnings");
-        assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].error.code.to_string(), "DEN-1");
-        assert_eq!(errors[0].position.column_number, 2);
-        assert_eq!(errors[0].position.length, 4);
+        assert_eq!(diagnostic_spans(&errors), vec![("DEN-1", 1, 2, 4)]);
         assert_eq!(report.warnings.len(), 1);
         assert_eq!(
             report.warnings[0].code,
@@ -1490,17 +1532,9 @@ mod tests {
 
         for (input, expected) in cases {
             let errors = parse(input).expect_err("invalid bar must remain rejected");
-            let diagnostics: Vec<_> = errors
-                .iter()
-                .map(|error| (error.error.code.to_string(), error.position.column_number))
-                .collect();
-            let expected: Vec<_> = expected
-                .into_iter()
-                .map(|(code, column)| (code.to_string(), column))
-                .collect();
-
             assert_eq!(
-                diagnostics, expected,
+                diagnostic_columns(&errors),
+                expected,
                 "unexpected diagnostics for {input:?}"
             );
         }
@@ -1528,24 +1562,9 @@ mod tests {
 
         for (input, expected) in cases {
             let errors = parse(input).expect_err("signed repeat metadata must be rejected");
-            let diagnostics: Vec<_> = errors
-                .iter()
-                .map(|error| {
-                    (
-                        error.error.code.to_string(),
-                        error.position.line_number,
-                        error.position.column_number,
-                        error.position.length,
-                    )
-                })
-                .collect();
-            let expected: Vec<_> = expected
-                .into_iter()
-                .map(|(code, line, column, length)| (code.to_string(), line, column, length))
-                .collect();
-
             assert_eq!(
-                diagnostics, expected,
+                diagnostic_spans(&errors),
+                expected,
                 "unexpected diagnostics for {input:?}"
             );
         }
@@ -1568,9 +1587,11 @@ mod tests {
             let errors = report
                 .result
                 .expect_err("non-chords cannot accept extension lists");
-            assert_eq!(errors.len(), 1, "unexpected diagnostics for {input:?}");
-            assert_eq!(errors[0].error.code.to_string(), "EXT-3");
-            assert_eq!(errors[0].position.column_number, expected_column);
+            assert_eq!(
+                diagnostic_columns(&errors),
+                vec![("EXT-3", expected_column)],
+                "unexpected diagnostics for {input:?}"
+            );
             assert!(
                 report.warnings.is_empty(),
                 "non-chord extension failure must not emit warnings for {input:?}"
@@ -1581,13 +1602,9 @@ mod tests {
         let nested_errors = nested
             .result
             .expect_err("non-chord extension list and later chord must fail");
-        let nested_diagnostics: Vec<_> = nested_errors
-            .iter()
-            .map(|error| (error.error.code.to_string(), error.position.column_number))
-            .collect();
         assert_eq!(
-            nested_diagnostics,
-            vec![("EXT-3".to_string(), 1), ("CHO-1".to_string(), 13)]
+            diagnostic_columns(&nested_errors),
+            vec![("EXT-3", 1), ("CHO-1", 13)]
         );
         assert!(nested.warnings.is_empty());
 
@@ -1595,13 +1612,9 @@ mod tests {
         let barred_errors = barred
             .result
             .expect_err("non-chord extension list and later bar must fail");
-        let barred_diagnostics: Vec<_> = barred_errors
-            .iter()
-            .map(|error| (error.error.code.to_string(), error.position.column_number))
-            .collect();
         assert_eq!(
-            barred_diagnostics,
-            vec![("EXT-3".to_string(), 1), ("CHO-1".to_string(), 8)]
+            diagnostic_columns(&barred_errors),
+            vec![("EXT-3", 1), ("CHO-1", 8)]
         );
         assert!(barred.warnings.is_empty());
     }
@@ -1642,24 +1655,9 @@ mod tests {
 
         for (input, expected) in cases {
             let errors = parse(input).expect_err("malformed section metadata must fail");
-            let diagnostics: Vec<_> = errors
-                .iter()
-                .map(|error| {
-                    (
-                        error.error.code.to_string(),
-                        error.position.line_number,
-                        error.position.column_number,
-                        error.position.length,
-                    )
-                })
-                .collect();
-            let expected: Vec<_> = expected
-                .into_iter()
-                .map(|(code, line, column, length)| (code.to_string(), line, column, length))
-                .collect();
-
             assert_eq!(
-                diagnostics, expected,
+                diagnostic_spans(&errors),
+                expected,
                 "unexpected diagnostics for {input:?}"
             );
         }
@@ -1688,24 +1686,9 @@ mod tests {
 
         for (input, expected) in cases {
             let errors = parse(input).expect_err("malformed chord metadata must fail");
-            let diagnostics: Vec<_> = errors
-                .iter()
-                .map(|error| {
-                    (
-                        error.error.code.to_string(),
-                        error.position.line_number,
-                        error.position.column_number,
-                        error.position.length,
-                    )
-                })
-                .collect();
-            let expected: Vec<_> = expected
-                .into_iter()
-                .map(|(code, line, column, length)| (code.to_string(), line, column, length))
-                .collect();
-
             assert_eq!(
-                diagnostics, expected,
+                diagnostic_spans(&errors),
+                expected,
                 "unexpected diagnostics for {input:?}"
             );
         }
@@ -1737,24 +1720,9 @@ mod tests {
 
         for (input, expected) in cases {
             let errors = parse(input).expect_err("malformed bar or extension must fail");
-            let diagnostics: Vec<_> = errors
-                .iter()
-                .map(|error| {
-                    (
-                        error.error.code.to_string(),
-                        error.position.line_number,
-                        error.position.column_number,
-                        error.position.length,
-                    )
-                })
-                .collect();
-            let expected: Vec<_> = expected
-                .into_iter()
-                .map(|(code, line, column, length)| (code.to_string(), line, column, length))
-                .collect();
-
             assert_eq!(
-                diagnostics, expected,
+                diagnostic_spans(&errors),
+                expected,
                 "unexpected diagnostics for {input:?}"
             );
         }

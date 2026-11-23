@@ -9,7 +9,7 @@ describe("generateRandomChordProgressionString", () => {
     expect(randomChordProgressionString).toBeDefined();
   });
 
-  test("can parsee with chord-progression-parser", () => {
+  test("can parse with chord-progression-parser", () => {
     for (let i = 0; i < 10; i++) {
       const randomChordProgressionString =
         generateRandomChordProgressionString();

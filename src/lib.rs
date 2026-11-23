@@ -23,73 +23,22 @@ pub use parse_report::{ParseReport, ParseWarning, SectionMetaPosition};
 pub use util::position::Position;
 pub use warning_code::WarningCode;
 
-/** Successful JavaScript response serialized as a plain object. */
-#[derive(Serialize)]
-struct JsParseSuccess {
-    success: bool,
-    ast: Ast,
-    #[serde(rename = "sectionMetaPositions")]
-    section_meta_positions: Vec<JsSectionMetaPosition>,
-    warnings: Vec<JsParseDiagnostic>,
-}
-
-/** Failed JavaScript response serialized as a plain object. */
-#[derive(Serialize)]
-struct JsParseFailure {
-    success: bool,
-    errors: Vec<JsParseDiagnostic>,
-    warnings: Vec<JsParseDiagnostic>,
-}
-
 /** JavaScript-facing error or warning with camel-case field names. */
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct JsParseDiagnostic {
-    code: String,
+    code: &'static str,
     additional_info: Option<String>,
-    position: JsPosition,
-}
-
-/** Keeps source ranges outside the stored AST so consumers can locate semantic diagnostics. */
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct JsSectionMetaPosition {
-    section_index: usize,
-    meta_index: usize,
-    position: JsPosition,
-}
-
-/** JavaScript-facing source position with camel-case field names. */
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct JsPosition {
-    line_number: usize,
-    column_number: usize,
-    length: usize,
-    start_offset: usize,
-    end_offset: usize,
-}
-
-impl From<Position> for JsPosition {
-    /** Converts a source position without changing its UTF-16 range. */
-    fn from(position: Position) -> Self {
-        Self {
-            line_number: position.line_number,
-            column_number: position.column_number,
-            length: position.length,
-            start_offset: position.start_offset,
-            end_offset: position.end_offset,
-        }
-    }
+    position: Position,
 }
 
 impl From<ErrorInfoWithPosition> for JsParseDiagnostic {
-    /** Retains the existing JavaScript error shape and code. */
+    /** Retains the existing JavaScript error shape and code without allocating a code string. */
     fn from(error: ErrorInfoWithPosition) -> Self {
         Self {
-            code: error.error.code.to_string(),
+            code: error.error.code.into(),
             additional_info: error.error.additional_info,
-            position: error.position.into(),
+            position: error.position,
         }
     }
 }
@@ -98,9 +47,9 @@ impl From<ParseWarning> for JsParseDiagnostic {
     /** Serializes warning codes independently of the error-code domain. */
     fn from(warning: ParseWarning) -> Self {
         Self {
-            code: warning.code.to_string(),
+            code: warning.code.into(),
             additional_info: warning.additional_info,
-            position: warning.position.into(),
+            position: warning.position,
         }
     }
 }
@@ -109,8 +58,18 @@ impl From<ParseWarning> for JsParseDiagnostic {
 #[derive(Serialize)]
 #[serde(untagged)]
 enum JsParseResult {
-    Success(JsParseSuccess),
-    Failure(JsParseFailure),
+    Success {
+        success: bool,
+        ast: Ast,
+        #[serde(rename = "sectionMetaPositions")]
+        section_meta_positions: Vec<SectionMetaPosition>,
+        warnings: Vec<JsParseDiagnostic>,
+    },
+    Failure {
+        success: bool,
+        errors: Vec<JsParseDiagnostic>,
+        warnings: Vec<JsParseDiagnostic>,
+    },
 }
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -198,27 +157,20 @@ pub fn parse_chord_progression_string_js(input: &str) -> JsValue {
     } = parse_chord_progression_string_with_warnings(input);
     let warnings = warnings.into_iter().map(JsParseDiagnostic::from).collect();
     let response = match result {
-        Ok(ast) => JsParseResult::Success(JsParseSuccess {
+        Ok(ast) => JsParseResult::Success {
             success: true,
             ast,
-            section_meta_positions: section_meta_positions
-                .into_iter()
-                .map(|source| JsSectionMetaPosition {
-                    section_index: source.section_index,
-                    meta_index: source.meta_index,
-                    position: source.position.into(),
-                })
-                .collect(),
+            section_meta_positions,
             warnings,
-        }),
-        Err(error_infos) => JsParseResult::Failure(JsParseFailure {
+        },
+        Err(error_infos) => JsParseResult::Failure {
             success: false,
             warnings,
             errors: error_infos
                 .into_iter()
                 .map(JsParseDiagnostic::from)
                 .collect(),
-        }),
+        },
     };
 
     response

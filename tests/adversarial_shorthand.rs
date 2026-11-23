@@ -98,9 +98,9 @@ fn checks_primary_modifier_boundaries_against_explicit_notation() {
                         .collect();
                     extensions.sort_by_key(extension_order::expected_rank);
                     let expected = ChordDetailed {
-                        base: base.clone(),
-                        accidental: accidental.clone(),
-                        chord_type: chord_type.clone(),
+                        base,
+                        accidental,
+                        chord_type,
                         extensions,
                     };
                     let chord = chord_from_source(&source);
