@@ -164,7 +164,10 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                         break;
                     }
 
-                    let separator = self.advance().expect("separator was checked above");
+                    let mut separator = self.advance().expect("separator was checked above");
+                    if separator.kind == TokenKind::Comma && self.at(TokenKind::Dash) {
+                        separator = self.advance().expect("dash was checked above");
+                    }
                     if self.is_at_end() || self.at(TokenKind::Newline) {
                         if separator.kind == TokenKind::Dash {
                             errors.push(parse_error(
@@ -183,14 +186,18 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             sections.push(current_section);
         }
 
-        ParseReport {
-            result: if errors.is_empty() {
-                Ok(sections)
-            } else {
-                Err(errors)
-            },
-            warnings: self.warnings,
-            section_meta_positions,
+        if errors.is_empty() {
+            ParseReport {
+                result: Ok(sections),
+                warnings: self.warnings,
+                section_meta_positions,
+            }
+        } else {
+            ParseReport {
+                result: Err(errors),
+                warnings: self.warnings,
+                section_meta_positions: Vec::new(),
+            }
         }
     }
 
@@ -232,39 +239,49 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             ));
         }
 
-        let value = if key == "repeat" && self.at(TokenKind::Dash) {
+        let (value, has_value) = if key == "repeat" && self.at(TokenKind::Dash) {
             let dash = self.advance().expect("dash was checked above");
             let span = match self.peek().copied() {
-                Some(token) if matches!(token.kind, TokenKind::Text(_)) => {
+                Some(token)
+                    if matches!(token.kind, TokenKind::Text(_))
+                        && token.span.start_offset == dash.span.end_offset =>
+                {
                     self.advance();
                     span_through(dash.span, token.span)
                 }
                 _ => dash.span,
             };
             errors.push(parse_error(ErrorCode::Smiv3, span, None));
-            None
+            (None, true)
         } else {
             match self.expect_text(ErrorCode::Smiv1) {
-                Ok(value) => Some(value),
+                Ok(value) => (Some(value), true),
                 Err(error) => {
                     errors.push(error);
-                    None
+                    (None, false)
                 }
             }
         };
 
         let meta = match (key, value) {
-            ("repeat", Some((value, value_span))) => match value.parse::<u32>() {
-                Ok(repeat) => Some(SectionMeta::Repeat(repeat)),
-                Err(_) => {
+            ("repeat", Some((value, value_span))) => {
+                if value.bytes().all(|byte| byte.is_ascii_digit()) {
+                    match value.parse::<u32>() {
+                        Ok(repeat) => Some(SectionMeta::Repeat(repeat)),
+                        Err(_) => {
+                            errors.push(parse_error(ErrorCode::Smiv3, value_span, None));
+                            None
+                        }
+                    }
+                } else {
                     errors.push(parse_error(ErrorCode::Smiv3, value_span, None));
                     None
                 }
-            },
+            }
             _ => None,
         };
 
-        if value.is_some() && !self.is_at_end() && !self.at(TokenKind::Newline) {
+        if has_value && !self.is_at_end() && !self.at(TokenKind::Newline) {
             errors.push(parse_error(ErrorCode::Smiv2, self.current_span(), None));
         }
 
@@ -416,7 +433,6 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
                         &extension.value,
                         &head[extension.range],
                         span,
-                        self.collect_warnings,
                         &mut seen,
                     );
                     extensions.push(extension.value);
@@ -433,25 +449,19 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             }
         };
         if self.at(TokenKind::LeftParen) {
-            let extensions = self.parse_extensions(
-                self.collect_warnings && matches!(expression, ChordExpression::Chord(_)),
-                &mut seen,
-            )?;
-            match &mut expression {
-                ChordExpression::Chord(chord) => {
-                    chord.plain.push('(');
-                    for (index, extension) in extensions.iter().enumerate() {
-                        if index > 0 {
-                            chord.plain.push(',');
-                        }
-                        write!(chord.plain, "{extension}")
-                            .expect("writing into a String cannot fail");
-                    }
-                    chord.plain.push(')');
-                    chord.detailed.extensions.extend(extensions);
+            let ChordExpression::Chord(chord) = &mut expression else {
+                return Err(vec![parse_error(ErrorCode::Ext3, head_span, None)]);
+            };
+            let extensions = self.parse_extensions(&mut seen)?;
+            chord.plain.push('(');
+            for (index, extension) in extensions.iter().enumerate() {
+                if index > 0 {
+                    chord.plain.push(',');
                 }
-                _ => return Err(vec![parse_error(ErrorCode::Ext3, head_span, None)]),
+                write!(chord.plain, "{extension}").expect("writing into a String cannot fail");
             }
+            chord.plain.push(')');
+            chord.detailed.extensions.extend(extensions);
         }
         if self.at(TokenKind::LeftParen) {
             return Err(vec![parse_error(
@@ -473,10 +483,9 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
         extension: &Extension,
         spelling: &str,
         span: SourceSpan,
-        warn: bool,
         seen: &mut [bool; Extension::COUNT],
     ) {
-        if warn {
+        if self.collect_warnings {
             let was_seen = &mut seen[extension.clone() as usize];
             if *was_seen {
                 self.warnings.push(ParseWarning {
@@ -506,10 +515,9 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             .map_err(|_| parse_error(ErrorCode::Cimv4, value_span, None))
     }
 
-    /** Parses extensions without removing duplicates; non-chords cannot receive warnings. */
+    /** Parses extensions without removing duplicates; only called for chord heads. */
     fn parse_extensions(
         &mut self,
-        warn_on_duplicates: bool,
         seen: &mut [bool; Extension::COUNT],
     ) -> Result<Vec<Extension>, Vec<ErrorInfoWithPosition>> {
         let opening = self
@@ -537,7 +545,7 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
             match self.expect_text(ErrorCode::Ext2) {
                 Ok((value, span)) => match Extension::from_str(value) {
                     Ok(extension) => {
-                        self.record_extension(&extension, value, span, warn_on_duplicates, seen);
+                        self.record_extension(&extension, value, span, seen);
                         extensions.push(extension);
                     }
                     Err(_) => {
@@ -584,11 +592,13 @@ impl<'tokens, 'src> Parser<'tokens, 'src> {
 
         while let Some(token) = self.peek().copied() {
             match token.kind {
-                TokenKind::Newline => break,
-                TokenKind::At | TokenKind::LeftBracket if parenthesis_depth == 0 => {
+                // Bar separators and newlines always terminate a denominator, even with unclosed parentheses.
+                TokenKind::Newline | TokenKind::Dash => break,
+                TokenKind::At | TokenKind::LeftBracket | TokenKind::Comma
+                    if parenthesis_depth == 0 =>
+                {
                     break;
                 }
-                TokenKind::Dash | TokenKind::Comma if parenthesis_depth == 0 => break,
                 TokenKind::Slash => {
                     self.advance();
                     return Err(parse_error(ErrorCode::Den2, token.span, None));
@@ -1379,6 +1389,192 @@ mod tests {
                 ("DEN-1".to_string(), 2, 2, 3),
             ]
         );
+    }
+
+    /** Stops unclosed denominators at bar separators so later bars keep their diagnostics. */
+    #[test]
+    fn recovers_at_bar_boundary_after_unclosed_denominator() {
+        let cases = [
+            ("C/G(7 - H", vec![("DEN-1", 1, 2, 4), ("CHO-1", 1, 9, 1)]),
+            ("C/(-H", vec![("DEN-1", 1, 2, 2), ("CHO-1", 1, 5, 1)]),
+        ];
+
+        for (input, expected) in cases {
+            let errors = parse(input).expect_err("unclosed denominator and later bar must fail");
+            let diagnostics: Vec<_> = errors
+                .iter()
+                .map(|error| {
+                    (
+                        error.error.code.to_string(),
+                        error.position.line_number,
+                        error.position.column_number,
+                        error.position.length,
+                    )
+                })
+                .collect();
+            let expected: Vec<_> = expected
+                .into_iter()
+                .map(|(code, line, column, length)| (code.to_string(), line, column, length))
+                .collect();
+
+            assert_eq!(
+                diagnostics, expected,
+                "unexpected diagnostics for {input:?}"
+            );
+        }
+
+        let report = crate::parse_chord_progression_string_with_warnings("C/G(7 - D(9,9)");
+        let errors = report
+            .result
+            .expect_err("unclosed denominator must fail while retaining later bar warnings");
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].error.code.to_string(), "DEN-1");
+        assert_eq!(errors[0].position.column_number, 2);
+        assert_eq!(errors[0].position.length, 4);
+        assert_eq!(report.warnings.len(), 1);
+        assert_eq!(
+            report.warnings[0].code,
+            crate::WarningCode::DuplicateExtension
+        );
+        assert_eq!(report.warnings[0].position.column_number, 13);
+    }
+
+    /** Preserves valid trailing-comma-before-dash grammar during error recovery. */
+    #[test]
+    fn recovers_across_trailing_comma_before_bar_separator() {
+        let cases = [
+            ("H,-D", vec![("CHO-1", 1)]),
+            ("H,-", vec![("CHO-1", 1), ("CHB-3", 3)]),
+            ("C/5,-D", vec![("DEN-1", 2)]),
+            ("C(111),-D", vec![("EXT-1", 3)]),
+            ("H,--D", vec![("CHO-1", 1), ("CHO-3", 4)]),
+        ];
+
+        for (input, expected) in cases {
+            let errors = parse(input).expect_err("invalid bar must remain rejected");
+            let diagnostics: Vec<_> = errors
+                .iter()
+                .map(|error| (error.error.code.to_string(), error.position.column_number))
+                .collect();
+            let expected: Vec<_> = expected
+                .into_iter()
+                .map(|(code, column)| (code.to_string(), column))
+                .collect();
+
+            assert_eq!(
+                diagnostics, expected,
+                "unexpected diagnostics for {input:?}"
+            );
+        }
+    }
+
+    /** Rejects signed repeat counts and reports trailing tokens after rejected negative values. */
+    #[test]
+    fn rejects_signed_repeat_values_and_trailing_tokens() {
+        let cases = [
+            ("@repeat=+2", vec![("SMIV-3", 1, 9, 2)]),
+            ("@repeat=+0", vec![("SMIV-3", 1, 9, 2)]),
+            (
+                "@repeat=+2 extra",
+                vec![("SMIV-3", 1, 9, 2), ("SMIV-2", 1, 12, 5)],
+            ),
+            (
+                "@repeat=-1 extra",
+                vec![("SMIV-3", 1, 9, 2), ("SMIV-2", 1, 12, 5)],
+            ),
+            (
+                "@repeat=- extra",
+                vec![("SMIV-3", 1, 9, 1), ("SMIV-2", 1, 11, 5)],
+            ),
+        ];
+
+        for (input, expected) in cases {
+            let errors = parse(input).expect_err("signed repeat metadata must be rejected");
+            let diagnostics: Vec<_> = errors
+                .iter()
+                .map(|error| {
+                    (
+                        error.error.code.to_string(),
+                        error.position.line_number,
+                        error.position.column_number,
+                        error.position.length,
+                    )
+                })
+                .collect();
+            let expected: Vec<_> = expected
+                .into_iter()
+                .map(|(code, line, column, length)| (code.to_string(), line, column, length))
+                .collect();
+
+            assert_eq!(
+                diagnostics, expected,
+                "unexpected diagnostics for {input:?}"
+            );
+        }
+    }
+
+    /** Reports EXT-3 consistently for non-chords with malformed extension bodies and no warnings. */
+    #[test]
+    fn rejects_malformed_extensions_on_non_chord_expressions() {
+        let single_error_cases = [
+            ("?(111)", 1),
+            ("?()", 1),
+            ("?(7", 1),
+            ("_(111)", 1),
+            ("_()", 1),
+            ("C-%(111)", 3),
+        ];
+
+        for (input, expected_column) in single_error_cases {
+            let report = crate::parse_chord_progression_string_with_warnings(input);
+            let errors = report
+                .result
+                .expect_err("non-chords cannot accept extension lists");
+            assert_eq!(errors.len(), 1, "unexpected diagnostics for {input:?}");
+            assert_eq!(errors[0].error.code.to_string(), "EXT-3");
+            assert_eq!(errors[0].position.column_number, expected_column);
+            assert!(
+                report.warnings.is_empty(),
+                "non-chord extension failure must not emit warnings for {input:?}"
+            );
+        }
+
+        let nested = crate::parse_chord_progression_string_with_warnings("?(9,C(9,9)),I");
+        let nested_errors = nested
+            .result
+            .expect_err("non-chord extension list and later chord must fail");
+        let nested_diagnostics: Vec<_> = nested_errors
+            .iter()
+            .map(|error| (error.error.code.to_string(), error.position.column_number))
+            .collect();
+        assert_eq!(
+            nested_diagnostics,
+            vec![("EXT-3".to_string(), 1), ("CHO-1".to_string(), 13)]
+        );
+        assert!(nested.warnings.is_empty());
+
+        let barred = crate::parse_chord_progression_string_with_warnings("?(9,9)-H");
+        let barred_errors = barred
+            .result
+            .expect_err("non-chord extension list and later bar must fail");
+        let barred_diagnostics: Vec<_> = barred_errors
+            .iter()
+            .map(|error| (error.error.code.to_string(), error.position.column_number))
+            .collect();
+        assert_eq!(
+            barred_diagnostics,
+            vec![("EXT-3".to_string(), 1), ("CHO-1".to_string(), 8)]
+        );
+        assert!(barred.warnings.is_empty());
+    }
+
+    /** Clears section metadata position indices when parsing returns errors instead of an AST. */
+    #[test]
+    fn clears_section_meta_positions_when_parse_fails() {
+        let report = crate::parse_chord_progression_string_with_warnings("H\n@section=Verse\nC");
+
+        assert!(report.result.is_err());
+        assert!(report.section_meta_positions.is_empty());
     }
 
     /** Keeps diagnostic positions in the original source despite collapsing blank lines. */
