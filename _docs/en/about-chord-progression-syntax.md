@@ -295,3 +295,17 @@ See the [machine-readable fixture](../../tests/fixtures/canonical_syntax.json).
 A new `@section` starts a separate section even before any chords have been entered. Consecutive names are not merged into the first definition. `@repeat` and a qualifying `@same` remain attached to their section. Reference names remain literal strings; target lookup, duplicate precedence and identifier semantics belong to the application.
 
 Successful JavaScript results include `sectionMetaPositions` outside the AST. Each entry addresses `ast[sectionIndex].metaInfos[metaIndex]`; `position` covers only the original metadata value after `=`, excluding surrounding ASCII spaces and tabs. Offsets are zero-based UTF-16 with an exclusive end; line/column are one-based, CRLF counts as one newline, and columns/length count Unicode scalar values. Applications can use these exact ranges for semantic diagnostics without rescanning metadata syntax. The stored AST shape is unchanged.
+
+## References
+
+This library defines its own bar- and section-based text syntax for chord progressions. For comparison, data-model design, or potential interoperability, the following standards widely used in Music Information Retrieval (MIR) are useful references:
+
+- **Harte notation (Harte chord notation)**
+  - Paper: Christopher Harte, Mark B. Sandler, Samer A. Abdallah, and Emilia Gómez, *"Symbolic Representation of Musical Chords: A Proposed Syntax for Text Annotations"*, ISMIR 2005.
+  - A BNF-defined, context-independent text syntax for machine-readable chord annotations using the form `root:quality(additions/omissions)/bass-degree` (for example `C:maj7`, `G:7(b9)/3`, `G(*3)` for omitted degrees, and `N` for no chord).
+  - Unlike this library's syntax (`CM7`, `G7(b9)/B`, `omit5`, `_`), Harte notation separates root and quality with a colon and expresses slash basses as scale degrees relative to the root rather than pitch names.
+- **JAMS (JSON Annotated Music Specification)**
+  - Paper: Eric J. Humphrey, Justin Salamon, Oriol Nieto, Jon Forsyth, Rachel M. Bittner, and Juan P. Bello, *"JAMS: A JSON Annotated Music Specification for Reproducible MIR Research"*, ISMIR 2014.
+  - Specification & repository: <https://github.com/marl/jams> / [Namespace definitions](https://jams.readthedocs.io/en/stable/namespace.html).
+  - A JSON schema and library for storing multiple time-aligned music annotations (such as chords, beats, and segments) in a single document.
+  - Its chord namespaces include `chord_harte` (strict Harte notation) and an expanded `chord` namespace. While this library targets bar/section chord-progression text rather than time-stamped JAMS files directly, JAMS is a relevant reference for schema design and conversion.

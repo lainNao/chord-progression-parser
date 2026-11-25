@@ -282,3 +282,17 @@ C7/E
 コード未入力でも、次の`@section`は別のセクションを開始します。複数の名前を先頭のセクションへまとめません。`@repeat`と、その名前に属する`@same`は同じセクションに保持します。パーサーは参照名を文字列として保持し、参照先の検索・重複の優先順位・識別子の意味はアプリ側で解釈します。
 
 JavaScriptの解析成功結果には、ASTと別に`sectionMetaPositions`を返します。各要素の`sectionIndex`・`metaIndex`は`ast[sectionIndex].metaInfos[metaIndex]`を指し、`position`は`=`の後の値だけの原文範囲です。周囲のASCII空白・タブは含めず、内部空白・Unicode・記号は保持します。位置は元の入力に対するUTF-16 offset（終端はexclusive）で、CRLFは1改行、列とlengthはUnicode scalar単位です。アプリ側の参照診断もこの範囲へ表示でき、正規表現などで原文を再解釈する必要はありません。保存ASTの形は変更しません。
+
+## 参考情報
+
+本ライブラリの構文は独自のテキストコード進行表記を採用しています。音楽情報処理（MIR: Music Information Retrieval）分野で広く使われている関連仕様として、以下が参考になります。
+
+- **Harte 記法（Harte chord notation）**
+  - 論文: Christopher Harte, Mark B. Sandler, Samer A. Abdallah, Emilia Gómez, *"Symbolic Representation of Musical Chords: A Proposed Syntax for Text Annotations"*, ISMIR 2005
+  - 機械可読かつ曖昧性のないコードアノテーションのために提案されたテキスト構文です。`ルート:種別(付加・省略度数)/ベース度数` の形式をとります（例: `C:maj7`、`G:7(b9)/3`、省略は `G(*3)`、ノーコードは `N`）。
+  - 本ライブラリの表記（`CM7`、`G7(b9)/B`、`omit5`、`_` など）とは異なり、コロン区切りを用いる点や、スラッシュ以降を音名ではなくルートからの相対度数で表す点が特徴です。
+- **JAMS（JSON Annotated Music Specification）**
+  - 論文: Eric J. Humphrey, Justin Salamon, Oriol Nieto, Jon Forsyth, Rachel M. Bittner, Juan P. Bello, *"JAMS: A JSON Annotated Music Specification for Reproducible MIR Research"*, ISMIR 2014
+  - 仕様・リポジトリ: <https://github.com/marl/jams> / [Namespace definitions](https://jams.readthedocs.io/en/stable/namespace.html)
+  - 時間区間付きの音楽アノテーション（コード・拍・セクションなど）を 1 つの JSON スキーマで扱うための仕様およびライブラリです。
+  - コード用の名前空間として、Harte 記法に準拠した `chord_harte` と拡張版の `chord` を備えています。本ライブラリは小節・セクション単位のテキストコード進行 AST を対象としており、時刻ベースの JAMS を直接入出力するものではありませんが、データモデルや相互変換を検討する際の参考仕様となります。
