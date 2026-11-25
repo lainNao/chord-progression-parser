@@ -285,7 +285,7 @@ JavaScriptの解析成功結果には、ASTと別に`sectionMetaPositions`を返
 
 ## 参考情報
 
-本ライブラリの構文は独自のテキストコード進行表記を採用しています。音楽情報処理（MIR: Music Information Retrieval）分野で広く使われている関連仕様として、以下が参考になります。
+本ライブラリの構文は小節・セクション単位の独自のテキストコード進行表記を採用しています。音楽情報処理（MIR）、リードシート／テキスト記譜、MIDI 拡張、楽譜 XML などの分野で使われている関連記法・データ仕様として、以下が参考になります。
 
 - **Harte 記法（Harte chord notation）**
   - 論文: Christopher Harte, Mark B. Sandler, Samer A. Abdallah, Emilia Gómez, *"Symbolic Representation of Musical Chords: A Proposed Syntax for Text Annotations"*, ISMIR 2005
@@ -294,5 +294,22 @@ JavaScriptの解析成功結果には、ASTと別に`sectionMetaPositions`を返
 - **JAMS（JSON Annotated Music Specification）**
   - 論文: Eric J. Humphrey, Justin Salamon, Oriol Nieto, Jon Forsyth, Rachel M. Bittner, Juan P. Bello, *"JAMS: A JSON Annotated Music Specification for Reproducible MIR Research"*, ISMIR 2014
   - 仕様・リポジトリ: <https://github.com/marl/jams> / [Namespace definitions](https://jams.readthedocs.io/en/stable/namespace.html)
-  - 時間区間付きの音楽アノテーション（コード・拍・セクションなど）を 1 つの JSON スキーマで扱うための仕様およびライブラリです。
-  - コード用の名前空間として、Harte 記法に準拠した `chord_harte` と拡張版の `chord` を備えています。本ライブラリは小節・セクション単位のテキストコード進行 AST を対象としており、時刻ベースの JAMS を直接入出力するものではありませんが、データモデルや相互変換を検討する際の参考仕様となります。
+  - 時間区間付きの音楽アノテーション（コード・拍・セクションなど）を 1 つの JSON スキーマで扱うための仕様およびライブラリです。コード用の名前空間として Harte 記法準拠の `chord_harte` と拡張版の `chord` を備えています。
+- **ChordPro**
+  - 仕様: <https://www.chordpro.org/> / [ChordPro Implementation: Chords](https://www.chordpro.org/chordpro/chordpro-chords/)
+  - 歌詞の途中に `[Am7]` や `[C/B]` のように角括弧でコードを埋め込み、`{title: ...}` や `{define: ...}` などのディレクティブでメタデータや押さえ方を記述するテキスト形式です。リードシート・弾き語り譜の作成や移調ツールで広く使われています。
+- **Humdrum（`**harm` など）**
+  - 仕様: <https://www.humdrum.org/> / [Functional Harmony (`**harm`)](https://www.humdrum.org/rep/harm/)
+  - 音楽学・計算音楽学向けのプレーンテキスト表現およびツール群です。和声解析用の `**harm` 表現では、調のコンテキストのもとでローマ数字による機能和声（例: `I`、`V7b`、`N` など）をタブ区切りのスパイン形式で記述します。
+- **ABC notation**
+  - 仕様: [ABC Standard v2.1](https://abcnotation.com/wiki/abc:standard:v2.1)（Section 4.18 Chord symbols）
+  - ASCII テキストで旋律や楽譜を記述する軽量な記譜形式です。コードシンボルは音符の直前に二重引用符で `"Am7"A2D2` や `"C/E"` のように付与します（五線上の和音は角括弧 `[CEGc]` で区別されます）。
+- **Yamaha XF**
+  - 仕様: Yamaha Corporation, *XF Format Specifications*（V2.0 / V2.01）
+  - Standard MIDI File（SMF）の拡張仕様で、歌詞やスタイル情報とともにコード進行をシーケンサ固有メタイベント（`FF 7F 07 43 7B 01 cr ct bn bt`）としてバイナリ記録します。ルート音・コード種別・オンベース音・ベースコード種別の 4 バイトで表現します。
+- **MEI（Music Encoding Initiative）**
+  - 仕様: <https://music-encoding.org/> / [`<harm>` element](https://music-encoding.org/guidelines/v5/elements/harm.html)
+  - 学術的な楽譜エンコーディングのための XML 仕様です。和声やコードシンボルは `<harm>` 要素として記述し、`<chordTable>` / `<chordDef>` による構成音・ダイアグラム定義や `<fb>` による通奏低音とも関連付けられます。
+- **MusicXML**
+  - 仕様: [W3C MusicXML 4.0 — The `<harmony>` element](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/harmony/)
+  - 楽譜作成ソフトウェア間で広く採用されている XML 交換形式です。コードシンボルや機能和声は `<harmony>` 要素内に `<root>`（または `<numeral>`）・`<kind>`・`<bass>`・`<degree>` などの構造化要素として表現します。

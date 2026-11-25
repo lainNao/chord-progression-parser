@@ -298,7 +298,7 @@ Successful JavaScript results include `sectionMetaPositions` outside the AST. Ea
 
 ## References
 
-This library defines its own bar- and section-based text syntax for chord progressions. For comparison, data-model design, or potential interoperability, the following standards widely used in Music Information Retrieval (MIR) are useful references:
+This library defines its own bar- and section-based text syntax for chord progressions. For comparison, data-model design, or potential interoperability, the following notations and specifications from Music Information Retrieval (MIR), text lead sheets, MIDI extensions, and XML music notation are useful references:
 
 - **Harte notation (Harte chord notation)**
   - Paper: Christopher Harte, Mark B. Sandler, Samer A. Abdallah, and Emilia Gómez, *"Symbolic Representation of Musical Chords: A Proposed Syntax for Text Annotations"*, ISMIR 2005.
@@ -307,5 +307,22 @@ This library defines its own bar- and section-based text syntax for chord progre
 - **JAMS (JSON Annotated Music Specification)**
   - Paper: Eric J. Humphrey, Justin Salamon, Oriol Nieto, Jon Forsyth, Rachel M. Bittner, and Juan P. Bello, *"JAMS: A JSON Annotated Music Specification for Reproducible MIR Research"*, ISMIR 2014.
   - Specification & repository: <https://github.com/marl/jams> / [Namespace definitions](https://jams.readthedocs.io/en/stable/namespace.html).
-  - A JSON schema and library for storing multiple time-aligned music annotations (such as chords, beats, and segments) in a single document.
-  - Its chord namespaces include `chord_harte` (strict Harte notation) and an expanded `chord` namespace. While this library targets bar/section chord-progression text rather than time-stamped JAMS files directly, JAMS is a relevant reference for schema design and conversion.
+  - A JSON schema and library for storing multiple time-aligned music annotations (such as chords, beats, and segments) in a single document, including the `chord_harte` (strict Harte notation) and expanded `chord` namespaces.
+- **ChordPro**
+  - Specification: <https://www.chordpro.org/> / [ChordPro Implementation: Chords](https://www.chordpro.org/chordpro/chordpro-chords/).
+  - A plain-text song-sheet format that embeds chords inline with lyrics in square brackets (such as `[Am7]` and `[C/B]`) alongside curly-brace directives (`{title: ...}`, `{define: ...}`) for metadata and chord diagrams.
+- **Humdrum (`**harm`, etc.)**
+  - Specification: <https://www.humdrum.org/> / [Functional Harmony (`**harm`)](https://www.humdrum.org/rep/harm/).
+  - A plain-text music representation and toolkit widely used in computational musicology. Its `**harm` spine encodes Western functional harmony in a key context using Roman numerals, inversions, and special chords (such as `I`, `V7b`, and `N`).
+- **ABC notation**
+  - Specification: [ABC Standard v2.1](https://abcnotation.com/wiki/abc:standard:v2.1) (Section 4.18, Chord symbols).
+  - A compact ASCII music notation format where chord symbols are placed in double quotes immediately before the note they accompany (for example `"Am7"A2D2` or `"C/E"`, distinct from bracketed simultaneous notes like `[CEGc]`).
+- **Yamaha XF**
+  - Specification: Yamaha Corporation, *XF Format Specifications* (V2.0 / V2.01).
+  - An extension to Standard MIDI Files (SMF) that stores chord progressions alongside lyrics and style data in sequencer-specific meta-events (`FF 7F 07 43 7B 01 cr ct bn bt`), encoding chord root, chord type, on-bass note, and bass chord type in four bytes.
+- **MEI (Music Encoding Initiative)**
+  - Specification: <https://music-encoding.org/> / [`<harm>` element](https://music-encoding.org/guidelines/v5/elements/harm.html).
+  - An XML standard for scholarly music encoding. Harmonic labels and chord symbols are encoded with `<harm>` and can link to pitch/diagram definitions (`<chordTable>` / `<chordDef>`) or structured figured bass (`<fb>`).
+- **MusicXML**
+  - Specification: [W3C MusicXML 4.0 — The `<harmony>` element](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/harmony/).
+  - A widely supported XML interchange format for music notation software. Chord symbols and functional harmony are represented structurally inside `<harmony>` using child elements such as `<root>` (or `<numeral>`), `<kind>`, `<bass>`, and `<degree>`.
